@@ -21,7 +21,7 @@ export default [
     output: {
       format: 'umd',
       file: 'dist/sortable.js',
-      name: 'draggable',
+      name: 'sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, '')
     },
@@ -37,7 +37,7 @@ export default [
     output: {
       format: 'umd',
       file: 'dist/sortable.min.js',
-      name: 'draggable',
+      name: 'sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, '')
     },

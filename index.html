@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sortable</title>
+  <style>
+    .group {
+      width: 100px;
+      text-align: center;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+    }
+    ul {
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      padding: 5px;
+      list-style: none;
+      background-color: aqua;
+    }
+  </style>
+</head>
+<body>
+  <ul class="group">
+
+  </ul>
+  <script type="module">
+    import Sortable from './src/index.js';
+
+    const group = document.getElementsByClassName('group')[0];
+    const children = [];
+    for(let i = 0; i < 100; i++) {
+      let li = document.createElement('li')
+      li.innerText = i + 1
+      children.push(li)
+    }
+    group.append(...children)
+    new Sortable({
+      group: document.getElementsByClassName('group')[0],
+      dragEnd: (pre, cur) => {
+        console.log(pre, cur)
+      }
+    });
+  </script>
+</body>
+</html>

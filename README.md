@@ -24,7 +24,7 @@ import Sortable from 'sortable-dnd'
 
 var drag = new Sortable({
   group: document.getElementById('content'),
-  draggable: (e) => {
+  dragging: (e) => {
     return e.target
   },
   dragEnd: (pre, cur) => {
@@ -44,8 +44,7 @@ drag.destroy()
 | **option** | **type** | **default** | **Description** |
 |-------------|--------------|--------------|--------------|
 | `group` | `HTMLElement` | - | List parent element |
-| `scroll` | `HTMLElement` | - | List scroll element. If not passed, the default is the same as the group |
-| `draggable` | `Function` | (e) => e.target | Specifies the drag and drop element, which must return an HTMLElement |
+| `dragging` | `Function` | (e) => e.target | Specifies the drag and drop element, which must return an HTMLElement |
 | `dragEnd` | `Function` | (pre, cur) => {} | The callback function when the drag is completed |
 | `ghostStyle` | `Object` | {} | The style of the mask element when dragging |
 | `ghostClass` | `String` | '' | The class of the mask element when dragging |
