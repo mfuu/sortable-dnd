@@ -30,7 +30,6 @@ class Sortable {
 
     this.animation = options.animation || 300 // 动画延迟
 
-    this.rectList = [] // 用于保存拖拽项getBoundingClientRect()方法获得的数据
     this.isMousedown = false // 记录鼠标按下
     this.isMousemove = false // 记录鼠标移动
 
@@ -86,7 +85,7 @@ class Sortable {
     const ghostEl = this.dragEl.cloneNode(true)
     const groupEl = this.group.cloneNode(false)
     groupEl.appendChild(ghostEl)
-    
+
     this.ghost.init(groupEl)
 
     this.diff.old.rect = rect
@@ -179,7 +178,6 @@ class Sortable {
   _resetState() {
     this.isMousedown = false
     this.isMousemove = false
-    this.rectList.length = 0
     this.dragEl = null
     this.dropEl = null
     this.ghost.destroy()
