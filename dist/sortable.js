@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.0.3
+ * sortable-dnd v0.0.4
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -451,6 +451,7 @@
         this.ghost.move();
         e.preventDefault();
         if (!this.isMousedown) return;
+        if (e.clientX < 0 || e.clientY < 0) return;
         document.body.style.cursor = 'grabbing';
         this.isMousemove = true;
         this.ghost.set('x', this.ghost.x + e.clientX - this.calcXY.x);
@@ -468,19 +469,19 @@
             el = _utils$getElement2.el,
             rect = _utils$getElement2.rect;
 
-        if (!el || index < 0) return;
         var left = rect.left,
             right = rect.right,
             top = rect.top,
             bottom = rect.bottom;
+        if (!el || index < 0) return;
+        if (top < 0 || left < 0) return;
 
         if (e.clientX > left && e.clientX < right && e.clientY > top && e.clientY < bottom) {
           this.dropEl = el; // 拖拽前后元素不一致时交换
 
           if (this.dropEl !== this.dragEl) {
             var dragRect = this.dragEl.getBoundingClientRect();
-            var dropRect = this.dropEl.getBoundingClientRect(); // if (this.dragEl.animated) return
-
+            var dropRect = this.dropEl.getBoundingClientRect();
             if (this.dropEl.animated) return;
 
             if (utils.index(this.group, this.dragEl) < index) {

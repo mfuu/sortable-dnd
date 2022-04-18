@@ -102,6 +102,7 @@ class Sortable {
 
     e.preventDefault()
     if (!this.isMousedown) return
+    if (e.clientX < 0 || e.clientY < 0) return
 
     document.body.style.cursor = 'grabbing'
     
@@ -118,9 +119,10 @@ class Sortable {
 
     const { index, el, rect } = utils.getElement(this.group, e.target)
 
-    if (!el || index < 0) return
-
     const { left, right, top, bottom } = rect
+
+    if (!el || index < 0) return
+    if (top < 0 || left < 0) return
 
     if (e.clientX > left && e.clientX < right && e.clientY > top && e.clientY < bottom) {
       this.dropEl = el
@@ -130,7 +132,6 @@ class Sortable {
         const dragRect = this.dragEl.getBoundingClientRect()
         const dropRect = this.dropEl.getBoundingClientRect()
 
-        // if (this.dragEl.animated) return
         if (this.dropEl.animated) return
 
         if (utils.index(this.group, this.dragEl) < index) {
