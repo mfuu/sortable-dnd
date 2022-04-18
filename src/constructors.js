@@ -36,17 +36,18 @@ export class Ghost {
     this.exist = false
   }
 
-  init(el) {
+  init(el, rect) {
     if (!el) {
       console.error('Ghost Element is required')
       return
     }
     this.$el = el
     const { ghostClass, ghostStyle = {} } = this.options
+    const { width, height } = rect
     
     this.$el.class = ghostClass
-    // this.$el.style.width = rect.width
-    // this.$el.style.height = rect.height
+    this.$el.style.width = width + 'px'
+    this.$el.style.height = height + 'px'
     this.$el.style.transform = ''
     this.$el.style.transition = ''
     this.$el.style.position = 'fixed'
@@ -56,8 +57,6 @@ export class Ghost {
     this.$el.style.opacity = 0.8
     this.$el.style.pointerEvents = 'none'
 
-    // utils.css(this.$el, 'width', rect.width)
-    // utils.css(this.$el, 'height', rect.height)
     for (const key in ghostStyle) {
       utils.css(this.$el, key, ghostStyle[key])
     }

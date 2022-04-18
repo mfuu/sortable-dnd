@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.0.2
+ * sortable-dnd v0.0.3
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -270,7 +270,7 @@
 
     _createClass(Ghost, [{
       key: "init",
-      value: function init(el) {
+      value: function init(el, rect) {
         if (!el) {
           console.error('Ghost Element is required');
           return;
@@ -281,9 +281,11 @@
             ghostClass = _this$options.ghostClass,
             _this$options$ghostSt = _this$options.ghostStyle,
             ghostStyle = _this$options$ghostSt === void 0 ? {} : _this$options$ghostSt;
-        this.$el["class"] = ghostClass; // this.$el.style.width = rect.width
-        // this.$el.style.height = rect.height
-
+        var width = rect.width,
+            height = rect.height;
+        this.$el["class"] = ghostClass;
+        this.$el.style.width = width + 'px';
+        this.$el.style.height = height + 'px';
         this.$el.style.transform = '';
         this.$el.style.transition = '';
         this.$el.style.position = 'fixed';
@@ -291,8 +293,7 @@
         this.$el.style.top = 0;
         this.$el.style.zIndex = 100000;
         this.$el.style.opacity = 0.8;
-        this.$el.style.pointerEvents = 'none'; // utils.css(this.$el, 'width', rect.width)
-        // utils.css(this.$el, 'height', rect.height)
+        this.$el.style.pointerEvents = 'none';
 
         for (var key in ghostStyle) {
           utils.css(this.$el, key, ghostStyle[key]);
@@ -363,8 +364,6 @@
 
       this.animation = options.animation || 300; // 动画延迟
 
-      this.rectList = []; // 用于保存拖拽项getBoundingClientRect()方法获得的数据
-
       this.isMousedown = false; // 记录鼠标按下
 
       this.isMousemove = false; // 记录鼠标移动
@@ -432,9 +431,7 @@
         if (!el || index < 0) return true; // 将拖拽元素克隆一份作为蒙版
 
         var ghostEl = this.dragEl.cloneNode(true);
-        var groupEl = this.group.cloneNode(false);
-        groupEl.appendChild(ghostEl);
-        this.ghost.init(groupEl);
+        this.ghost.init(ghostEl, rect);
         this.diff.old.rect = rect;
         this.ghost.set('x', rect.left);
         this.ghost.set('y', rect.top); // 记录拖拽移动时坐标
@@ -539,7 +536,6 @@
       value: function _resetState() {
         this.isMousedown = false;
         this.isMousemove = false;
-        this.rectList.length = 0;
         this.dragEl = null;
         this.dropEl = null;
         this.ghost.destroy();

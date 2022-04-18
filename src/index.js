@@ -83,10 +83,8 @@ class Sortable {
 
     // 将拖拽元素克隆一份作为蒙版
     const ghostEl = this.dragEl.cloneNode(true)
-    const groupEl = this.group.cloneNode(false)
-    groupEl.appendChild(ghostEl)
 
-    this.ghost.init(groupEl)
+    this.ghost.init(ghostEl, rect)
 
     this.diff.old.rect = rect
     this.ghost.set('x', rect.left)
