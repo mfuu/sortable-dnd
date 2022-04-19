@@ -42,6 +42,7 @@ export class Ghost {
       return
     }
     this.$el = el
+    this.rect = rect
     const { ghostClass, ghostStyle = {} } = this.options
     const { width, height } = rect
     
