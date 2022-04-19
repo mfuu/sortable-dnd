@@ -122,7 +122,10 @@ class Sortable {
     const { left, right, top, bottom } = rect
 
     if (!el || index < 0) return
-    if (top < 0 || left < 0) return
+
+    const groupRect = this.group.getBoundingClientRect()
+
+    if (top - groupRect.top < 0 || left - groupRect.left < 0) return
 
     if (e.clientX > left && e.clientX < right && e.clientY > top && e.clientY < bottom) {
       this.dropEl = el

@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.0.4
+ * sortable-dnd v0.0.5
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -474,7 +474,8 @@
             top = rect.top,
             bottom = rect.bottom;
         if (!el || index < 0) return;
-        if (top < 0 || left < 0) return;
+        var groupRect = this.group.getBoundingClientRect();
+        if (top - groupRect.top < 0 || left - groupRect.left < 0) return;
 
         if (e.clientX > left && e.clientX < right && e.clientY > top && e.clientY < bottom) {
           this.dropEl = el; // 拖拽前后元素不一致时交换
