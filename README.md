@@ -22,7 +22,7 @@ JS Library for Drag and Drop, supports Sortable and Draggable
 ```js
 import Sortable from 'sortable-dnd'
 
-var drag = new Sortable({
+var DND = new Sortable({
   group: document.getElementById('content'),
   dragging: (e) => {
     return e.target
@@ -33,10 +33,10 @@ var drag = new Sortable({
 })
 ```
 
-When the component you created is destroyed, you need to destroy the `drag(new Draggable)`like this
+When the component you created is destroyed, you need to destroy the `new Sortable` like this
 
 ```js
-drag.destroy()
+DND.destroy()
 ```
 
 # Options
