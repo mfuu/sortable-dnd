@@ -48,7 +48,7 @@ DND.destroy()
 
 | **option** | **type** | **default** | **Description** |
 |-------------|--------------|--------------|--------------|
-| `draggable` | `String | Function` | - | Specifies which items inside the element should be draggable, the function type must return a boolean |
+| `draggable` | `String/Function` | - | Specifies which items inside the element should be draggable, the function type must return a boolean |
 | `dragging` | `Function` | (e) => e.target | Specifies the drag and drop element, which must return an HTMLElement |
 | `dragEnd` | `Function` | (pre, cur) => {} | The callback function when the drag is completed |
 | `ghostStyle` | `Object` | {} | The style of the mask element when dragging |
