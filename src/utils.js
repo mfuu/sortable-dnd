@@ -5,12 +5,26 @@ const captureMode = {
 	passive: false
 }
 
+const R_SPACE = /\s+/g
+
 export default {
 
+  /**
+   * add specified event listener
+   * @param {HTMLElement} el 
+   * @param {String} event 
+   * @param {Function} fn 
+   */
   on(el, event, fn) {
     el.addEventListener(event, fn, !IE11OrLess && captureMode)
   },
 
+  /**
+   * remove specified event listener
+   * @param {HTMLElement} el 
+   * @param {String} event 
+   * @param {Function} fn 
+   */
   off(el, event, fn) {
     el.removeEventListener(event, fn, !IE11OrLess && captureMode)
   },
@@ -25,6 +39,12 @@ export default {
     }
   },
 
+  /**
+   * get specified element's index in group
+   * @param {HTMLElement} group 
+   * @param {HTMLElement} el 
+   * @returns {Number} index
+   */
   index(group, el) {
     if (!el || !el.parentNode) return -1
 
@@ -32,40 +52,81 @@ export default {
     return children.indexOf(el)
   },
 
-  getRect(children, index) {
-    if (!children.length) return {}
-    if (index < 0) return {}
-    return children[index].getBoundingClientRect()
+  /**
+   * Returns the "bounding client rect" of given element
+   * @param {HTMLElement} el  The element whose boundingClientRect is wanted
+   */
+  getRect(el) {
+    if (!el.getBoundingClientRect && el !== window) return
+
+    const rect = {
+      top: 0,
+      left: 0,
+      bottom: 0,
+      right: 0,
+      height: 0,
+      width: 0,
+    }
+
+    let elRect
+
+    if (el !== window && el.parentNode && el !== this.getWindowScrollingElement()) {
+      elRect = el.getBoundingClientRect()
+      rect.top = elRect.top
+      rect.left = elRect.left
+      rect.bottom = elRect.bottom
+      rect.right = elRect.right
+      rect.height = elRect.height
+      rect.width = elRect.width
+    } else {
+      rect.top = 0
+      rect.left = 0
+      rect.bottom = window.innerHeight
+      rect.right = window.innerWidth
+      rect.height = window.innerHeight
+      rect.width = window.innerWidth
+    }
+
+    return rect
   },
 
-  getElement(group, dragging) {
+  /**
+   * get target Element in group
+   * @param {HTMLElement} group 
+   * @param {HTMLElement} el 
+   */
+  getElement(group, el) {
     const result = { index: -1, el: null, rect: {} }
-
     const children = [...Array.from(group.children)]
 
     // 如果能直接在子元素中找到，返回对应的index
-    const index = children.indexOf(dragging)
+    const index = children.indexOf(el)
     if (index > -1)
       Object.assign(result, {
         index,
         el: children[index],
-        rect: children[index].getBoundingClientRect()
+        rect: this.getRect(children[index])
       })
 
     // children 中无法直接找到对应的dom时，需要向下寻找
     for (let i = 0; i < children.length; i++) {
-      if (this.isChildOf(dragging, children[i]))
+      if (this.isChildOf(el, children[i]))
         Object.assign(result, {
           index: i,
           el: children[i],
-          rect: children[i].getBoundingClientRect()
+          rect: this.getRect(children[i])
         })
     }
 
     return result
   },
 
-  // 判断子元素是否包含在父元素中
+  /**
+   * Check if child element is contained in parent element
+   * @param {HTMLElement} child 
+   * @param {HTMLElement} parent 
+   * @returns {Boolean} true | false
+   */
   isChildOf(child, parent) {
     let parentNode
     if (child && parent) {
@@ -78,8 +139,53 @@ export default {
     return false
   },
 
-  animate(el, preRect, animation = 300) {
-    const curRect = el.getBoundingClientRect()
+  /**
+   * add or remove element's class
+   * @param {HTMLElement} el element
+   * @param {String} name class name
+   * @param {Boolean} state true: add, false: remove
+   */
+  toggleClass(el, name, state) {
+    if (el && name) {
+      if (el.classList) {
+        el.classList[state ? 'add' : 'remove'](name)
+      } else {
+        const className = (' ' + el.className + ' ').replace(R_SPACE, ' ').replace(' ' + name + ' ', ' ')
+        el.className = (className + (state ? ' ' + name : '')).replace(R_SPACE, ' ')
+      }
+    }
+  },
+
+  /**
+   * Check if a DOM element matches a given selector
+   * @param {HTMLElement} el 
+   * @param {String} selector 
+   * @returns 
+   */
+  matches(el, selector) {
+    if (!selector) return
+  
+    selector[0] === '>' && (selector = selector.substring(1))
+  
+    if (el) {
+      try {
+        if (el.matches) {
+          return el.matches(selector)
+        } else if (el.msMatchesSelector) {
+          return el.msMatchesSelector(selector)
+        } else if (el.webkitMatchesSelector) {
+          return el.webkitMatchesSelector(selector)
+        }
+      } catch(error) {
+        return false
+      }
+    }
+  
+    return false
+  },
+
+  animate(el, preRect, animation = 150) {
+    const curRect = this.getRect(el)
 
     const left = preRect.left - curRect.left
     const top = preRect.top - curRect.top
@@ -125,6 +231,10 @@ export default {
         fn.call(this, ...args)
       }, delay)
     }
+  },
+
+  _nextTick(fn) {
+    return setTimeout(fn, 0)
   }
 
 }

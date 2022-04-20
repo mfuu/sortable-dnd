@@ -6,44 +6,91 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sortable</title>
   <style>
-    .group {
-      width: 100px;
-      text-align: center;
-      margin: 0 auto;
-      border: 1px solid #ccc;
-    }
     ul {
       padding: 0;
       margin: 0;
     }
     li {
-      padding: 5px;
       list-style: none;
-      background-color: aqua;
+    }
+    .group {
+      width: 100px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      margin-bottom: 100px;
+    }
+    .group li {
+      text-align: center;
+      padding: 5px;
+      margin: 5px;
+      border: 1px solid #aaa;
+    }
+    .flex-group {
+      width: 500px;
+      height: 500px;
+      overflow: hidden auto;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      padding: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+    }
+    .flex-group li {
+      text-align: center;
+      width: 100px;
+      height: 100px;
+      padding: 5px;
+      border: 1px solid #aaa;
+    }
+    .chosen {
+      background-color: #c8ebfb;
     }
   </style>
 </head>
 <body>
-  <ul class="group">
-
-  </ul>
+  <ul id="group" class="group"></ul>
+  <ul id="flexgroup" class="flex-group"></ul>
   <script type="module">
     import Sortable from './src/index.js';
 
-    const group = document.getElementsByClassName('group')[0];
-    const children = [];
-    for(let i = 0; i < 100; i++) {
-      let li = document.createElement('li')
-      li.innerText = i + 1
-      children.push(li)
+    const group = document.getElementById('group');
+    const children1 = [];
+    for(let i = 0; i < 10; i++) {
+      let li = document.createElement('li');
+      li.innerText = i + 1;
+      children1.push(li);
     }
-    group.append(...children)
-    new Sortable({
-      group: document.getElementsByClassName('group')[0],
-      dragEnd: (pre, cur) => {
-        console.log(pre, cur)
+    group.append(...children1);
+    new Sortable(
+      document.getElementById('group'),
+      {
+        ghostStyle: { border: '1px solid #aaa' },
+        chosenClass: 'chosen',
+        dragEnd: (pre, cur) => {
+          console.log(pre, cur)
+        }
       }
-    });
+    );
+
+    const flexG = document.getElementById('flexgroup');
+    const children2 = [];
+    for(let i = 0; i < 16; i++) {
+      let li = document.createElement('li');
+      li.innerText = i + 1;
+      children2.push(li);
+    }
+    flexG.append(...children2);
+    new Sortable(
+      document.getElementById('flexgroup'),
+      {
+        ghostStyle: { border: '1px solid #aaa' },
+        chosenClass: 'chosen',
+        dragEnd: (pre, cur) => {
+          console.log(pre, cur)
+        }
+      }
+    );
   </script>
 </body>
 </html>

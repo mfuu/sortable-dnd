@@ -1,58 +1,131 @@
 import utils from './utils.js'
 import { Safari } from './brower.js'
-import { Ghost, Diff } from './constructors.js'
 
 /**
- * @interface Options {
- * 
- * group: HTMLElement,
- * 
- * draggable?: Function, return element node selected when dragging, or null
- * 
- * dragEnd?: Function, The callback function when the drag is completed
- * 
- * ghostStyle?: Object,
- * 
- * ghostClass?: String,
- * 
- * }
+ * 拖拽前后差异初始化
  */
+class Diff {
+  constructor() {
+    this.old = { node: null, rect: {} }
+    this.new = { node: null, rect: {} }
+  }
+
+  get(key) {
+    return this[key]
+  }
+
+  set(key, value) {
+    this[key] = value
+  }
+
+  destroy() {
+    this.old = { node: null, rect: {} }
+    this.new = { node: null, rect: {} }
+  }
+}
+
+/**
+ * 拖拽中的元素
+ */
+class Ghost {
+  constructor(options) {
+    this.options = options
+    this.x = 0
+    this.y = 0
+    this.exist = false
+  }
+
+  init(el, rect) {
+    if (!el) {
+      console.error('Ghost Element is required')
+      return
+    }
+    this.$el = el
+    this.rect = rect
+    const { ghostClass, ghostStyle = {} } = this.options
+    const { width, height } = rect
+    
+    this.$el.class = ghostClass
+    this.$el.style.width = width + 'px'
+    this.$el.style.height = height + 'px'
+    this.$el.style.transform = ''
+    this.$el.style.transition = ''
+    this.$el.style.position = 'fixed'
+    this.$el.style.left = 0
+    this.$el.style.top = 0
+    this.$el.style.zIndex = 100000
+    this.$el.style.opacity = 0.8
+    this.$el.style.pointerEvents = 'none'
+
+    for (const key in ghostStyle) {
+      utils.css(this.$el, key, ghostStyle[key])
+    }
+  }
+
+  get (key) {
+    return this[key]
+  }
+
+  set (key, value) {
+    this[key] = value
+    this[key] = value
+  }
+
+  move() {
+    // 将初始化放在 move 事件中，避免与鼠标点击事件冲突
+    if (!this.exist) {
+      document.body.appendChild(this.$el)
+      this.exist = true
+    }
+    this.$el.style.transform = `translate3d(${this.x}px, ${this.y}px, 0)`
+  }
+
+  destroy() {
+    if (this.$el) this.$el.remove()
+    this.exist = false
+  }
+}
 
 class Sortable {
-  constructor(options) {
-    this.group = options.group // 父级元素
-
-    this.dragging = options.dragging // 必须为函数且必须返回一个 HTMLElement (e) => return e.target
-    this.dragEnd = options.dragEnd // 拖拽完成时的回调函数，返回两个值(olddom, newdom) => {}
-
-    this.ghostStyle = options.ghostStyle // 克隆元素包含的属性
-    this.ghostClass = options.ghostClass // 克隆元素的类名
-
-    this.animation = options.animation || 300 // 动画延迟
-
-    this.isMousedown = false // 记录鼠标按下
-    this.isMousemove = false // 记录鼠标移动
+  constructor(el, options) {
+    this.$el = el // 列表容器元素
+    this.options = options = Object.assign({}, options)
 
     this.dragEl = null // 拖拽元素
     this.dropEl = null // 释放元素
-    this.diff = new Diff() // 记录拖拽前后差异
-
-    this.ghost = new Ghost({
-      ghostClass: this.ghostClass,
-      ghostStyle: this.ghostStyle
-    })
-
-    this.supportPointer = ('PointerEvent' in window) && !Safari
-
-    this.calcXY = { x: 0, y: 0 } 
+    this.diff = null // 记录拖拽前后差异
+    this.ghost = null // 拖拽时蒙版元素
+    this.calcXY = { x: 0, y: 0 } // 记录拖拽移动时坐标
 
     utils.debounce(this.init(), 50) // 避免重复执行多次
   }
   init() {
-    if (!this.group) {
-      console.error('Error: group is required')
+    if (!this.$el) {
+      console.error('Error: container element is required')
       return
     }
+
+    const defaults = {
+      animation: 150, // 动画延时
+
+      ghostClass: '',
+      ghostStyle: {},
+      chosenClass: '',
+      draggable: '', // String: class, Function: (e) => return true
+      dragging: null, // 必须为函数且必须返回一个 HTMLElement (e) => return e.target
+      dragEnd: null, // 拖拽完成时的回调函数，返回两个值(olddom, newdom) => {}
+
+      supportPointer: ('PointerEvent' in window) && !Safari,
+      ownerDocument: this.$el.ownerDocument,
+    }
+    // Set default options
+    for (const name in defaults) {
+      !(name in this.options) && (this.options[name] = defaults[name])
+    }
+
+    this.diff = new Diff()
+    this.ghost = new Ghost(this.options)
+
     this._bindEventListener()
   }
   destroy() {
@@ -60,85 +133,123 @@ class Sortable {
     this._resetState()
   }
 
-  _onStart(e) {
-    if (e.button !== 0) return true
-    if (e.target === this.group) return true
+  _bindEventListener() {
+    this._onStart = this._onStart.bind(this)
+    this._onMove = this._onMove.bind(this)
+    this._onDrop = this._onDrop.bind(this)
+
+    const { supportPointer } = this.options
+    if (supportPointer) {
+      utils.on(this.$el, 'pointerdown', this._onStart)
+    } else {
+      utils.on(this.$el, 'mousedown', this._onStart)
+      utils.on(this.$el, 'touchstart', this._onStart)
+    }
+  }
+
+  _unbindEventListener() {
+    utils.off(this.$el, 'pointerdown', this._onStart)
+    utils.off(this.$el, 'touchstart', this._onStart)
+    utils.off(this.$el, 'mousedown', this._onStart)
+  }
+
+  _onStart(evt) {
+    const { dragging, draggable } = this.options
+    const touch = (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt)
+    const target = (touch || evt).target
+
+    if (typeof draggable === 'function') {
+      if (!draggable(touch || evt)) return true
+    } else if (draggable) {
+      if (!utils.matches(target, draggable)) return true
+    }
+
+    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return // only left button and enabled
+    if (target === this.$el) return true
+
     try {
+			if (document.selection) {
+				// Timeout neccessary for IE9
+				utils._nextTick(() => { document.selection.empty() })
+			} else {
+				window.getSelection().removeAllRanges()
+			}
+
       // 获取拖拽元素
-      const element = this.dragging ? this.dragging(e) : e.target
+      const element = dragging && typeof dragging === 'function' ? dragging(touch || evt) : target
       // 不存在拖拽元素时不允许拖拽
       if (!element) return true
       if (element.animated) return
+
       this.dragEl = element
-    } catch(e) {
+		} catch (err) {
       //
       return true
-    }
-    this.isMousedown = true
+		}
+
+    window.sortableDndOnDown = true
 
     // 获取当前元素在列表中的位置
-    const { index, el, rect } = utils.getElement(this.group, this.dragEl)
+    const { index, el, rect } = utils.getElement(this.$el, this.dragEl)
 
     if (!el || index < 0) return true
 
     // 将拖拽元素克隆一份作为蒙版
     const ghostEl = this.dragEl.cloneNode(true)
-
     this.ghost.init(ghostEl, rect)
-
-    this.diff.old.rect = rect
     this.ghost.set('x', rect.left)
     this.ghost.set('y', rect.top)
 
-    // 记录拖拽移动时坐标
-    this.calcXY = { x: e.clientX, y: e.clientY }
+    this.diff.old.rect = rect
+    this.calcXY = { x: (touch || evt).clientX, y: (touch || evt).clientY }
 
-    this._onMoveEvents()
-    this._onUpEvents()
+    this._onMoveEvents(touch)
+    this._onUpEvents(touch)
   }
 
-  _onMove(e) {
+  _onMove(evt) {
+    evt.preventDefault()
+
+    const touch = evt.touches && evt.touches[0]
+    const e = touch || evt
+    const { clientX, clientY } = e
+    const target = touch ? document.elementFromPoint(clientX, clientY) : e.target
+
+    const { chosenClass } = this.options
+    utils.toggleClass(this.dragEl, chosenClass, true)
     this.ghost.move()
 
-    e.preventDefault()
-    if (!this.isMousedown) return
-    if (e.clientX < 0 || e.clientY < 0) return
+    if (!window.sortableDndOnDown) return
+    if (clientX < 0 || clientY < 0) return
 
     document.body.style.cursor = 'grabbing'
-    
-    this.isMousemove = true
+    window.sortableDndOnMove = true
 
-    this.ghost.set('x', this.ghost.x + e.clientX - this.calcXY.x)
-    this.ghost.set('y', this.ghost.y + e.clientY - this.calcXY.y)
-    
-    this.calcXY = { x: e.clientX, y: e.clientY }
-
+    this.ghost.set('x', this.ghost.x + clientX - this.calcXY.x)
+    this.ghost.set('y', this.ghost.y + clientY - this.calcXY.y)
+    this.calcXY = { x: clientX, y: clientY }
     this.ghost.move()
 
     this._checkRange(e)
 
-    const { index, el, rect } = utils.getElement(this.group, e.target)
-
+    const { index, el, rect } = utils.getElement(this.$el, target)
     const { left, right, top, bottom } = rect
 
-    if (!el || index < 0) return
+    if (!el || index < 0 || top < 0) return
 
-    if (top < 0 || top - (this.ghost.rect.height / 3) < 0) return
-
-    if (e.clientX > left && e.clientX < right && e.clientY > top && e.clientY < bottom) {
+    if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
       this.dropEl = el
       // 拖拽前后元素不一致时交换
       if (this.dropEl !== this.dragEl) {
-
-        const dragRect = this.dragEl.getBoundingClientRect()
-        const dropRect = this.dropEl.getBoundingClientRect()
-
         if (this.dropEl.animated) return
 
-        if (utils.index(this.group, this.dragEl) < index) {
-          this.group.insertBefore(this.dragEl, this.dropEl.nextElementSibling)
+        const dragRect = utils.getRect(this.dragEl)
+        const dropRect = utils.getRect(this.dropEl)
+
+        if (utils.index(this.$el, this.dragEl) < index) {
+          this.$el.insertBefore(this.dragEl, this.dropEl.nextElementSibling)
         } else {
-          this.group.insertBefore(this.dragEl, this.dropEl)
+          this.$el.insertBefore(this.dragEl, this.dropEl)
         }
 
         // 设置动画
@@ -148,7 +259,7 @@ class Sortable {
         this.diff.old.node = this.dragEl
         this.diff.new.node = this.dropEl
       }
-      this.diff.new.rect = this.dropEl.getBoundingClientRect()
+      this.diff.new.rect = utils.getRect(this.dropEl)
     }
   }
 
@@ -156,75 +267,77 @@ class Sortable {
     this._offMoveEvents()
     this._offUpEvents()
     document.body.style.cursor = ''
-    if (this.isMousedown && this.isMousemove) {
+
+    const { dragEnd, chosenClass } = this.options
+
+    utils.toggleClass(this.dragEl, chosenClass, false)
+
+    if (window.sortableDndOnDown && window.sortableDndOnMove) {
       // 拖拽完成触发回调函数
-      if (this.dragEnd && typeof this.dragEnd === 'function')
-        this.dragEnd(this.diff.old, this.diff.new)
+      if (dragEnd && typeof dragEnd === 'function') dragEnd(this.diff.old, this.diff.new)
     }
-    this.isMousedown = false
-    this.isMousemove = false
+
     this.diff.destroy()
     this.ghost.destroy()
+    this._removeWindowState()
   }
 
   _checkRange(e) {
-    const { top, left, right, bottom } = this.group.getBoundingClientRect()
+    const { top, left, right, bottom } = utils.getRect(this.$el)
 
     if (e.clientX < left || e.clientX > right || e.clientY < top || e.clientY > bottom) {
       document.body.style.cursor = 'not-allowed'
+      return
     }
   }
 
   _resetState() {
-    this.isMousedown = false
-    this.isMousemove = false
     this.dragEl = null
     this.dropEl = null
     this.ghost.destroy()
-    this.diff = new Diff()
+    this.diff.destroy()
+    this._removeWindowState()
   }
 
-  _bindEventListener() {
-    this._onStart = this._onStart.bind(this)
-    this._onMove = this._onMove.bind(this)
-    this._onDrop = this._onDrop.bind(this)
-
-    if (this.supportPointer) {
-      utils.on(this.group, 'pointerdown', this._onStart)
-    } else {
-      utils.on(this.group, 'mousedown', this._onStart)
-    }
+  _removeWindowState() {
+    window.sortableDndOnDown = null
+    window.sortableDndOnMove = null
+    delete window.sortableDndOnDown
+    delete window.sortableDndOnMove
   }
   
-  _onMoveEvents() {
-    if (this.supportPointer) {
-      utils.on(document, 'pointermove', this._onMove)
+  _onMoveEvents(touch) {
+    const { supportPointer, ownerDocument } = this.options
+    if (supportPointer) {
+      utils.on(ownerDocument, 'pointermove', this._onMove)
+    } else if (touch) {
+      utils.on(ownerDocument, 'touchmove', this._onMove)
     } else {
-      utils.on(document, 'mousemove', this._onMove)
+      utils.on(ownerDocument, 'mousemove', this._onMove)
     }
   }
 
   _onUpEvents() {
-    if (this.supportPointer) {
-      utils.on(document, 'pointerup', this._onDrop)
-    } else {
-      utils.on(document, 'mouseup', this._onDrop)
-    }
-  }
-
-  _unbindEventListener() {
-    utils.off(this.group, 'mousedown', this._onStart)
-    utils.off(this.group, 'pointerdown', this._onStart)
+    const { ownerDocument } = this.options
+    utils.on(ownerDocument, 'pointerup', this._onDrop)
+    utils.on(ownerDocument, 'touchend', this._onDrop)
+    utils.on(ownerDocument, 'touchcancel', this._onDrop)
+    utils.on(ownerDocument, 'mouseup', this._onDrop)
   }
 
   _offMoveEvents() {
-    utils.off(document, 'mousemove', this._onMove)
-    utils.off(document, 'pointermove', this._onMove)
+    const { ownerDocument } = this.options
+    utils.off(ownerDocument, 'pointermove', this._onMove)
+    utils.off(ownerDocument, 'touchmove', this._onMove)
+    utils.off(ownerDocument, 'mousemove', this._onMove)
   }
 
   _offUpEvents() {
-    utils.off(document, 'mouseup', this._onDrop)
-    utils.off(document, 'pointerup', this._onDrop)
+    const { ownerDocument } = this.options
+    utils.off(ownerDocument, 'mouseup', this._onDrop)
+    utils.off(ownerDocument, 'touchend', this._onDrop)
+    utils.off(ownerDocument, 'touchcancel', this._onDrop)
+    utils.off(ownerDocument, 'pointerup', this._onDrop)
   }
 }
 
