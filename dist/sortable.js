@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.0.7
+ * sortable-dnd v0.0.8
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -7,7 +7,7 @@
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.sortable = factory());
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Sortable = factory());
 })(this, (function () { 'use strict';
 
   function _classCallCheck(instance, Constructor) {
@@ -383,11 +383,7 @@
     _createClass(Ghost, [{
       key: "init",
       value: function init(el, rect) {
-        if (!el) {
-          console.error('Ghost Element is required');
-          return;
-        }
-
+        if (!el) return;
         this.$el = el;
         this.rect = rect;
         var _this$options = this.options,
@@ -472,7 +468,7 @@
       key: "init",
       value: function init() {
         if (!this.$el) {
-          console.error('Error: container element is required');
+          console.error('Sortable-dnd Error: container element is required');
           return;
         }
 
@@ -560,13 +556,13 @@
           } // 获取拖拽元素
 
 
-          var element = dragging && typeof dragging === 'function' ? dragging(touch || evt) : target; // 不存在拖拽元素时不允许拖拽
+          var element = dragging && typeof dragging === 'function' ? dragging(touch || evt) : utils.getElement(this.$el, target).el; // 不存在拖拽元素时不允许拖拽
 
           if (!element) return true;
           if (element.animated) return;
           this.dragEl = element;
         } catch (err) {
-          //
+          console.error("Sortable-dnd Error: ".concat(err));
           return true;
         }
 

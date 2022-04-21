@@ -36,10 +36,7 @@ class Ghost {
   }
 
   init(el, rect) {
-    if (!el) {
-      console.error('Ghost Element is required')
-      return
-    }
+    if (!el) return
     this.$el = el
     this.rect = rect
     const { ghostClass, ghostStyle = {} } = this.options
@@ -101,7 +98,7 @@ class Sortable {
   }
   init() {
     if (!this.$el) {
-      console.error('Error: container element is required')
+      console.error('Sortable-dnd Error: container element is required')
       return
     }
 
@@ -176,14 +173,17 @@ class Sortable {
 			}
 
       // 获取拖拽元素
-      const element = dragging && typeof dragging === 'function' ? dragging(touch || evt) : target
+      const element = dragging && typeof dragging === 'function'
+                        ? dragging(touch || evt)
+                        : utils.getElement(this.$el, target).el
       // 不存在拖拽元素时不允许拖拽
       if (!element) return true
       if (element.animated) return
 
       this.dragEl = element
+
 		} catch (err) {
-      //
+      console.error(`Sortable-dnd Error: ${err}`)
       return true
 		}
 
