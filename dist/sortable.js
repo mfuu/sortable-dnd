@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.0.8
+ * sortable-dnd v0.0.9
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -259,28 +259,6 @@
 
       return false;
     },
-    animate: function animate(el, preRect) {
-      var _this = this;
-
-      var animation = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 150;
-      var curRect = this.getRect(el);
-      var left = preRect.left - curRect.left;
-      var top = preRect.top - curRect.top;
-      this.css(el, 'transition', 'none');
-      this.css(el, 'transform', "translate3d(".concat(left, "px, ").concat(top, "px, 0)"));
-      el.offsetLeft; // 触发重绘
-
-      this.css(el, 'transition', "all ".concat(animation, "ms"));
-      this.css(el, 'transform', 'translate3d(0px, 0px, 0px)');
-      clearTimeout(el.animated);
-      el.animated = setTimeout(function () {
-        _this.css(el, 'transition', '');
-
-        _this.css(el, 'transform', '');
-
-        el.animated = null;
-      }, animation);
-    },
     css: function css(el, prop, val) {
       var style = el && el.style;
 
@@ -304,7 +282,7 @@
     },
     debounce: function debounce(fn, delay) {
       return function () {
-        var _this2 = this;
+        var _this = this;
 
         for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
           args[_key] = arguments[_key];
@@ -312,7 +290,7 @@
 
         clearTimeout(fn.id);
         fn.id = setTimeout(function () {
-          fn.call.apply(fn, [_this2].concat(args));
+          fn.call.apply(fn, [_this].concat(args));
         }, delay);
       };
     },
@@ -320,6 +298,68 @@
       return setTimeout(fn, 0);
     }
   };
+
+  function Animation() {
+    var animationState = [];
+    return {
+      captureAnimationState: function captureAnimationState() {
+        var children = _toConsumableArray(Array.from(this.$el.children));
+
+        var _getRange = getRange(children, this.dragEl, this.dropEl),
+            start = _getRange.start,
+            end = _getRange.end;
+
+        animationState.length = 0; // 重置
+
+        children.slice(start, end + 1).forEach(function (child) {
+          animationState.push({
+            target: child,
+            rect: utils.getRect(child)
+          });
+        });
+      },
+      animateRange: function animateRange() {
+        var _this = this;
+
+        animationState.forEach(function (state) {
+          var target = state.target,
+              rect = state.rect;
+
+          _this.animate(target, rect, _this.animation);
+        });
+      },
+      animate: function animate(el, preRect) {
+        var animation = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 150;
+        var curRect = utils.getRect(el);
+        var left = preRect.left - curRect.left;
+        var top = preRect.top - curRect.top;
+        utils.css(el, 'transition', 'none');
+        utils.css(el, 'transform', "translate3d(".concat(left, "px, ").concat(top, "px, 0)"));
+        el.offsetLeft; // 触发重绘
+
+        utils.css(el, 'transition', "all ".concat(animation, "ms"));
+        utils.css(el, 'transform', 'translate3d(0px, 0px, 0px)');
+        clearTimeout(el.animated);
+        el.animated = setTimeout(function () {
+          utils.css(el, 'transition', '');
+          utils.css(el, 'transform', '');
+          el.animated = null;
+        }, animation);
+      }
+    };
+  }
+
+  function getRange(children, drag, drop) {
+    var start = children.indexOf(drag);
+    var end = children.indexOf(drop);
+    return start < end ? {
+      start: start,
+      end: end
+    } : {
+      start: end,
+      end: start
+    };
+  }
 
   /**
    * 拖拽前后差异初始化
@@ -494,6 +534,7 @@
 
         this.diff = new Diff();
         this.ghost = new Ghost(this.options);
+        Object.assign(this, Animation());
 
         this._bindEventListener();
       }
@@ -631,18 +672,15 @@
 
           if (this.dropEl !== this.dragEl) {
             if (this.dropEl.animated) return;
-            var dragRect = utils.getRect(this.dragEl);
-            var dropRect = utils.getRect(this.dropEl);
+            this.captureAnimationState();
 
             if (utils.index(this.$el, this.dragEl) < index) {
               this.$el.insertBefore(this.dragEl, this.dropEl.nextElementSibling);
             } else {
               this.$el.insertBefore(this.dragEl, this.dropEl);
-            } // 设置动画
+            }
 
-
-            utils.animate(this.dragEl, dragRect, this.animation);
-            utils.animate(this.dropEl, dropRect, this.animation);
+            this.animateRange();
             this.diff.old.node = this.dragEl;
             this.diff["new"].node = this.dropEl;
           }

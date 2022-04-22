@@ -1,4 +1,4 @@
-import { IE11OrLess } from './brower.js'
+import { IE11OrLess } from './Brower.js'
 
 const captureMode = {
 	capture: false,
@@ -182,27 +182,6 @@ export default {
     }
   
     return false
-  },
-
-  animate(el, preRect, animation = 150) {
-    const curRect = this.getRect(el)
-
-    const left = preRect.left - curRect.left
-    const top = preRect.top - curRect.top
-    
-    this.css(el, 'transition', 'none')
-    this.css(el, 'transform', `translate3d(${left}px, ${top}px, 0)`)
-
-    el.offsetLeft // 触发重绘
-
-    this.css(el, 'transition', `all ${animation}ms`)
-    this.css(el, 'transform', 'translate3d(0px, 0px, 0px)')
-    clearTimeout(el.animated)
-    el.animated = setTimeout(() => {
-      this.css(el, 'transition', '')
-      this.css(el, 'transform', '')
-      el.animated = null
-    }, animation)
   },
 
   css(el, prop, val) {

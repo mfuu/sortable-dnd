@@ -15,7 +15,20 @@ JS Library for Drag and Drop, supports Sortable and Draggable
 
 **HTML**
 ```html
-<div id="content"></div>
+<ul id="group">
+  <li>
+    <i>drag me</i>
+    <p>1</p>
+  </li>
+  <li>
+    <i>drag me</i>
+    <p>2</p>
+  </li>
+  <li>
+    <i>drag me</i>
+    <p>3</p>
+  </li>
+</ul>
 ```
 
 **JavaScript**
@@ -23,15 +36,17 @@ JS Library for Drag and Drop, supports Sortable and Draggable
 import Sortable from 'sortable-dnd'
 
 var DND = new Sortable(
-  document.getElementById('content'),
+  document.getElementById('group'),
   {
+    chosenClass: 'chosen',
     draggable: (e) => {
-      return true
-    }, // or draggable: '.class'
+      return e.target.tagName === 'I' ? true : false
+    },
+    // or draggable: 'i'
     dragging: (e) => {
       return e.target
     },
-    dragEnd: (pre, cur) => {
+    dragEnd: (old, new) => {
       ...
     }
   }
@@ -54,7 +69,7 @@ DND.destroy()
 | `ghostStyle` | `Object` | {} | The style of the mask element when dragging |
 | `ghostClass` | `String` | '' | The class of the mask element when dragging |
 | `chosenClass` | `String` | {} | The class of the selected element when dragging |
-| `animation` | `Number` | 300 | animation delay |
+| `animation` | `Number` | 150 | animation delay |
 
 # methods
 
