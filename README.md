@@ -7,9 +7,9 @@
   </a>
 </p>
 
-# sortable-dnd
 
-JS Library for Drag and Drop, supports Sortable and Draggable
+
+A JS Library for Drag and Drop, supports Sortable and Draggable
 
 # Usage
 
