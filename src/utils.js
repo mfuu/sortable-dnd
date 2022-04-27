@@ -10,24 +10,32 @@ const R_SPACE = /\s+/g
 export default {
 
   /**
-   * add specified event listener
-   * @param {HTMLElement} el 
-   * @param {String} event 
-   * @param {Function} fn 
-   */
+  * add specified event listener
+  * @param {HTMLElement} el 
+  * @param {String} event 
+  * @param {Function} fn 
+  */
   on(el, event, fn) {
+  if (window.addEventListener) {
     el.addEventListener(event, fn, !IE11OrLess && captureMode)
-  },
-
-  /**
-   * remove specified event listener
-   * @param {HTMLElement} el 
-   * @param {String} event 
-   * @param {Function} fn 
-   */
+  } else if (window.attachEvent) {
+    el.addEventListener('on' + event, fn)
+  }
+ },
+ 
+ /**
+  * remove specified event listener
+  * @param {HTMLElement} el 
+  * @param {String} event 
+  * @param {Function} fn 
+  */
   off(el, event, fn) {
-    el.removeEventListener(event, fn, !IE11OrLess && captureMode)
-  },
+   if (window.removeEventListener) {
+     el.removeEventListener(event, fn, !IE11OrLess && captureMode)
+   } else if (window.detachEvent) {
+     el.detachEvent('on' + event, fn)
+   }
+ },
 
   getWindowScrollingElement() {
     let scrollingElement = document.scrollingElement

@@ -86,6 +86,8 @@ class Ghost {
 
 class Sortable {
   constructor(el, options) {
+    if (!el) throw new Error('container element is required')
+
     this.$el = el // 列表容器元素
     this.options = options = Object.assign({}, options)
 
@@ -97,19 +99,15 @@ class Sortable {
 
     utils.debounce(this.init(), 50) // 避免重复执行多次
   }
-  init() {
-    if (!this.$el) {
-      console.error('Sortable-dnd Error: container element is required')
-      return
-    }
 
+  init() {
     const defaults = {
       animation: 150, // 动画延时
 
       ghostClass: '',
       ghostStyle: {},
       chosenClass: '',
-      draggable: '', // String: class, Function: (e) => return true
+      draggable: undefined, // String: class, Function: (e) => return true
       dragging: null, // 必须为函数且必须返回一个 HTMLElement (e) => return e.target
       dragEnd: null, // 拖拽完成时的回调函数，返回两个值(olddom, newdom) => {}
 
@@ -125,31 +123,33 @@ class Sortable {
     this.ghost = new Ghost(this.options)
 
     Object.assign(this, Animation())
+
     this._bindEventListener()
-  }
-  destroy() {
-    this._unbindEventListener()
-    this._resetState()
+    this._handleDestroy()
   }
 
-  _bindEventListener() {
-    this._onStart = this._onStart.bind(this)
-    this._onMove = this._onMove.bind(this)
-    this._onDrop = this._onDrop.bind(this)
+  _handleDestroy() {
+    const MutationObserver = window.MutationObserver || window.WebKitMutationObserver
+    const observer = new MutationObserver((mutationList) => {
+      if (!this.$el) {
+        observer.disconnect()
+        observer = null
+        this._unbindEventListener()
+        this._resetState()
+      }
+    })
+    observer.observe(this.$el.parentNode, {
+      childList: true,  // 观察目标子节点的变化，是否有添加或者删除
+      attributes: false, // 观察属性变动
+      subtree: false     // 观察后代节点，默认为 false
+    })
 
-    const { supportPointer } = this.options
-    if (supportPointer) {
-      utils.on(this.$el, 'pointerdown', this._onStart)
-    } else {
-      utils.on(this.$el, 'mousedown', this._onStart)
-      utils.on(this.$el, 'touchstart', this._onStart)
+    window.onbeforeunload = () => {
+      if (observer) observer.disconnect()
+      observer = null
+      this._unbindEventListener()
+      this._resetState()
     }
-  }
-
-  _unbindEventListener() {
-    utils.off(this.$el, 'pointerdown', this._onStart)
-    utils.off(this.$el, 'touchstart', this._onStart)
-    utils.off(this.$el, 'mousedown', this._onStart)
   }
 
   _onStart(evt) {
@@ -159,8 +159,10 @@ class Sortable {
 
     if (typeof draggable === 'function') {
       if (!draggable(touch || evt)) return true
-    } else if (draggable) {
+    } else if (typeof draggable === 'string') {
       if (!utils.matches(target, draggable)) return true
+    } else if (draggable !== undefined) {
+      throw new Error(`draggable expected "function" or "string" but received "${typeof draggable}"`)
     }
 
     if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return // only left button and enabled
@@ -185,9 +187,8 @@ class Sortable {
 
       this.dragEl = element
 
-		} catch (err) {
-      console.error(`Sortable-dnd Error: ${err}`)
-      return true
+		} catch (error) {
+      throw new Error(error)
 		}
 
     window.sortableDndOnDown = true
@@ -276,7 +277,11 @@ class Sortable {
 
     if (window.sortableDndOnDown && window.sortableDndOnMove) {
       // 拖拽完成触发回调函数
-      if (dragEnd && typeof dragEnd === 'function') dragEnd(this.diff.old, this.diff.new)
+      if (typeof dragEnd === 'function') {
+        dragEnd(this.diff.old, this.diff.new)
+      } else {
+        throw new Error(`Sortable-dnd Error: dragEnd expected "function" but received "${typeof dragEnd}"`)
+      }
     }
 
     this.diff.destroy()
@@ -306,6 +311,26 @@ class Sortable {
     window.sortableDndOnMove = null
     delete window.sortableDndOnDown
     delete window.sortableDndOnMove
+  }
+
+  _bindEventListener() {
+    this._onStart = this._onStart.bind(this)
+    this._onMove = this._onMove.bind(this)
+    this._onDrop = this._onDrop.bind(this)
+
+    const { supportPointer } = this.options
+    if (supportPointer) {
+      utils.on(this.$el, 'pointerdown', this._onStart)
+    } else {
+      utils.on(this.$el, 'mousedown', this._onStart)
+      utils.on(this.$el, 'touchstart', this._onStart)
+    }
+  }
+
+  _unbindEventListener() {
+    utils.off(this.$el, 'pointerdown', this._onStart)
+    utils.off(this.$el, 'touchstart', this._onStart)
+    utils.off(this.$el, 'mousedown', this._onStart)
   }
   
   _onMoveEvents(touch) {

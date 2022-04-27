@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.0.9
+ * sortable-dnd v0.0.10
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -9,6 +9,16 @@
   typeof define === 'function' && define.amd ? define(factory) :
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Sortable = factory());
 })(this, (function () { 'use strict';
+
+  function _typeof(obj) {
+    "@babel/helpers - typeof";
+
+    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) {
+      return typeof obj;
+    } : function (obj) {
+      return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+    }, _typeof(obj);
+  }
 
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
@@ -33,6 +43,10 @@
       writable: false
     });
     return Constructor;
+  }
+
+  function _readOnlyError(name) {
+    throw new TypeError("\"" + name + "\" is read-only");
   }
 
   function _toConsumableArray(arr) {
@@ -84,13 +98,17 @@
   var R_SPACE = /\s+/g;
   var utils = {
     /**
-     * add specified event listener
-     * @param {HTMLElement} el 
-     * @param {String} event 
-     * @param {Function} fn 
-     */
+    * add specified event listener
+    * @param {HTMLElement} el 
+    * @param {String} event 
+    * @param {Function} fn 
+    */
     on: function on(el, event, fn) {
-      el.addEventListener(event, fn, !IE11OrLess && captureMode);
+      if (window.addEventListener) {
+        el.addEventListener(event, fn, !IE11OrLess && captureMode);
+      } else if (window.attachEvent) {
+        el.addEventListener('on' + event, fn);
+      }
     },
 
     /**
@@ -100,7 +118,11 @@
      * @param {Function} fn 
      */
     off: function off(el, event, fn) {
-      el.removeEventListener(event, fn, !IE11OrLess && captureMode);
+      if (window.removeEventListener) {
+        el.removeEventListener(event, fn, !IE11OrLess && captureMode);
+      } else if (window.detachEvent) {
+        el.detachEvent('on' + event, fn);
+      }
     },
     getWindowScrollingElement: function getWindowScrollingElement() {
       var scrollingElement = document.scrollingElement;
@@ -485,6 +507,7 @@
     function Sortable(el, options) {
       _classCallCheck(this, Sortable);
 
+      if (!el) throw new Error('container element is required');
       this.$el = el; // 列表容器元素
 
       this.options = options = Object.assign({}, options);
@@ -507,18 +530,13 @@
     _createClass(Sortable, [{
       key: "init",
       value: function init() {
-        if (!this.$el) {
-          console.error('Sortable-dnd Error: container element is required');
-          return;
-        }
-
         var defaults = {
           animation: 150,
           // 动画延时
           ghostClass: '',
           ghostStyle: {},
           chosenClass: '',
-          draggable: '',
+          draggable: undefined,
           // String: class, Function: (e) => return true
           dragging: null,
           // 必须为函数且必须返回一个 HTMLElement (e) => return e.target
@@ -537,35 +555,42 @@
         Object.assign(this, Animation());
 
         this._bindEventListener();
-      }
-    }, {
-      key: "destroy",
-      value: function destroy() {
-        this._unbindEventListener();
 
-        this._resetState();
+        this._handleDestroy();
       }
     }, {
-      key: "_bindEventListener",
-      value: function _bindEventListener() {
-        this._onStart = this._onStart.bind(this);
-        this._onMove = this._onMove.bind(this);
-        this._onDrop = this._onDrop.bind(this);
-        var supportPointer = this.options.supportPointer;
+      key: "_handleDestroy",
+      value: function _handleDestroy() {
+        var _this = this;
 
-        if (supportPointer) {
-          utils.on(this.$el, 'pointerdown', this._onStart);
-        } else {
-          utils.on(this.$el, 'mousedown', this._onStart);
-          utils.on(this.$el, 'touchstart', this._onStart);
-        }
-      }
-    }, {
-      key: "_unbindEventListener",
-      value: function _unbindEventListener() {
-        utils.off(this.$el, 'pointerdown', this._onStart);
-        utils.off(this.$el, 'touchstart', this._onStart);
-        utils.off(this.$el, 'mousedown', this._onStart);
+        var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
+        var observer = new MutationObserver(function (mutationList) {
+          if (!_this.$el) {
+            observer.disconnect();
+            _readOnlyError("observer");
+
+            _this._unbindEventListener();
+
+            _this._resetState();
+          }
+        });
+        observer.observe(this.$el.parentNode, {
+          childList: true,
+          // 观察目标子节点的变化，是否有添加或者删除
+          attributes: false,
+          // 观察属性变动
+          subtree: false // 观察后代节点，默认为 false
+
+        });
+
+        window.onbeforeunload = function () {
+          if (observer) observer.disconnect();
+          _readOnlyError("observer");
+
+          _this._unbindEventListener();
+
+          _this._resetState();
+        };
       }
     }, {
       key: "_onStart",
@@ -578,8 +603,10 @@
 
         if (typeof draggable === 'function') {
           if (!draggable(touch || evt)) return true;
-        } else if (draggable) {
+        } else if (typeof draggable === 'string') {
           if (!utils.matches(target, draggable)) return true;
+        } else if (draggable !== undefined) {
+          throw new Error("draggable expected \"function\" or \"string\" but received \"".concat(_typeof(draggable), "\""));
         }
 
         if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return; // only left button and enabled
@@ -602,9 +629,8 @@
           if (!element) return true;
           if (element.animated) return;
           this.dragEl = element;
-        } catch (err) {
-          console.error("Sortable-dnd Error: ".concat(err));
-          return true;
+        } catch (error) {
+          throw new Error(error);
         }
 
         window.sortableDndOnDown = true; // 获取当前元素在列表中的位置
@@ -703,7 +729,11 @@
 
         if (window.sortableDndOnDown && window.sortableDndOnMove) {
           // 拖拽完成触发回调函数
-          if (dragEnd && typeof dragEnd === 'function') dragEnd(this.diff.old, this.diff["new"]);
+          if (typeof dragEnd === 'function') {
+            dragEnd(this.diff.old, this.diff["new"]);
+          } else {
+            throw new Error("Sortable-dnd Error: dragEnd expected \"function\" but received \"".concat(_typeof(dragEnd), "\""));
+          }
         }
 
         this.diff.destroy();
@@ -742,6 +772,28 @@
         window.sortableDndOnMove = null;
         delete window.sortableDndOnDown;
         delete window.sortableDndOnMove;
+      }
+    }, {
+      key: "_bindEventListener",
+      value: function _bindEventListener() {
+        this._onStart = this._onStart.bind(this);
+        this._onMove = this._onMove.bind(this);
+        this._onDrop = this._onDrop.bind(this);
+        var supportPointer = this.options.supportPointer;
+
+        if (supportPointer) {
+          utils.on(this.$el, 'pointerdown', this._onStart);
+        } else {
+          utils.on(this.$el, 'mousedown', this._onStart);
+          utils.on(this.$el, 'touchstart', this._onStart);
+        }
+      }
+    }, {
+      key: "_unbindEventListener",
+      value: function _unbindEventListener() {
+        utils.off(this.$el, 'pointerdown', this._onStart);
+        utils.off(this.$el, 'touchstart', this._onStart);
+        utils.off(this.$el, 'mousedown', this._onStart);
       }
     }, {
       key: "_onMoveEvents",

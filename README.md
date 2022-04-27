@@ -53,11 +53,8 @@ var DND = new Sortable(
 )
 ```
 
-When the component you created is destroyed, you need to destroy the `new Sortable` like this
+The component you created will clear all state after destroyed
 
-```js
-DND.destroy()
-```
 
 # Options
 
@@ -71,8 +68,3 @@ DND.destroy()
 | `chosenClass` | `String` | {} | The class of the selected element when dragging |
 | `animation` | `Number` | 150 | animation delay |
 
-# methods
-
-| **method** | **Description** |
-|-------------|--------------|
-| `destroy` | Destroy the component and empty its contents |
