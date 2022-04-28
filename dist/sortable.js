@@ -45,10 +45,6 @@
     return Constructor;
   }
 
-  function _readOnlyError(name) {
-    throw new TypeError("\"" + name + "\" is read-only");
-  }
-
   function _toConsumableArray(arr) {
     return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
   }
@@ -563,29 +559,33 @@
       value: function _handleDestroy() {
         var _this = this;
 
+        var observer = null;
         var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-        var observer = new MutationObserver(function (mutationList) {
-          if (!_this.$el) {
-            observer.disconnect();
-            _readOnlyError("observer");
 
-            _this._unbindEventListener();
+        if (MutationObserver) {
+          observer = new MutationObserver(function () {
+            if (!_this.$el) {
+              observer.disconnect();
+              observer = null;
 
-            _this._resetState();
-          }
-        });
-        observer.observe(this.$el.parentNode, {
-          childList: true,
-          // 观察目标子节点的变化，是否有添加或者删除
-          attributes: false,
-          // 观察属性变动
-          subtree: false // 观察后代节点，默认为 false
+              _this._unbindEventListener();
 
-        });
+              _this._resetState();
+            }
+          });
+          observer.observe(this.$el.parentNode, {
+            childList: true,
+            // 观察目标子节点的变化，是否有添加或者删除
+            attributes: false,
+            // 观察属性变动
+            subtree: false // 观察后代节点，默认为 false
+
+          });
+        }
 
         window.onbeforeunload = function () {
           if (observer) observer.disconnect();
-          _readOnlyError("observer");
+          observer = null;
 
           _this._unbindEventListener();
 

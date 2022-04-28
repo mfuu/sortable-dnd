@@ -129,20 +129,23 @@ class Sortable {
   }
 
   _handleDestroy() {
+    let observer = null
     const MutationObserver = window.MutationObserver || window.WebKitMutationObserver
-    const observer = new MutationObserver((mutationList) => {
-      if (!this.$el) {
-        observer.disconnect()
-        observer = null
-        this._unbindEventListener()
-        this._resetState()
-      }
-    })
-    observer.observe(this.$el.parentNode, {
-      childList: true,  // 观察目标子节点的变化，是否有添加或者删除
-      attributes: false, // 观察属性变动
-      subtree: false     // 观察后代节点，默认为 false
-    })
+    if (MutationObserver) {
+      observer = new MutationObserver(() => {
+        if (!this.$el) {
+          observer.disconnect()
+          observer = null
+          this._unbindEventListener()
+          this._resetState()
+        }
+      })
+      observer.observe(this.$el.parentNode, {
+        childList: true,  // 观察目标子节点的变化，是否有添加或者删除
+        attributes: false, // 观察属性变动
+        subtree: false     // 观察后代节点，默认为 false
+      })
+    }
 
     window.onbeforeunload = () => {
       if (observer) observer.disconnect()
