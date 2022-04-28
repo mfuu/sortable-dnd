@@ -68,3 +68,8 @@ The component you created will clear all state after destroyed
 | `chosenClass` | `String` | {} | The class of the selected element when dragging |
 | `animation` | `Number` | 150 | animation delay |
 
+# Methods
+
+| **method** | **Description** |
+|--------------|--------------|
+| `destroy()` | Manually clear all the state of the component, using this method the component will not be draggable |

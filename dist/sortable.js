@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.0.10
+ * sortable-dnd v0.0.11
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -524,6 +524,13 @@
     }
 
     _createClass(Sortable, [{
+      key: "destroy",
+      value: function destroy() {
+        this._unbindEventListener();
+
+        this._resetState();
+      }
+    }, {
       key: "init",
       value: function init() {
         var defaults = {
@@ -762,6 +769,10 @@
         this.dropEl = null;
         this.ghost.destroy();
         this.diff.destroy();
+        this.calcXY = {
+          x: 0,
+          y: 0
+        };
 
         this._removeWindowState();
       }

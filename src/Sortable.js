@@ -100,6 +100,11 @@ class Sortable {
     utils.debounce(this.init(), 50) // 避免重复执行多次
   }
 
+  destroy() {
+    this._unbindEventListener()
+    this._resetState()
+  }
+
   init() {
     const defaults = {
       animation: 150, // 动画延时
@@ -306,6 +311,7 @@ class Sortable {
     this.dropEl = null
     this.ghost.destroy()
     this.diff.destroy()
+    this.calcXY = { x: 0, y: 0 }
     this._removeWindowState()
   }
 
