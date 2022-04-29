@@ -1,4 +1,4 @@
-import utils from './utils.js'
+import { getRect, css } from './utils.js'
 
 export default function Animation() {
   
@@ -15,7 +15,7 @@ export default function Animation() {
       children.slice(start, end + 1).forEach(child => {
         animationState.push({
           target: child,
-          rect: utils.getRect(child)
+          rect: getRect(child)
         })
       })
     },
@@ -28,21 +28,21 @@ export default function Animation() {
     },
 
     animate(el, preRect, animation = 150) {
-      const curRect = utils.getRect(el)
+      const curRect = getRect(el)
       const left = preRect.left - curRect.left
       const top = preRect.top - curRect.top
       
-      utils.css(el, 'transition', 'none')
-      utils.css(el, 'transform', `translate3d(${left}px, ${top}px, 0)`)
+      css(el, 'transition', 'none')
+      css(el, 'transform', `translate3d(${left}px, ${top}px, 0)`)
   
       el.offsetLeft // 触发重绘
   
-      utils.css(el, 'transition', `all ${animation}ms`)
-      utils.css(el, 'transform', 'translate3d(0px, 0px, 0px)')
+      css(el, 'transition', `all ${animation}ms`)
+      css(el, 'transform', 'translate3d(0px, 0px, 0px)')
       clearTimeout(el.animated)
       el.animated = setTimeout(() => {
-        utils.css(el, 'transition', '')
-        utils.css(el, 'transform', '')
+        css(el, 'transition', '')
+        css(el, 'transform', '')
         el.animated = null
       }, animation)
     }

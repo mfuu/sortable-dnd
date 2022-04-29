@@ -69,8 +69,8 @@
       {
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
-        dragEnd: (pre, cur) => {
-          console.log(pre, cur)
+        dragEnd: (pre, cur, changed) => {
+          console.log(pre, cur, changed)
         }
       }
     );
@@ -88,8 +88,8 @@
       {
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
-        dragEnd: (pre, cur) => {
-          console.log(pre, cur)
+        dragEnd: (pre, cur, changed) => {
+          console.log(pre, cur, changed)
         }
       }
     );
@@ -110,8 +110,8 @@
         draggable: (e) => {
           return e.target.tagName === 'I' ? true : false
         },
-        dragEnd: (pre, cur) => {
-          console.log(pre, cur)
+        dragEnd: (pre, cur, changed) => {
+          console.log(pre, cur, changed)
         }
       }
     );
