@@ -8,16 +8,32 @@ const captureMode = {
 const R_SPACE = /\s+/g
 
 /**
+ * detect passive event support
+ */
+export function supportPassive() {
+  // https://github.com/Modernizr/Modernizr/issues/1894
+  let supportPassive = false
+  document.addEventListener('checkIfSupportPassive', null, {
+    get passive() {
+      supportPassive = true
+      return true
+    }
+  })
+  return supportPassive
+}
+
+/**
 * add specified event listener
 * @param {HTMLElement} el 
 * @param {String} event 
 * @param {Function} fn 
+* @param {Boolean} sp
 */
-export function on(el, event, fn) {
+export function on(el, event, fn, sp) {
   if (window.addEventListener) {
-    el.addEventListener(event, fn, !IE11OrLess && captureMode)
+    el.addEventListener(event, fn, (sp || !IE11OrLess) ? captureMode : false)
   } else if (window.attachEvent) {
-    el.addEventListener('on' + event, fn)
+    el.attachEvent('on' + event, fn)
   }
 }
 
@@ -26,10 +42,11 @@ export function on(el, event, fn) {
 * @param {HTMLElement} el 
 * @param {String} event 
 * @param {Function} fn 
+* @param {Boolean} sp
 */
-export function off(el, event, fn) {
+export function off(el, event, fn, sp) {
   if (window.removeEventListener) {
-    el.removeEventListener(event, fn, !IE11OrLess && captureMode)
+    el.removeEventListener(event, fn, (sp || !IE11OrLess) ? captureMode : false)
   } else if (window.detachEvent) {
     el.detachEvent('on' + event, fn)
   }
@@ -296,6 +313,7 @@ export default {
   isChildOf,
   getElement,
   toggleClass,
+  supportPassive,
   getWindowScrollingElement,
   getParentAutoScrollElement,
 }

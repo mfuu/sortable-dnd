@@ -60,13 +60,14 @@ The component you created will clear all state after destroyed
 
 | **option** | **type** | **default** | **Description** |
 |-------------|--------------|--------------|--------------|
-| `draggable` | `String/Function` | - | Specifies which items inside the element should be draggable, the function type must return a boolean |
-| `dragging` | `Function` | (e) => e.target | Specifies the drag and drop element, which must return an HTMLElement |
-| `dragEnd` | `Function` | (pre, cur, changed) => {} | The callback function when the drag is completed |
-| `ghostStyle` | `Object` | {} | The style of the mask element when dragging |
-| `ghostClass` | `String` | '' | The class of the mask element when dragging |
-| `chosenClass` | `String` | {} | The class of the selected element when dragging |
-| `animation` | `Number` | 150 | animation delay |
+| `draggable` | `String/Function` | `undefined` | Specifies which items inside the element should be draggable, the function type must return a boolean |
+| `dragging` | `Function` | `undefined` | Specifies the drag and drop element, which must return an HTMLElement, such as `(e) => e.target` |
+| `dragEnd` | `Function` | `undefined` | The callback function when the drag is completed, such as `(pre, cur, changed) => {}` |
+| `ghostStyle` | `Object` | `{}` | The style of the mask element when dragging |
+| `ghostClass` | `String` | `''` | The class of the mask element when dragging |
+| `chosenClass` | `String` | `{}` | The class of the selected element when dragging |
+| `animation` | `Number` | `150` | animation delay |
+| `stopPropagation` | `Boolean` | `false` | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
 
 # Methods
 
