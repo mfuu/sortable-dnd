@@ -1,8 +1,8 @@
 import {
+  on,
   css,
   matches,
   getRect,
-  debounce,
   getOffset,
   _nextTick,
   getElement,
@@ -10,7 +10,7 @@ import {
   supportPassive,
   getParentAutoScrollElement
 } from './utils.js'
-import { Safari } from './Brower.js'
+import { IOS, Safari, ChromeForAndroid } from './Brower.js'
 import Animation from './Animation.js'
 import Events from './events.js'
 
@@ -105,72 +105,95 @@ class Ghost {
   }
 }
 
-class Sortable {
-  // -------------------------------- dnd state ----------------------------------
-  dragEl = null // 拖拽元素
-  dropEl = null // 释放元素
-  differ = null // 记录拖拽前后差异
-  ghost = null // 拖拽时蒙版元素
-  calcXY = { x: 0, y: 0 } // 记录拖拽移动时坐标
+// -------------------------------- Sortable ----------------------------------
 
-  constructor(el, options) {
-    if (!el) throw new Error('container element is required')
+const documentExists = typeof document !== 'undefined'
+const supportDraggable = documentExists && !ChromeForAndroid && !IOS && ('draggable' in document.createElement('div'))
 
-    this.$el = el // 列表容器元素
-    this.options = options = Object.assign({}, options)
-    this.scrollEl = getParentAutoScrollElement(this.$el, true) // 获取页面滚动元素
+/**
+ * @class  Sortable
+ * @param  {HTMLElement}  el
+ * @param  {Object}       options
+ */
+function Sortable(el, options) {
+  if (!(el && el.nodeType && el.nodeType === 1)) {
+		throw `Sortable: \`el\` must be an HTMLElement, not ${ {}.toString.call(el) }`;
+	}
 
-    debounce(this.init(), 50) // 避免重复执行多次
+  this.$el = el // root element
+  this.options = options = Object.assign({}, options)
+  this.scrollEl = getParentAutoScrollElement(this.$el, true) // 获取页面滚动元素
+
+  this.dragEl = null // 拖拽元素
+  this.dropEl = null // 释放元素
+  this.differ = null // 记录拖拽前后差异
+  this.ghost = null // 拖拽时蒙版元素
+  this.calcXY = { x: 0, y: 0 } // 记录拖拽移动时坐标
+
+  const defaults = {
+    disabled: false, // 
+    animation: 150, // 动画延时
+
+    ghostClass: '', // 拖拽元素Class类名
+    ghostStyle: {}, // 拖拽元素样式
+    chosenClass: '', // 选中元素样式
+    draggable: undefined, // String: css selecter, Function: (e) => return true
+    dragging: undefined, // 必须为函数且必须返回一个 HTMLElement: (e) => return e.target
+    dragEnd: undefined, // 拖拽完成时的回调函数: (old, new, changed) => {}
+
+    forceFallback: false, // 忽略 HTML5拖拽行为，强制回调进行
+
+    stopPropagation: false, // 阻止捕获和冒泡阶段中当前事件的进一步传播
+
+    supportPassive: supportPassive(),
+    supportPointer: ('PointerEvent' in window) && !Safari,
+    supportTouch: 'ontouchstart' in window,
+    ownerDocument: this.$el.ownerDocument,
   }
+
+  // Set default options
+  for (const name in defaults) {
+    !(name in this.options) && (this.options[name] = defaults[name])
+  }
+
+  this.differ = new Differ()
+  this.ghost = new Ghost(this.options)
+
+  Object.assign(this, Animation(), Events())
+
+  this._bindEventListener()
+
+  this.nativeDraggable = this.options.forceFallback ? false : supportDraggable
+
+  if (this.nativeDraggable) {
+    on(this.$el, 'dragover', this)
+    on(this.$el, 'dragenter', this)
+  }
+
+  this._handleDestroy()
+}
+
+Sortable.prototype = /** @lends Sortable.prototype */ {
+  constructor: Sortable,
 
   destroy() {
     this._unbindEventListener()
     this._resetState()
-  }
-
-  init() {
-    const defaults = {
-      animation: 150, // 动画延时
-
-      ghostClass: '', // 拖拽元素Class类名
-      ghostStyle: {}, // 拖拽元素样式
-      chosenClass: '', // 选中元素样式
-      draggable: undefined, // String: css selecter, Function: (e) => return true
-      dragging: undefined, // 必须为函数且必须返回一个 HTMLElement: (e) => return e.target
-      dragEnd: undefined, // 拖拽完成时的回调函数: (old, new, changed) => {}
-
-      stopPropagation: false, // 阻止捕获和冒泡阶段中当前事件的进一步传播
-
-      supportPassive: supportPassive(),
-      supportPointer: ('PointerEvent' in window) && !Safari,
-      supportTouch: 'ontouchstart' in window,
-      ownerDocument: this.$el.ownerDocument,
-    }
-    // Set default options
-    for (const name in defaults) {
-      !(name in this.options) && (this.options[name] = defaults[name])
-    }
-
-    this.differ = new Differ()
-    this.ghost = new Ghost(this.options)
-
-    Object.assign(this, Animation(), Events())
-
-    this._bindEventListener()
-    this._handleDestroy()
-  }
+  },
 
   // -------------------------------- drag and drop ----------------------------------
-  _onStart(evt) {
-    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return // only left button and enabled
-    
-    const { dragging, draggable, stopPropagation } = this.options
+  _onStart: function(/** Event|TouchEvent */evt) {
+    const { disabled, dragging, draggable, stopPropagation } = this.options
+
+    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || disabled) return // only left button and enabled
+
     const touch = (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt)
     const e = touch || evt
 
-    if (e.target === this.$el) return true
+    // Safari ignores further event handling after mousedown
+		if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return
 
-    if (stopPropagation) evt.stopPropagation()
+    if (e.target === this.$el) return true
 
     if (typeof draggable === 'function') {
       if (!draggable(e)) return true
@@ -181,6 +204,9 @@ class Sortable {
     } else if (draggable !== undefined) {
       throw new Error(`draggable expected "function" or "string" but received "${typeof draggable}"`)
     }
+
+    if (evt.preventDefault !== void 0) evt.preventDefault()
+    if (stopPropagation) evt.stopPropagation()
 
     try {
 			if (document.selection) {
@@ -222,13 +248,10 @@ class Sortable {
 
     this.calcXY = { x: e.clientX, y: e.clientY }
 
-    if (evt.preventDefault !== void 0) evt.preventDefault()
-
     this._onMoveEvents(touch)
     this._onUpEvents(touch)
-  }
-
-  _onMove(evt) {
+  },
+  _onMove: function(/** Event|TouchEvent */evt) {
     if (evt.preventDefault !== void 0) evt.preventDefault() // prevent scrolling
 
     const touch = evt.touches && evt.touches[0]
@@ -253,28 +276,30 @@ class Sortable {
     this.calcXY = { x: clientX, y: clientY }
     this.ghost.move()
 
-    const { index, el, rect, offset } = getElement(this.$el, target)
-    const { left, right, top, bottom } = rect
+    // 判断边界值
+    const rc = getRect(this.$el)
 
-    if (!el || index < 0 || top < 0) {
+    if (clientX < rc.left || clientX > rc.right || clientY < rc.top || clientY > rc.bottom) {
       this.ghost.setStyle({ cursor: 'not-allowed' })
       return
     }
 
-    // 判断边界值
-    const rc = getRect(this.$el)
+    const { index, el, rect, offset } = getElement(this.$el, target)
+    const { left, right, top, bottom } = rect
+
+    if (!el || index < 0 || top < 0) return
+
+    // 加上当前滚动距离
     const { scrollTop, scrollLeft } = this.scrollEl
+    const boundaryL = rc.left + scrollLeft
+    const boundaryT = rc.top + scrollTop
 
     // 如果目标元素超出当前可视区，不允许拖动
     if (this.scrollEl !== this.$el && (rc.left < 0 || rc.top < 0)) {
-      if (top < (rc.top + scrollTop) && rc.top < 0) return
-      if (left < (rc.left + scrollLeft) && rc.left < 0) return
-    } else {
-      if (top < rc.top) return
-      if (left < rc.left) return
-    }
-    
+      if ((rc.top < 0 && top < boundaryT) || (rc.left < 0 && left < boundaryL)) return
 
+    } else if (top < rc.top || left < rc.left) return
+    
     if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
       this.dropEl = el
 
@@ -298,9 +323,8 @@ class Sortable {
         this.differ._new_.rect = getRect(this.dropEl)
       }
     }
-  }
-
-  _onDrop(evt) {
+  },
+  _onDrop: function(/** Event|TouchEvent */evt) {
     this._offMoveEvents()
     this._offUpEvents()
 
@@ -334,10 +358,10 @@ class Sortable {
     this.differ.destroy()
     this.ghost.destroy()
     this._removeWindowState()
-  }
+  },
 
   // -------------------------------- auto destroy ----------------------------------
-  _handleDestroy() {
+  _handleDestroy: function() {
     let observer = null
     const MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver
     if (MutationObserver) {
@@ -364,19 +388,18 @@ class Sortable {
       this._unbindEventListener()
       this._resetState()
     }
-  }
+  },
 
   // -------------------------------- reset state ----------------------------------
-  _resetState() {
+  _resetState: function() {
     this.dragEl = null
     this.dropEl = null
     this.ghost.destroy()
     this.differ.destroy()
     this.calcXY = { x: 0, y: 0 }
     this._removeWindowState()
-  }
-
-  _removeWindowState() {
+  },
+  _removeWindowState: function() {
     window.sortableDndOnDown = null
     window.sortableDndOnMove = null
     delete window.sortableDndOnDown

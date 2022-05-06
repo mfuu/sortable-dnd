@@ -22,6 +22,10 @@ export default function DNDEvent() {
       off(this.$el, 'pointerdown', this._onStart, supportPassive)
       off(this.$el, 'touchstart', this._onStart, supportPassive)
       off(this.$el, 'mousedown', this._onStart, supportPassive)
+      if (this.nativeDraggable) {
+        off(this.$el, 'dragover', this)
+        off(this.$el, 'dragenter', this)
+      }
     },
     
     _onMoveEvents(touch) {
