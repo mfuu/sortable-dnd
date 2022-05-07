@@ -67,6 +67,7 @@
     new Sortable(
       document.getElementById('group'),
       {
+        ghostAnimation: 500,
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
         dragEnd: (pre, cur, changed) => {
@@ -86,6 +87,7 @@
     new Sortable(
       document.getElementById('flexgroup'),
       {
+        ghostAnimation: 500,
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
         dragEnd: (pre, cur, changed) => {
@@ -105,6 +107,7 @@
     new Sortable(
       document.getElementById('flexdrag'),
       {
+        ghostAnimation: 500,
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
         draggable: (e) => {

@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.1.0
+ * sortable-dnd v0.1.1
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -632,8 +632,10 @@
       }
     }, {
       key: "move",
-      value: function move() {
-        // 将初始化放在 move 事件中，避免与鼠标点击事件冲突
+      value: function move(smooth) {
+        var ghostAnimation = this.options.ghostAnimation;
+        if (smooth) this.$el.style.transition = "all ".concat(ghostAnimation, "ms");else this.$el.style.transition = ''; // 将初始化放在 move 事件中，避免与鼠标点击事件冲突
+
         if (!this.exist) {
           document.body.appendChild(this.$el);
           this.exist = true;
@@ -644,9 +646,19 @@
       }
     }, {
       key: "destroy",
-      value: function destroy() {
-        if (this.$el) this.$el.remove();
-        this.exist = false;
+      value: function destroy(rect) {
+        var _this = this;
+
+        if (rect) {
+          this.x = rect.left;
+          this.y = rect.top;
+          this.move(true);
+        }
+
+        setTimeout(function () {
+          if (_this.$el) _this.$el.remove();
+          _this.exist = false;
+        }, this.options.ghostAnimation);
       }
     }]);
 
@@ -690,6 +702,8 @@
       // 
       animation: 150,
       // 动画延时
+      ghostAnimation: 0,
+      // 拖拽元素销毁时动画效果
       ghostClass: '',
       // 拖拽元素Class类名
       ghostStyle: {},
@@ -921,7 +935,10 @@
 
         var changed = _old_.offset.top !== _new_.offset.top || _old_.offset.left !== _new_.offset.left; // 如果拖拽前后没有发生交换，重新赋值一次
 
-        if (!changed) this.differ._new_.node = this.differ._old_.node;
+        if (!changed) {
+          this.differ._new_.node = this.differ._old_.node;
+          this.differ._new_.rect = this.differ._old_.rect;
+        }
 
         if (typeof dragEnd === 'function') {
           dragEnd(_old_, _new_, changed);
@@ -930,49 +947,10 @@
         }
       }
 
+      this.ghost.destroy(this.differ._new_.rect);
       this.differ.destroy();
-      this.ghost.destroy();
 
       this._removeWindowState();
-    },
-    // -------------------------------- auto destroy ----------------------------------
-    _handleDestroy: function _handleDestroy() {
-      var _this = this;
-
-      var observer = null;
-      var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
-
-      if (MutationObserver) {
-        var ownerDocument = this.options.ownerDocument;
-        if (!ownerDocument) return;
-        observer = new MutationObserver(function () {
-          if (!ownerDocument.body.contains(_this.$el)) {
-            observer.disconnect();
-            observer = null;
-
-            _this._unbindEventListener();
-
-            _this._resetState();
-          }
-        });
-        observer.observe(this.$el.parentNode, {
-          childList: true,
-          // 观察目标子节点的变化，是否有添加或者删除
-          attributes: false,
-          // 观察属性变动
-          subtree: false // 观察后代节点，默认为 false
-
-        });
-      }
-
-      window.onbeforeunload = function () {
-        if (observer) observer.disconnect();
-        observer = null;
-
-        _this._unbindEventListener();
-
-        _this._resetState();
-      };
     },
     // -------------------------------- reset state ----------------------------------
     _resetState: function _resetState() {
@@ -992,6 +970,45 @@
       window.sortableDndOnMove = null;
       delete window.sortableDndOnDown;
       delete window.sortableDndOnMove;
+    },
+    // -------------------------------- auto destroy ----------------------------------
+    _handleDestroy: function _handleDestroy() {
+      var _this2 = this;
+
+      var observer = null;
+      var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+
+      if (MutationObserver) {
+        var ownerDocument = this.options.ownerDocument;
+        if (!ownerDocument) return;
+        observer = new MutationObserver(function () {
+          if (!ownerDocument.body.contains(_this2.$el)) {
+            observer.disconnect();
+            observer = null;
+
+            _this2._unbindEventListener();
+
+            _this2._resetState();
+          }
+        });
+        observer.observe(this.$el.parentNode, {
+          childList: true,
+          // 观察目标子节点的变化，是否有添加或者删除
+          attributes: false,
+          // 观察属性变动
+          subtree: false // 观察后代节点，默认为 false
+
+        });
+      }
+
+      window.onbeforeunload = function () {
+        if (observer) observer.disconnect();
+        observer = null;
+
+        _this2._unbindEventListener();
+
+        _this2._resetState();
+      };
     }
   };
 

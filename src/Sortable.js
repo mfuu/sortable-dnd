@@ -89,7 +89,10 @@ class Ghost {
     return this.$el.getBoundingClientRect()
   }
 
-  move() {
+  move(smooth) {
+    const { ghostAnimation } = this.options
+    if (smooth) this.$el.style.transition = `all ${ghostAnimation}ms`
+    else this.$el.style.transition = ''
     // 将初始化放在 move 事件中，避免与鼠标点击事件冲突
     if (!this.exist) {
       document.body.appendChild(this.$el)
@@ -99,9 +102,16 @@ class Ghost {
     if (this.$el.style.cursor !== 'move') this.$el.style.cursor = 'move'
   }
 
-  destroy() {
-    if (this.$el) this.$el.remove()
-    this.exist = false
+  destroy(rect) {
+    if (rect) {
+      this.x = rect.left
+      this.y = rect.top
+      this.move(true)
+    }
+    setTimeout(() => {
+      if (this.$el) this.$el.remove()
+      this.exist = false
+    }, this.options.ghostAnimation)
   }
 }
 
@@ -134,6 +144,7 @@ function Sortable(el, options) {
     disabled: false, // 
     animation: 150, // 动画延时
 
+    ghostAnimation: 0, // 拖拽元素销毁时动画效果
     ghostClass: '', // 拖拽元素Class类名
     ghostStyle: {}, // 拖拽元素样式
     chosenClass: '', // 选中元素样式
@@ -346,7 +357,10 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
       const changed = _old_.offset.top !== _new_.offset.top || _old_.offset.left !== _new_.offset.left
 
       // 如果拖拽前后没有发生交换，重新赋值一次
-      if (!changed) this.differ._new_.node = this.differ._old_.node
+      if (!changed) {
+        this.differ._new_.node = this.differ._old_.node
+        this.differ._new_.rect = this.differ._old_.rect
+      }
       
       if (typeof dragEnd === 'function') {
         dragEnd(_old_, _new_, changed)
@@ -355,9 +369,25 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
       }
     }
 
+    this.ghost.destroy(this.differ._new_.rect)
     this.differ.destroy()
-    this.ghost.destroy()
     this._removeWindowState()
+  },
+
+  // -------------------------------- reset state ----------------------------------
+  _resetState: function() {
+    this.dragEl = null
+    this.dropEl = null
+    this.ghost.destroy()
+    this.differ.destroy()
+    this.calcXY = { x: 0, y: 0 }
+    this._removeWindowState()
+  },
+  _removeWindowState: function() {
+    window.sortableDndOnDown = null
+    window.sortableDndOnMove = null
+    delete window.sortableDndOnDown
+    delete window.sortableDndOnMove
   },
 
   // -------------------------------- auto destroy ----------------------------------
@@ -388,22 +418,6 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
       this._unbindEventListener()
       this._resetState()
     }
-  },
-
-  // -------------------------------- reset state ----------------------------------
-  _resetState: function() {
-    this.dragEl = null
-    this.dropEl = null
-    this.ghost.destroy()
-    this.differ.destroy()
-    this.calcXY = { x: 0, y: 0 }
-    this._removeWindowState()
-  },
-  _removeWindowState: function() {
-    window.sortableDndOnDown = null
-    window.sortableDndOnMove = null
-    delete window.sortableDndOnDown
-    delete window.sortableDndOnMove
   }
 }
 
