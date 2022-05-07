@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.1.1
+ * sortable-dnd v0.1.2
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
