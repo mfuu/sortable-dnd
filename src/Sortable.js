@@ -1,5 +1,4 @@
 import {
-  on,
   css,
   matches,
   getRect,
@@ -10,7 +9,7 @@ import {
   supportPassive,
   getParentAutoScrollElement
 } from './utils.js'
-import { IOS, Safari, ChromeForAndroid } from './Brower.js'
+import { IOS, Edge, Safari, IE11OrLess, ChromeForAndroid } from './Brower.js'
 import Animation from './Animation.js'
 import Events from './events.js'
 
@@ -110,6 +109,9 @@ class Ghost {
     }
     setTimeout(() => {
       if (this.$el) this.$el.remove()
+      this.$el = null
+      this.x = 0
+      this.y = 0
       this.exist = false
     }, this.options.ghostAnimation)
   }
@@ -141,8 +143,10 @@ function Sortable(el, options) {
   this.calcXY = { x: 0, y: 0 } // 记录拖拽移动时坐标
 
   const defaults = {
-    disabled: false, // 
-    animation: 150, // 动画延时
+    delay: 0, // 定义鼠标选中列表单元可以开始拖动的延迟时间
+    delayOnTouchOnly: false, // only delay if user is using touch
+    disabled: false, // 定义是否此sortable对象是否可用，为true时sortable对象不能拖放排序等功能，为false时为可以进行排序，相当于一个开关
+    animation: 150, // 定义排序动画的时间
 
     ghostAnimation: 0, // 拖拽元素销毁时动画效果
     ghostClass: '', // 拖拽元素Class类名
@@ -167,19 +171,14 @@ function Sortable(el, options) {
     !(name in this.options) && (this.options[name] = defaults[name])
   }
 
+  this.nativeDraggable = this.options.forceFallback ? false : supportDraggable
+
   this.differ = new Differ()
   this.ghost = new Ghost(this.options)
 
   Object.assign(this, Animation(), Events())
 
   this._bindEventListener()
-
-  this.nativeDraggable = this.options.forceFallback ? false : supportDraggable
-
-  if (this.nativeDraggable) {
-    on(this.$el, 'dragover', this)
-    on(this.$el, 'dragenter', this)
-  }
 
   this._handleDestroy()
 }
@@ -194,8 +193,7 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
 
   // -------------------------------- drag and drop ----------------------------------
   _onStart: function(/** Event|TouchEvent */evt) {
-    const { disabled, dragging, draggable, stopPropagation } = this.options
-
+    const { delay, disabled, stopPropagation, delayOnTouchOnly } = this.options
     if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || disabled) return // only left button and enabled
 
     const touch = (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt)
@@ -203,8 +201,19 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
 
     // Safari ignores further event handling after mousedown
 		if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return
-
     if (e.target === this.$el) return true
+
+    if (evt.preventDefault !== void 0) evt.preventDefault()
+    if (stopPropagation) evt.stopPropagation()
+
+    if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
+      this.dragStartTimer = setTimeout(this._onDrag(e, touch), delay)
+    } else {
+      this._onDrag(e, touch)
+    }
+  },
+  _onDrag: function(/** Event|TouchEvent */e, touch) {
+    const { dragging, draggable } = this.options
 
     if (typeof draggable === 'function') {
       if (!draggable(e)) return true
@@ -215,9 +224,6 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
     } else if (draggable !== undefined) {
       throw new Error(`draggable expected "function" or "string" but received "${typeof draggable}"`)
     }
-
-    if (evt.preventDefault !== void 0) evt.preventDefault()
-    if (stopPropagation) evt.stopPropagation()
 
     try {
 			if (document.selection) {
@@ -247,9 +253,6 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
 
     if (!el || index < 0) return true
 
-    // 将拖拽元素克隆一份作为蒙版
-    const ghostEl = this.dragEl.cloneNode(true)
-    this.ghost.init(ghostEl, rect)
     this.ghost.set('x', rect.left)
     this.ghost.set('y', rect.top)
 
@@ -264,6 +267,13 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
   },
   _onMove: function(/** Event|TouchEvent */evt) {
     if (evt.preventDefault !== void 0) evt.preventDefault() // prevent scrolling
+
+    // 将初始化放到move事件中，防止与click事件冲突
+    if (!this.ghost.$el) {
+      // 将拖拽元素克隆一份作为蒙版
+      const ghostEl = this.dragEl.cloneNode(true)
+      this.ghost.init(ghostEl, this.differ._old_.rect)
+    }
 
     const touch = evt.touches && evt.touches[0]
     const e = touch || evt
@@ -338,6 +348,7 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
   _onDrop: function(/** Event|TouchEvent */evt) {
     this._offMoveEvents()
     this._offUpEvents()
+    clearTimeout(this.dragStartTimer)
 
     const { dragEnd, chosenClass, stopPropagation } = this.options
 
@@ -367,9 +378,9 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
       } else {
         throw new Error(`Sortable-dnd Error: dragEnd expected "function" but received "${typeof dragEnd}"`)
       }
-    }
 
-    this.ghost.destroy(getRect(this.dragEl))
+      this.ghost.destroy(getRect(this.dragEl))
+    }
     this.differ.destroy()
     this._removeWindowState()
   },

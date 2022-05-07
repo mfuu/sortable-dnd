@@ -15,6 +15,11 @@ export default function DNDEvent() {
       } else {
         on(this.$el, 'mousedown', this._onStart, supportPassive)
       }
+
+      if (this.nativeDraggable) {
+        on(this.$el, 'dragover', this)
+        on(this.$el, 'dragenter', this)
+      }
     },
   
     _unbindEventListener() {

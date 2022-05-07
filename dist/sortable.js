@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.1.2
+ * sortable-dnd v0.1.3
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -85,6 +85,7 @@
   }
 
   var IE11OrLess = userAgent(/(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i);
+  var Edge = userAgent(/Edge/i);
   var Safari = userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
   var IOS = userAgent(/iP(ad|od|hone)/i);
   var ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
@@ -462,6 +463,11 @@
         } else {
           on(this.$el, 'mousedown', this._onStart, supportPassive);
         }
+
+        if (this.nativeDraggable) {
+          on(this.$el, 'dragover', this);
+          on(this.$el, 'dragenter', this);
+        }
       },
       _unbindEventListener: function _unbindEventListener() {
         var supportPassive = this.options.supportPassive;
@@ -657,6 +663,9 @@
 
         setTimeout(function () {
           if (_this.$el) _this.$el.remove();
+          _this.$el = null;
+          _this.x = 0;
+          _this.y = 0;
           _this.exist = false;
         }, this.options.ghostAnimation);
       }
@@ -698,10 +707,14 @@
     }; // 记录拖拽移动时坐标
 
     var defaults = {
+      delay: 0,
+      // 定义鼠标选中列表单元可以开始拖动的延迟时间
+      delayOnTouchOnly: false,
+      // only delay if user is using touch
       disabled: false,
-      // 
+      // 定义是否此sortable对象是否可用，为true时sortable对象不能拖放排序等功能，为false时为可以进行排序，相当于一个开关
       animation: 150,
-      // 动画延时
+      // 定义排序动画的时间
       ghostAnimation: 0,
       // 拖拽元素销毁时动画效果
       ghostClass: '',
@@ -730,18 +743,12 @@
       !(name in this.options) && (this.options[name] = defaults[name]);
     }
 
+    this.nativeDraggable = this.options.forceFallback ? false : supportDraggable;
     this.differ = new Differ();
     this.ghost = new Ghost(this.options);
     Object.assign(this, Animation(), DNDEvent());
 
     this._bindEventListener();
-
-    this.nativeDraggable = this.options.forceFallback ? false : supportDraggable;
-
-    if (this.nativeDraggable) {
-      on(this.$el, 'dragover', this);
-      on(this.$el, 'dragenter', this);
-    }
 
     this._handleDestroy();
   }
@@ -760,10 +767,10 @@
     /** Event|TouchEvent */
     evt) {
       var _this$options2 = this.options,
+          delay = _this$options2.delay,
           disabled = _this$options2.disabled,
-          dragging = _this$options2.dragging,
-          draggable = _this$options2.draggable,
-          stopPropagation = _this$options2.stopPropagation;
+          stopPropagation = _this$options2.stopPropagation,
+          delayOnTouchOnly = _this$options2.delayOnTouchOnly;
       if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || disabled) return; // only left button and enabled
 
       var touch = evt.touches && evt.touches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
@@ -771,6 +778,21 @@
 
       if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return;
       if (e.target === this.$el) return true;
+      if (evt.preventDefault !== void 0) evt.preventDefault();
+      if (stopPropagation) evt.stopPropagation();
+
+      if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
+        this.dragStartTimer = setTimeout(this._onDrag(e, touch), delay);
+      } else {
+        this._onDrag(e, touch);
+      }
+    },
+    _onDrag: function _onDrag(
+    /** Event|TouchEvent */
+    e, touch) {
+      var _this$options3 = this.options,
+          dragging = _this$options3.dragging,
+          draggable = _this$options3.draggable;
 
       if (typeof draggable === 'function') {
         if (!draggable(e)) return true;
@@ -779,9 +801,6 @@
       } else if (draggable !== undefined) {
         throw new Error("draggable expected \"function\" or \"string\" but received \"".concat(_typeof(draggable), "\""));
       }
-
-      if (evt.preventDefault !== void 0) evt.preventDefault();
-      if (stopPropagation) evt.stopPropagation();
 
       try {
         if (document.selection) {
@@ -811,10 +830,7 @@
           rect = _getElement.rect,
           offset = _getElement.offset;
 
-      if (!el || index < 0) return true; // 将拖拽元素克隆一份作为蒙版
-
-      var ghostEl = this.dragEl.cloneNode(true);
-      this.ghost.init(ghostEl, rect);
+      if (!el || index < 0) return true;
       this.ghost.set('x', rect.left);
       this.ghost.set('y', rect.top);
       this.differ._old_.rect = rect;
@@ -833,15 +849,22 @@
     /** Event|TouchEvent */
     evt) {
       if (evt.preventDefault !== void 0) evt.preventDefault(); // prevent scrolling
+      // 将初始化放到move事件中，防止与click事件冲突
+
+      if (!this.ghost.$el) {
+        // 将拖拽元素克隆一份作为蒙版
+        var ghostEl = this.dragEl.cloneNode(true);
+        this.ghost.init(ghostEl, this.differ._old_.rect);
+      }
 
       var touch = evt.touches && evt.touches[0];
       var e = touch || evt;
       var clientX = e.clientX,
           clientY = e.clientY;
       var target = touch ? document.elementFromPoint(clientX, clientY) : e.target;
-      var _this$options3 = this.options,
-          chosenClass = _this$options3.chosenClass,
-          stopPropagation = _this$options3.stopPropagation;
+      var _this$options4 = this.options,
+          chosenClass = _this$options4.chosenClass,
+          stopPropagation = _this$options4.stopPropagation;
       if (stopPropagation) evt.stopPropagation();
       toggleClass(this.dragEl, chosenClass, true);
       this.ghost.move();
@@ -917,10 +940,11 @@
 
       this._offUpEvents();
 
-      var _this$options4 = this.options,
-          dragEnd = _this$options4.dragEnd,
-          chosenClass = _this$options4.chosenClass,
-          stopPropagation = _this$options4.stopPropagation;
+      clearTimeout(this.dragStartTimer);
+      var _this$options5 = this.options,
+          dragEnd = _this$options5.dragEnd,
+          chosenClass = _this$options5.chosenClass,
+          stopPropagation = _this$options5.stopPropagation;
       if (stopPropagation) evt.stopPropagation(); // 阻止事件冒泡
 
       toggleClass(this.dragEl, chosenClass, false);
@@ -945,9 +969,10 @@
         } else {
           throw new Error("Sortable-dnd Error: dragEnd expected \"function\" but received \"".concat(_typeof(dragEnd), "\""));
         }
+
+        this.ghost.destroy(getRect(this.dragEl));
       }
 
-      this.ghost.destroy(getRect(this.dragEl));
       this.differ.destroy();
 
       this._removeWindowState();
