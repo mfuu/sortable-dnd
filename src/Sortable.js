@@ -369,7 +369,7 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
       }
     }
 
-    this.ghost.destroy(this.differ._new_.rect)
+    this.ghost.destroy(getRect(this.dragEl))
     this.differ.destroy()
     this._removeWindowState()
   },
