@@ -71,11 +71,11 @@ The component you created will clear all state after destroyed
 |-------------------|-------------------|-------------|--------------|
 | `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
 | `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable, the function type must return a boolean |
-| `dragging`        | `Function`        | `undefined` | Specifies the element witch you want to drag: `(e) => return e.target` |
-| `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started: `(dragEl, event, originalEvent) => {}` |
-| `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving: `(from, ghostEl, event, originalEvent) => {}` |
-| `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed: `(changed, originalEvent) => {}` |
-| `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position: `(from, to, event, originalEvent) => {}` |
+| `dragging`        | `Function`        | `undefined` | Specifies the element witch you want to drag: <br /> `(e) => return e.target` |
+| `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started: <br />`(dragEl, event, originalEvent) => {}` |
+| `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving: <br /> `(from, ghostEl, event, originalEvent) => {}` |
+| `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed: <br /> `(changed, originalEvent) => {}` |
+| `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position: <br /> `(from, to, event, originalEvent) => {}` |
 | `ghostStyle`      | `Object`          | `{}`        | The style of the mask element when dragging |
 | `ghostClass`      | `String`          | `''`        | The class of the mask element when dragging |
 | `chosenClass`     | `String`          | `{}`        | The class of the selected element when dragging |
