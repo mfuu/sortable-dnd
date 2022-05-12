@@ -115,9 +115,9 @@ export function getWindowScrollingElement() {
   let scrollingElement = document.scrollingElement
 
   if (scrollingElement) {
-    return scrollingElement
+    return scrollingElement.contains(document.body) ? document : scrollingElement
   } else {
-    return document.documentElement
+    return document
   }
 }
 
@@ -176,34 +176,33 @@ export function getRect(el) {
  * get target Element in group
  * @param {HTMLElement} group 
  * @param {HTMLElement} el 
+ * @param {Boolean} onlyEl only get element
  */
-export function getElement(group, el) {
-  const result = { index: -1, el: null, rect: {}, offset: {} }
+export function getElement(group, el, onlyEl) {
   const children = [...Array.from(group.children)]
 
   // 如果能直接在子元素中找到，返回对应的index
   const index = children.indexOf(el)
   if (index > -1)
-    Object.assign(result, {
+    return onlyEl ? children[index] : {
       index,
       el: children[index],
       rect: getRect(children[index]),
       offset: getOffset(children[index])
-    })
+    }
 
   // children 中无法直接找到对应的dom时，需要向下寻找
   for (let i = 0; i < children.length; i++) {
     if (isChildOf(el, children[i])) {
-      Object.assign(result, {
+      return onlyEl ? children[i] : {
         index: i,
         el: children[i],
         rect: getRect(children[i]),
         offset: getOffset(children[i])
-      })
-      break
+      }
     }
   }
-  return result
+  return onlyEl ? null : { index: -1, el: null, rect: {}, offset: {} }
 }
 
 /**

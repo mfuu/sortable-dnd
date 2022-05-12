@@ -6,6 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sortable</title>
   <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
     ul {
       padding: 0;
       margin: 0;
@@ -70,8 +76,14 @@
         ghostAnimation: 500,
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
-        dragEnd: (pre, cur, changed) => {
-          console.log(pre, cur, changed)
+        onDrag: (e) => {
+          console.log(e, 'ondrag')
+        },
+        onDrop: (changed) => {
+          console.log(changed)
+        },
+        onChange: (from, to) => {
+          console.log(from, to)
         }
       }
     );
@@ -90,8 +102,14 @@
         ghostAnimation: 500,
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
-        dragEnd: (pre, cur, changed) => {
-          console.log(pre, cur, changed)
+        onDrag: (e) => {
+          console.log(e, 'ondrag')
+        },
+        onDrop: (changed) => {
+          console.log(changed)
+        },
+        onChange: (from, to) => {
+          console.log(from, to)
         }
       }
     );
@@ -113,8 +131,14 @@
         draggable: (e) => {
           return e.target.tagName === 'I' ? true : false
         },
-        dragEnd: (pre, cur, changed) => {
-          console.log(pre, cur, changed)
+        onDrag: (e) => {
+          console.log(e, 'ondrag')
+        },
+        onDrop: (changed) => {
+          console.log(changed)
+        },
+        onChange: (from, to) => {
+          console.log(from, to)
         }
       }
     );

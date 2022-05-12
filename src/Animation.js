@@ -7,6 +7,12 @@ export default function Animation() {
   
   const animationState = []
 
+  function getRange(children, drag, drop) {
+    const start = children.indexOf(drag)
+    const end = children.indexOf(drop)
+    return start < end ? { start, end } : { start: end, end: start }
+  }
+
   return {
 
     captureAnimationState() {
@@ -51,10 +57,4 @@ export default function Animation() {
       }, animation)
     }
   }
-}
-
-function getRange(children, drag, drop) {
-  const start = children.indexOf(drag)
-  const end = children.indexOf(drop)
-  return start< end ? { start, end } : { start: end, end: start }
 }

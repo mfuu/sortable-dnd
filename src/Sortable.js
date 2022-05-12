@@ -18,8 +18,8 @@ import Events from './events.js'
  */
 class Differ {
   constructor() {
-    this._old_ = { node: null, rect: {}, offset: {} }
-    this._new_ = { node: null, rect: {}, offset: {} }
+    this.from = { node: null, rect: {}, offset: {} }
+    this.to = { node: null, rect: {}, offset: {} }
   }
 
   get(key) {
@@ -31,8 +31,8 @@ class Differ {
   }
 
   destroy() {
-    this._old_ = { node: null, rect: {}, offset: {} }
-    this._new_ = { node: null, rect: {}, offset: {} }
+    this.from = { node: null, rect: {}, offset: {} }
+    this.to = { node: null, rect: {}, offset: {} }
   }
 }
 
@@ -152,9 +152,13 @@ function Sortable(el, options) {
     ghostClass: '', // 拖拽元素Class类名
     ghostStyle: {}, // 拖拽元素样式
     chosenClass: '', // 选中元素样式
-    draggable: undefined, // String: css selecter, Function: (e) => return true
-    dragging: undefined, // 必须为函数且必须返回一个 HTMLElement: (e) => return e.target
-    dragEnd: undefined, // 拖拽完成时的回调函数: (old, new, changed) => {}
+    
+    draggable: undefined, // String: css选择器, Function: (e) => return true
+    dragging: undefined, // 设置拖拽元素，必须为函数且必须返回一个 HTMLElement: (e) => return e.target
+    onDrag: undefined, // 拖拽开始时触发的回调函数: () => {}
+    onMove: undefined, // 拖拽过程中的回调函数: (from, to) => {}
+    onDrop: undefined, // 拖拽完成时的回调函数: (from, to, changed) => {}
+    onChange: undefined, // 拖拽元素改变位置的时候: (from, to) => {}
 
     forceFallback: false, // 忽略 HTML5拖拽行为，强制回调进行
 
@@ -179,11 +183,10 @@ function Sortable(el, options) {
   Object.assign(this, Animation(), Events())
 
   this._bindEventListener()
-
   this._handleDestroy()
 }
 
-Sortable.prototype = /** @lends Sortable.prototype */ {
+Sortable.prototype = {
   constructor: Sortable,
 
   destroy() {
@@ -213,7 +216,7 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
     }
   },
   _onDrag: function(/** Event|TouchEvent */e, touch) {
-    const { dragging, draggable } = this.options
+    const { draggable, dragging } = this.options
 
     if (typeof draggable === 'function') {
       if (!draggable(e)) return true
@@ -232,34 +235,29 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
 			} else {
 				window.getSelection().removeAllRanges()
 			}
-
-      // 获取拖拽元素
-      const element = typeof dragging === 'function' ? dragging(e) : getElement(this.$el, e.target).el
-                        
-      // 不存在拖拽元素时不允许拖拽
-      if (!element) return true
-      if (element.animated) return
-
-      this.dragEl = element
-
 		} catch (error) {
       throw new Error(error)
 		}
 
-    window.sortableDndOnDown = true
+    // 获取拖拽元素                 
+    if (dragging) {
+      if (typeof dragging === 'function') this.dragEl = dragging(e)
+      else throw new Error(`dragging expected "function" or "string" but received "${typeof dragging}"`)
+    } else {
+      this.dragEl = getElement(this.$el, e.target, true)
+    }
 
-    // 获取当前元素在列表中的位置
-    const { index, el, rect, offset } = getElement(this.$el, this.dragEl)
+    // 不存在拖拽元素时不允许拖拽
+    if (!this.dragEl || this.dragEl.animated) return true
 
-    if (!el || index < 0) return true
+    // 获取拖拽元素在列表中的位置
+    const { rect, offset } = getElement(this.$el, this.dragEl)
+
+    window.sortableDndOnDownState = true
 
     this.ghost.set('x', rect.left)
     this.ghost.set('y', rect.top)
-
-    this.differ._old_.rect = rect
-    this.differ._old_.offset = offset
-    this.differ._old_.node = this.dragEl
-
+    this.differ.from = { node: this.dragEl, rect, offset}
     this.calcXY = { x: e.clientX, y: e.clientY }
 
     this._onMoveEvents(touch)
@@ -268,29 +266,38 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
   _onMove: function(/** Event|TouchEvent */evt) {
     if (evt.preventDefault !== void 0) evt.preventDefault() // prevent scrolling
 
-    // 将初始化放到move事件中，防止与click事件冲突
-    if (!this.ghost.$el) {
-      // 将拖拽元素克隆一份作为蒙版
-      const ghostEl = this.dragEl.cloneNode(true)
-      this.ghost.init(ghostEl, this.differ._old_.rect)
-    }
+    const { chosenClass, stopPropagation, onMove, onDrag } = this.options
+
+    if (stopPropagation) evt.stopPropagation()
 
     const touch = evt.touches && evt.touches[0]
     const e = touch || evt
     const { clientX, clientY } = e
     const target = touch ? document.elementFromPoint(clientX, clientY) : e.target
 
-    const { chosenClass, stopPropagation } = this.options
+    // 将初始化放到move事件中，防止与click事件冲突
+    // 将拖拽元素克隆一份作为蒙版
+    if (!this.ghost.$el) {
+      this.ghost.init(this.dragEl.cloneNode(true), this.differ.from.rect)
+      if (onDrag !== undefined) {
+        if (typeof onDrag === 'function') onDrag(this.dragEl, e, /** originalEvent */evt)
+        else throw new Error(`onDrag expected "function" but received "${typeof onDrag}"`)
+      }
+    }
 
-    if (stopPropagation) evt.stopPropagation()
+    // 拖拽过程中触发的回调
+    if (onMove !== undefined) {
+      if (typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, /** originalEvent */evt)
+      else throw new Error(`onMove expected "function" but received "${typeof onMove}"`)
+    }
 
     toggleClass(this.dragEl, chosenClass, true)
     this.ghost.move()
 
-    if (!window.sortableDndOnDown) return
+    if (!window.sortableDndOnDownState) return
     if (clientX < 0 || clientY < 0) return
 
-    window.sortableDndOnMove = true
+    window.sortableDndOnMoveState = true
 
     this.ghost.set('x', this.ghost.x + clientX - this.calcXY.x)
     this.ghost.set('y', this.ghost.y + clientY - this.calcXY.y)
@@ -321,27 +328,34 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
 
     } else if (top < rc.top || left < rc.left) return
     
-    if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
-      this.dropEl = el
+    this.dropEl = el
 
+    if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
       // 拖拽前后元素不一致时交换
-      if (this.dropEl !== this.dragEl) {
-        if (this.dropEl.animated) return
+      if (el !== this.dragEl) {
+        this.differ.to = { node: this.dropEl, rect, offset }
+
+        if (el.animated) return
 
         this.captureAnimationState()
 
+        const { onChange } = this.options
         const _offset = getOffset(this.dragEl) // 获取拖拽元素的 offset 值
+
+        // 元素发生位置交换时触发的回调
+        if (onChange !== undefined) {
+          if (typeof onChange === 'function') onChange(this.differ.from, this.differ.to, e, evt)
+          else throw new Error(`onChange expected "function" but received "${typeof onChange}"`)
+        }
         
         // 优先比较 top 值，top 值相同再比较 left
         if (_offset.top < offset.top || _offset.left < offset.left) {
-          this.$el.insertBefore(this.dragEl, this.dropEl.nextElementSibling)
+          this.$el.insertBefore(this.dragEl, el.nextElementSibling)
         } else {
-          this.$el.insertBefore(this.dragEl, this.dropEl)
+          this.$el.insertBefore(this.dragEl, el)
         }
 
         this.animateRange()
-        this.differ._new_.node = this.dropEl
-        this.differ._new_.rect = getRect(this.dropEl)
       }
     }
   },
@@ -350,33 +364,27 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
     this._offUpEvents()
     clearTimeout(this.dragStartTimer)
 
-    const { dragEnd, chosenClass, stopPropagation } = this.options
+    const { onDrop, chosenClass, stopPropagation } = this.options
 
     if (stopPropagation) evt.stopPropagation() // 阻止事件冒泡
 
     toggleClass(this.dragEl, chosenClass, false)
 
-    if (window.sortableDndOnDown && window.sortableDndOnMove) {
+    if (window.sortableDndOnDownState && window.sortableDndOnMoveState) {
 
-      // 重新获取一次拖拽元素的 offset 值作为拖拽完成后的 offset 值
-      this.differ._new_.offset = getOffset(this.dragEl)
+      // 重新获取一次拖拽元素的 offset 和 rect 值作为拖拽完成后的值
+      this.differ.to.offset = getOffset(this.dragEl)
+      this.differ.to.rect = getRect(this.dragEl)
 
-      // 拖拽完成触发回调函数
-      const { _old_, _new_ } = this.differ
+      const { from, to } = this.differ
 
       // 通过 offset 比较是否进行了元素交换
-      const changed = _old_.offset.top !== _new_.offset.top || _old_.offset.left !== _new_.offset.left
-
-      // 如果拖拽前后没有发生交换，重新赋值一次
-      if (!changed) {
-        this.differ._new_.node = this.differ._old_.node
-        this.differ._new_.rect = this.differ._old_.rect
-      }
+      const changed = from.offset.top !== to.offset.top || from.offset.left !== to.offset.left
       
-      if (typeof dragEnd === 'function') {
-        dragEnd(_old_, _new_, changed)
-      } else {
-        throw new Error(`Sortable-dnd Error: dragEnd expected "function" but received "${typeof dragEnd}"`)
+      // 拖拽完成触发回调函数
+      if (onDrop !== undefined) {
+        if (typeof onDrop === 'function') onDrop(changed, evt)
+        else throw new Error(`onDrop expected "function" but received "${typeof onDrop}"`)
       }
 
       this.ghost.destroy(getRect(this.dragEl))
@@ -395,10 +403,12 @@ Sortable.prototype = /** @lends Sortable.prototype */ {
     this._removeWindowState()
   },
   _removeWindowState: function() {
-    window.sortableDndOnDown = null
-    window.sortableDndOnMove = null
-    delete window.sortableDndOnDown
-    delete window.sortableDndOnMove
+    window.sortableDndOnDownState = null
+    window.sortableDndOnMoveState = null
+    window.sortableDndAnimationEnd = null
+    delete window.sortableDndOnDownState
+    delete window.sortableDndOnMoveState
+    delete window.sortableDndAnimationEnd
   },
 
   // -------------------------------- auto destroy ----------------------------------
