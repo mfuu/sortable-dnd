@@ -43,9 +43,6 @@ var DND = new Sortable(
     // draggable: 'i' // use tagName 
     // draggable: '.drag' // use class
     // draggable: '#drag' // use id
-    dragging: (e) => {
-      return e.target.parentNode
-    },
     onDrag: (dragEl, event, originalEvent) => {
       // code
     },
