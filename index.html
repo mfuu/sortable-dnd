@@ -43,21 +43,30 @@
       flex-wrap: wrap;
       justify-content: space-between;
     }
-    .flex-group li {
+    .flex-group li, .horizontal li {
       text-align: center;
       width: 100px;
       height: 100px;
       padding: 5px;
+      margin: 5px;
       border: 1px solid #aaa;
+      display: inline-block;
     }
     .chosen {
       background-color: #c8ebfb;
+    }
+    .horizontal {
+      width: 50%;
+      margin: 0 auto;
+      overflow: auto;
+      white-space: nowrap;
+      margin-bottom: 100px;
     }
   </style>
 </head>
 <body>
   <ul id="group" class="group"></ul>
-  <ul id="flexgroup" class="flex-group"></ul>
+  <ul id="flexgroup" class="horizontal"></ul>
   <ul id="flexdrag" class="flex-group"></ul>
   <script type="module">
     import Sortable from './src/index.js';
