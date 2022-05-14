@@ -1,6 +1,6 @@
 {
   "name": "sortable-dnd",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "JS Library for Drag and Drop, supports Sortable and Draggable",
   "main": "dist/sortable.js",
   "files": [

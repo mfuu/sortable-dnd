@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.2.0
+ * sortable-dnd v0.2.1
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -781,7 +781,6 @@
 
       if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return;
       if (e.target === this.$el) return true;
-      if (evt.preventDefault !== void 0) evt.preventDefault();
       if (stopPropagation) evt.stopPropagation();
 
       if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
