@@ -7,6 +7,32 @@ const captureMode = {
 
 const R_SPACE = /\s+/g
 
+export const CSSTRANSITIONS = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition']
+export const CSSTRANSFORMS = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform']
+
+/**
+ * set transition style
+ * @param {HTMLElement} el 
+ * @param {String | Function} transition 
+ */
+export function setTransition(el, transition) {
+  if (transition) {
+    if (transition === 'none') CSSTRANSITIONS.forEach(ts => css(el, ts, 'none'))
+    else CSSTRANSITIONS.forEach(ts => css(el, ts, `${ts.split('transition')[0]}transform ${transition}`))
+  }
+  else CSSTRANSITIONS.forEach(ts => css(el, ts, ''))
+}
+
+/**
+ * set transform style
+ * @param {HTMLElement} el 
+ * @param {String} transform 
+ */
+export function setTransform(el, transform) {
+  if (transform) CSSTRANSFORMS.forEach(tf => css(el, tf, `${tf.split('transform')[0]}${transform}`))
+  else CSSTRANSFORMS.forEach(tf => css(el, tf, ''))
+}
+
 /**
  * detect passive event support
  */
@@ -312,6 +338,8 @@ export default {
   isChildOf,
   getElement,
   toggleClass,
+  setTransform,
+  setTransition,
   supportPassive,
   getWindowScrollingElement,
   getParentAutoScrollElement,

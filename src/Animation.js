@@ -1,7 +1,4 @@
-import { getRect, css } from './utils.js'
-
-const CSS_TRANSITIONS = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition']
-const CSS_TRANSFORMS = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform']
+import { getRect, setTransition, setTransform } from './utils.js'
 
 export default function Animation() {
   
@@ -41,18 +38,18 @@ export default function Animation() {
       const left = preRect.left - curRect.left
       const top = preRect.top - curRect.top
 
-      CSS_TRANSITIONS.forEach(ts => css(el, ts, 'none'))
-      CSS_TRANSFORMS.forEach(tf => css(el, tf, `${tf.split('transform')[0]}translate3d(${left}px, ${top}px, 0)`))
+      setTransition(el, 'none')
+      setTransform(el, `translate3d(${left}px, ${top}px, 0)`)
   
       el.offsetLeft // 触发重绘
   
-      CSS_TRANSITIONS.forEach(ts => css(el, ts, `${ts.split('transition')[0]}transform ${animation}ms`))
-      CSS_TRANSFORMS.forEach(tf => css(el, tf, `${tf.split('transform')[0]}translate3d(0px, 0px, 0px)`))
+      setTransition(el, `${animation}ms`)
+      setTransform(el, 'translate3d(0px, 0px, 0px)')
 
       clearTimeout(el.animated)
       el.animated = setTimeout(() => {
-        CSS_TRANSITIONS.forEach(ts => css(el, ts, ''))
-        CSS_TRANSFORMS.forEach(tf => css(el, tf, ''))
+        setTransition(el, '')
+        setTransform(el, '')
         el.animated = null
       }, animation)
     }

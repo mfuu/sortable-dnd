@@ -95,6 +95,38 @@
     passive: false
   };
   var R_SPACE = /\s+/g;
+  var CSSTRANSITIONS = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition'];
+  var CSSTRANSFORMS = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform'];
+  /**
+   * set transition style
+   * @param {HTMLElement} el 
+   * @param {String | Function} transition 
+   */
+
+  function setTransition(el, transition) {
+    if (transition) {
+      if (transition === 'none') CSSTRANSITIONS.forEach(function (ts) {
+        return css(el, ts, 'none');
+      });else CSSTRANSITIONS.forEach(function (ts) {
+        return css(el, ts, "".concat(ts.split('transition')[0], "transform ").concat(transition));
+      });
+    } else CSSTRANSITIONS.forEach(function (ts) {
+      return css(el, ts, '');
+    });
+  }
+  /**
+   * set transform style
+   * @param {HTMLElement} el 
+   * @param {String} transform 
+   */
+
+  function setTransform(el, transform) {
+    if (transform) CSSTRANSFORMS.forEach(function (tf) {
+      return css(el, tf, "".concat(tf.split('transform')[0]).concat(transform));
+    });else CSSTRANSFORMS.forEach(function (tf) {
+      return css(el, tf, '');
+    });
+  }
   /**
    * detect passive event support
    */
@@ -367,8 +399,154 @@
     return setTimeout(fn, 0);
   }
 
-  var CSS_TRANSITIONS = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition'];
-  var CSS_TRANSFORMS = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform'];
+  /**
+   * 拖拽前后差异初始化
+   */
+
+  var Differ = /*#__PURE__*/function () {
+    function Differ() {
+      _classCallCheck(this, Differ);
+
+      this.from = {
+        node: null,
+        rect: {},
+        offset: {}
+      };
+      this.to = {
+        node: null,
+        rect: {},
+        offset: {}
+      };
+    }
+
+    _createClass(Differ, [{
+      key: "get",
+      value: function get(key) {
+        return this[key];
+      }
+    }, {
+      key: "set",
+      value: function set(key, value) {
+        this[key] = value;
+      }
+    }, {
+      key: "destroy",
+      value: function destroy() {
+        this.from = {
+          node: null,
+          rect: {},
+          offset: {}
+        };
+        this.to = {
+          node: null,
+          rect: {},
+          offset: {}
+        };
+      }
+    }]);
+
+    return Differ;
+  }();
+  /**
+   * 拖拽中的元素
+   */
+
+  var Ghost = /*#__PURE__*/function () {
+    function Ghost(options) {
+      _classCallCheck(this, Ghost);
+
+      this.options = options;
+      this.x = 0;
+      this.y = 0;
+      this.exist = false;
+    }
+
+    _createClass(Ghost, [{
+      key: "init",
+      value: function init(el, rect) {
+        if (!el) return;
+        this.$el = el;
+        var _this$options = this.options,
+            ghostClass = _this$options.ghostClass,
+            _this$options$ghostSt = _this$options.ghostStyle,
+            ghostStyle = _this$options$ghostSt === void 0 ? {} : _this$options$ghostSt;
+        var width = rect.width,
+            height = rect.height;
+        this.$el["class"] = ghostClass;
+        this.$el.style.width = width + 'px';
+        this.$el.style.height = height + 'px';
+        this.$el.style.position = 'fixed';
+        this.$el.style.left = 0;
+        this.$el.style.top = 0;
+        this.$el.style.zIndex = 100000;
+        this.$el.style.opacity = 0.8;
+        this.$el.style.pointerEvents = 'none';
+        this.$el.style.cursor = 'move';
+        setTransition(this.$el, 'none');
+        setTransform(this.$el, 'translate3d(0px, 0px, 0px)');
+        this.setStyle(ghostStyle);
+      }
+    }, {
+      key: "get",
+      value: function get(key) {
+        return this[key];
+      }
+    }, {
+      key: "set",
+      value: function set(key, value) {
+        this[key] = value;
+        this[key] = value;
+      }
+    }, {
+      key: "setStyle",
+      value: function setStyle(style) {
+        for (var key in style) {
+          css(this.$el, key, style[key]);
+        }
+      }
+    }, {
+      key: "rect",
+      value: function rect() {
+        return getRect(this.$el);
+      }
+    }, {
+      key: "move",
+      value: function move(smooth) {
+        var ghostAnimation = this.options.ghostAnimation;
+        if (smooth) setTransition(this.$el, "".concat(ghostAnimation, "ms"));else setTransition(this.$el, 'none'); // 将初始化放在 move 事件中，避免与鼠标点击事件冲突
+
+        if (!this.exist) {
+          document.body.appendChild(this.$el);
+          this.exist = true;
+        }
+
+        setTransform(this.$el, "translate3d(".concat(this.x, "px, ").concat(this.y, "px, 0)"));
+        if (this.$el.style.cursor !== 'move') this.$el.style.cursor = 'move';
+      }
+    }, {
+      key: "destroy",
+      value: function destroy(rect) {
+        var _this = this;
+
+        if (rect) {
+          this.x = rect.left;
+          this.y = rect.top;
+          this.move(true);
+        }
+
+        setTimeout(function () {
+          if (_this.$el) _this.$el.remove();
+          _this.$el = null;
+          _this.x = 0;
+          _this.y = 0;
+          _this.exist = false;
+        }, this.options.ghostAnimation);
+      }
+    }]);
+
+    return Ghost;
+  }();
+
   function Animation() {
     var animationState = [];
 
@@ -416,28 +594,16 @@
         var curRect = getRect(el);
         var left = preRect.left - curRect.left;
         var top = preRect.top - curRect.top;
-        CSS_TRANSITIONS.forEach(function (ts) {
-          return css(el, ts, 'none');
-        });
-        CSS_TRANSFORMS.forEach(function (tf) {
-          return css(el, tf, "".concat(tf.split('transform')[0], "translate3d(").concat(left, "px, ").concat(top, "px, 0)"));
-        });
+        setTransition(el, 'none');
+        setTransform(el, "translate3d(".concat(left, "px, ").concat(top, "px, 0)"));
         el.offsetLeft; // 触发重绘
 
-        CSS_TRANSITIONS.forEach(function (ts) {
-          return css(el, ts, "".concat(ts.split('transition')[0], "transform ").concat(animation, "ms"));
-        });
-        CSS_TRANSFORMS.forEach(function (tf) {
-          return css(el, tf, "".concat(tf.split('transform')[0], "translate3d(0px, 0px, 0px)"));
-        });
+        setTransition(el, "".concat(animation, "ms"));
+        setTransform(el, 'translate3d(0px, 0px, 0px)');
         clearTimeout(el.animated);
         el.animated = setTimeout(function () {
-          CSS_TRANSITIONS.forEach(function (ts) {
-            return css(el, ts, '');
-          });
-          CSS_TRANSFORMS.forEach(function (tf) {
-            return css(el, tf, '');
-          });
+          setTransition(el, '');
+          setTransform(el, '');
           el.animated = null;
         }, animation);
       }
@@ -523,156 +689,6 @@
       }
     };
   }
-
-  /**
-   * 拖拽前后差异初始化
-   */
-
-  var Differ = /*#__PURE__*/function () {
-    function Differ() {
-      _classCallCheck(this, Differ);
-
-      this.from = {
-        node: null,
-        rect: {},
-        offset: {}
-      };
-      this.to = {
-        node: null,
-        rect: {},
-        offset: {}
-      };
-    }
-
-    _createClass(Differ, [{
-      key: "get",
-      value: function get(key) {
-        return this[key];
-      }
-    }, {
-      key: "set",
-      value: function set(key, value) {
-        this[key] = value;
-      }
-    }, {
-      key: "destroy",
-      value: function destroy() {
-        this.from = {
-          node: null,
-          rect: {},
-          offset: {}
-        };
-        this.to = {
-          node: null,
-          rect: {},
-          offset: {}
-        };
-      }
-    }]);
-
-    return Differ;
-  }();
-  /**
-   * 拖拽中的元素
-   */
-
-
-  var Ghost = /*#__PURE__*/function () {
-    function Ghost(options) {
-      _classCallCheck(this, Ghost);
-
-      this.options = options;
-      this.x = 0;
-      this.y = 0;
-      this.exist = false;
-    }
-
-    _createClass(Ghost, [{
-      key: "init",
-      value: function init(el, rect) {
-        if (!el) return;
-        this.$el = el;
-        var _this$options = this.options,
-            ghostClass = _this$options.ghostClass,
-            _this$options$ghostSt = _this$options.ghostStyle,
-            ghostStyle = _this$options$ghostSt === void 0 ? {} : _this$options$ghostSt;
-        var width = rect.width,
-            height = rect.height;
-        this.$el["class"] = ghostClass;
-        this.$el.style.width = width + 'px';
-        this.$el.style.height = height + 'px';
-        this.$el.style.transform = '';
-        this.$el.style.transition = '';
-        this.$el.style.position = 'fixed';
-        this.$el.style.left = 0;
-        this.$el.style.top = 0;
-        this.$el.style.zIndex = 100000;
-        this.$el.style.opacity = 0.8;
-        this.$el.style.pointerEvents = 'none';
-        this.$el.style.cursor = 'move';
-        this.setStyle(ghostStyle);
-      }
-    }, {
-      key: "get",
-      value: function get(key) {
-        return this[key];
-      }
-    }, {
-      key: "set",
-      value: function set(key, value) {
-        this[key] = value;
-        this[key] = value;
-      }
-    }, {
-      key: "setStyle",
-      value: function setStyle(style) {
-        for (var key in style) {
-          css(this.$el, key, style[key]);
-        }
-      }
-    }, {
-      key: "rect",
-      value: function rect() {
-        return this.$el.getBoundingClientRect();
-      }
-    }, {
-      key: "move",
-      value: function move(smooth) {
-        var ghostAnimation = this.options.ghostAnimation;
-        if (smooth) this.$el.style.transition = "all ".concat(ghostAnimation, "ms");else this.$el.style.transition = ''; // 将初始化放在 move 事件中，避免与鼠标点击事件冲突
-
-        if (!this.exist) {
-          document.body.appendChild(this.$el);
-          this.exist = true;
-        }
-
-        this.$el.style.transform = "translate3d(".concat(this.x, "px, ").concat(this.y, "px, 0)");
-        if (this.$el.style.cursor !== 'move') this.$el.style.cursor = 'move';
-      }
-    }, {
-      key: "destroy",
-      value: function destroy(rect) {
-        var _this = this;
-
-        if (rect) {
-          this.x = rect.left;
-          this.y = rect.top;
-          this.move(true);
-        }
-
-        setTimeout(function () {
-          if (_this.$el) _this.$el.remove();
-          _this.$el = null;
-          _this.x = 0;
-          _this.y = 0;
-          _this.exist = false;
-        }, this.options.ghostAnimation);
-      }
-    }]);
-
-    return Ghost;
-  }(); // -------------------------------- Sortable ----------------------------------
-
 
   var documentExists = typeof document !== 'undefined';
   var supportDraggable = documentExists && !ChromeForAndroid && !IOS && 'draggable' in document.createElement('div');
@@ -769,11 +785,11 @@
     _onStart: function _onStart(
     /** Event|TouchEvent */
     evt) {
-      var _this$options2 = this.options,
-          delay = _this$options2.delay,
-          disabled = _this$options2.disabled,
-          stopPropagation = _this$options2.stopPropagation,
-          delayOnTouchOnly = _this$options2.delayOnTouchOnly;
+      var _this$options = this.options,
+          delay = _this$options.delay,
+          disabled = _this$options.disabled,
+          stopPropagation = _this$options.stopPropagation,
+          delayOnTouchOnly = _this$options.delayOnTouchOnly;
       if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || disabled) return; // only left button and enabled
 
       var touch = evt.touches && evt.touches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
@@ -792,9 +808,9 @@
     _onDrag: function _onDrag(
     /** Event|TouchEvent */
     e, touch) {
-      var _this$options3 = this.options,
-          draggable = _this$options3.draggable,
-          dragging = _this$options3.dragging;
+      var _this$options2 = this.options,
+          draggable = _this$options2.draggable,
+          dragging = _this$options2.dragging;
 
       if (typeof draggable === 'function') {
         if (!draggable(e)) return true;
@@ -853,11 +869,11 @@
     evt) {
       if (evt.preventDefault !== void 0) evt.preventDefault(); // prevent scrolling
 
-      var _this$options4 = this.options,
-          chosenClass = _this$options4.chosenClass,
-          stopPropagation = _this$options4.stopPropagation,
-          onMove = _this$options4.onMove,
-          onDrag = _this$options4.onDrag;
+      var _this$options3 = this.options,
+          chosenClass = _this$options3.chosenClass,
+          stopPropagation = _this$options3.stopPropagation,
+          onMove = _this$options3.onMove,
+          onDrag = _this$options3.onDrag;
       if (stopPropagation) evt.stopPropagation();
       var touch = evt.touches && evt.touches[0];
       var e = touch || evt;
@@ -968,10 +984,10 @@
       this._offUpEvents();
 
       clearTimeout(this.dragStartTimer);
-      var _this$options5 = this.options,
-          onDrop = _this$options5.onDrop,
-          chosenClass = _this$options5.chosenClass,
-          stopPropagation = _this$options5.stopPropagation;
+      var _this$options4 = this.options,
+          onDrop = _this$options4.onDrop,
+          chosenClass = _this$options4.chosenClass,
+          stopPropagation = _this$options4.stopPropagation;
       if (stopPropagation) evt.stopPropagation(); // 阻止事件冒泡
 
       toggleClass(this.dragEl, chosenClass, false);
@@ -1020,7 +1036,7 @@
     },
     // -------------------------------- auto destroy ----------------------------------
     _handleDestroy: function _handleDestroy() {
-      var _this2 = this;
+      var _this = this;
 
       var observer = null;
       var MutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
@@ -1029,13 +1045,13 @@
         var ownerDocument = this.options.ownerDocument;
         if (!ownerDocument) return;
         observer = new MutationObserver(function () {
-          if (!ownerDocument.body.contains(_this2.$el)) {
+          if (!ownerDocument.body.contains(_this.$el)) {
             observer.disconnect();
             observer = null;
 
-            _this2._unbindEventListener();
+            _this._unbindEventListener();
 
-            _this2._resetState();
+            _this._resetState();
           }
         });
         observer.observe(this.$el.parentNode, {
@@ -1052,9 +1068,9 @@
         if (observer) observer.disconnect();
         observer = null;
 
-        _this2._unbindEventListener();
+        _this._unbindEventListener();
 
-        _this2._resetState();
+        _this._resetState();
       };
     }
   };
