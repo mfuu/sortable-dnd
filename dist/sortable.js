@@ -534,13 +534,19 @@
           this.move(true);
         }
 
-        setTimeout(function () {
-          if (_this.$el) _this.$el.remove();
-          _this.$el = null;
-          _this.x = 0;
-          _this.y = 0;
-          _this.exist = false;
-        }, this.options.ghostAnimation);
+        var ghostAnimation = this.options.ghostAnimation;
+        ghostAnimation ? setTimeout(function () {
+          return _this.clear();
+        }, ghostAnimation) : this.clear();
+      }
+    }, {
+      key: "clear",
+      value: function clear() {
+        if (this.$el) this.$el.remove();
+        this.$el = null;
+        this.x = 0;
+        this.y = 0;
+        this.exist = false;
       }
     }]);
 

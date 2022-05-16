@@ -95,12 +95,15 @@ export class Ghost {
       this.y = rect.top
       this.move(true)
     }
-    setTimeout(() => {
-      if (this.$el) this.$el.remove()
-      this.$el = null
-      this.x = 0
-      this.y = 0
-      this.exist = false
-    }, this.options.ghostAnimation)
+    const { ghostAnimation } = this.options
+    ghostAnimation ? setTimeout(() => this.clear(), ghostAnimation) : this.clear()
+  }
+
+  clear() {
+    if (this.$el) this.$el.remove()
+    this.$el = null
+    this.x = 0
+    this.y = 0
+    this.exist = false
   }
 }
