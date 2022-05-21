@@ -29,12 +29,14 @@ export class Differ {
 export class Ghost {
   constructor(options) {
     this.options = options
-    this.x = 0
-    this.y = 0
+    this.diff = { x: 0, y: 0 }
+    this.position = { x: 0, y: 0 }
+
     this.exist = false
   }
 
   init(el, rect) {
+    if (this.$el) this.$el.remove()
     if (!el) return
     this.$el = el
     const { ghostClass, ghostStyle = {} } = this.options
@@ -57,13 +59,11 @@ export class Ghost {
     this.setStyle(ghostStyle)
   }
 
-  get (key) {
-    return this[key]
-  }
-
-  set (key, value) {
-    this[key] = value
-    this[key] = value
+  setPosition(x, y) {
+    this.position = {
+      x: x - this.diff.x,
+      y: y - this.diff.y
+    }
   }
 
   setStyle(style) {
@@ -77,6 +77,7 @@ export class Ghost {
   }
 
   move(smooth) {
+    if (!this.$el) return
     const { ghostAnimation } = this.options
     if (smooth) setTransition(this.$el, `${ghostAnimation}ms`)
     else setTransition(this.$el, 'none')
@@ -85,14 +86,13 @@ export class Ghost {
       document.body.appendChild(this.$el)
       this.exist = true
     }
-    setTransform(this.$el, `translate3d(${this.x}px, ${this.y}px, 0)`)
+    setTransform(this.$el, `translate3d(${this.position.x}px, ${this.position.y}px, 0)`)
     if (this.$el.style.cursor !== 'move') this.$el.style.cursor = 'move'
   }
 
   destroy(rect) {
     if (rect) {
-      this.x = rect.left
-      this.y = rect.top
+      this.position = { x: rect.left, y: rect.top }
       this.move(true)
     }
     const { ghostAnimation } = this.options
@@ -102,8 +102,8 @@ export class Ghost {
   clear() {
     if (this.$el) this.$el.remove()
     this.$el = null
-    this.x = 0
-    this.y = 0
+    this.diff = { x: 0, y: 0 }
+    this.position = { x: 0, y: 0 }
     this.exist = false
   }
 }

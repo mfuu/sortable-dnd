@@ -20,6 +20,8 @@
       list-style: none;
     }
     .group {
+      height: 500px;
+      overflow: auto;
       width: 100px;
       margin: 0 auto;
       border: 1px solid #ccc;
@@ -73,7 +75,7 @@
 
     const group = document.getElementById('group');
     const children1 = [];
-    for(let i = 0; i < 10; i++) {
+    for(let i = 0; i < 100; i++) {
       let li = document.createElement('li');
       li.innerText = i + 1;
       children1.push(li);
@@ -90,9 +92,6 @@
         },
         onDrop: (changed) => {
           console.log(changed, 'changed')
-        },
-        onChange: (from, to) => {
-          console.log(from, to)
         }
       }
     );

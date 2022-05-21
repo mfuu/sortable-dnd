@@ -15,11 +15,6 @@ export default function DNDEvent() {
       } else {
         on(this.$el, 'mousedown', this._onStart, supportPassive)
       }
-
-      if (this.nativeDraggable) {
-        on(this.$el, 'dragover', this)
-        on(this.$el, 'dragenter', this)
-      }
     },
   
     _unbindEventListener() {
@@ -27,14 +22,9 @@ export default function DNDEvent() {
       off(this.$el, 'pointerdown', this._onStart, supportPassive)
       off(this.$el, 'touchstart', this._onStart, supportPassive)
       off(this.$el, 'mousedown', this._onStart, supportPassive)
-
-      if (this.nativeDraggable) {
-        off(this.$el, 'dragover', this)
-        off(this.$el, 'dragenter', this)
-      }
     },
     
-    _onMoveEvents(touch) {
+    _bindMoveEvents(touch) {
       const { supportPointer, ownerDocument, supportPassive } = this.options
       if (supportPointer) {
         on(ownerDocument, 'pointermove', this._onMove, supportPassive)
@@ -45,7 +35,7 @@ export default function DNDEvent() {
       }
     },
   
-    _onUpEvents() {
+    _bindUpEvents() {
       const { ownerDocument, supportPassive } = this.options
       on(ownerDocument, 'pointerup', this._onDrop, supportPassive)
       on(ownerDocument, 'pointercancel', this._onDrop, supportPassive)
@@ -54,14 +44,14 @@ export default function DNDEvent() {
       on(ownerDocument, 'mouseup', this._onDrop, supportPassive)
     },
   
-    _offMoveEvents() {
+    _unbindMoveEvents() {
       const { ownerDocument, supportPassive } = this.options
       off(ownerDocument, 'pointermove', this._onMove, supportPassive)
       off(ownerDocument, 'touchmove', this._onMove, supportPassive)
       off(ownerDocument, 'mousemove', this._onMove, supportPassive)
     },
   
-    _offUpEvents() {
+    _unbindUpEvents() {
       const { ownerDocument, supportPassive } = this.options
       off(ownerDocument, 'pointerup', this._onDrop, supportPassive)
       off(ownerDocument, 'pointercancel', this._onDrop, supportPassive)

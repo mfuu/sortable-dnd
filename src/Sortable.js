@@ -30,13 +30,11 @@ function Sortable(el, options) {
 
   this.$el = el // root element
   this.options = options = Object.assign({}, options)
-  this.scrollEl = getParentAutoScrollElement(this.$el, true) // 获取页面滚动元素
 
   this.dragEl = null // 拖拽元素
   this.dropEl = null // 释放元素
   this.differ = null // 记录拖拽前后差异
   this.ghost = null // 拖拽时蒙版元素
-  this.calcXY = { x: 0, y: 0 } // 记录拖拽移动时坐标
 
   const defaults = {
     delay: 0, // 定义鼠标选中列表单元可以开始拖动的延迟时间
@@ -150,13 +148,15 @@ Sortable.prototype = {
 
     window.sortableDndOnDownState = true
 
-    this.ghost.set('x', rect.left)
-    this.ghost.set('y', rect.top)
+    this.ghost.setPosition(rect.left, rect.top)
+    this.ghost.diff = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    }
     this.differ.from = { node: this.dragEl, rect, offset}
-    this.calcXY = { x: e.clientX, y: e.clientY }
 
-    this._onMoveEvents(touch)
-    this._onUpEvents(touch)
+    this._bindMoveEvents(touch)
+    this._bindUpEvents(touch)
   },
   _onMove: function(/** Event|TouchEvent */evt) {
     if (evt.preventDefault !== void 0) evt.preventDefault() // prevent scrolling
@@ -194,9 +194,7 @@ Sortable.prototype = {
 
     window.sortableDndOnMoveState = true
 
-    this.ghost.set('x', this.ghost.x + clientX - this.calcXY.x)
-    this.ghost.set('y', this.ghost.y + clientY - this.calcXY.y)
-    this.calcXY = { x: clientX, y: clientY }
+    this.ghost.setPosition(clientX, clientY)
     this.ghost.move()
 
     // 判断边界值
@@ -210,18 +208,7 @@ Sortable.prototype = {
     const { index, el, rect, offset } = getElement(this.$el, target)
     const { left, right, top, bottom } = rect
 
-    if (!el || index < 0 || top < 0) return
-
-    // 加上当前滚动距离
-    const { scrollTop, scrollLeft } = this.scrollEl
-    const boundaryL = rc.left + scrollLeft
-    const boundaryT = rc.top + scrollTop
-
-    // 如果目标元素超出当前可视区，不允许拖动
-    if (this.scrollEl !== this.$el && (rc.left < 0 || rc.top < 0)) {
-      if ((rc.top < 0 && top < boundaryT) || (rc.left < 0 && left < boundaryL)) return
-
-    } else if (top < rc.top || left < rc.left) return
+    if (!el || index < 0) return
     
     this.dropEl = el
 
@@ -255,8 +242,8 @@ Sortable.prototype = {
     }
   },
   _onDrop: function(/** Event|TouchEvent */evt) {
-    this._offMoveEvents()
-    this._offUpEvents()
+    this._unbindMoveEvents()
+    this._unbindUpEvents()
     clearTimeout(this.dragStartTimer)
 
     const { onDrop, chosenClass, stopPropagation } = this.options
@@ -294,7 +281,6 @@ Sortable.prototype = {
     this.dropEl = null
     this.ghost.destroy()
     this.differ.destroy()
-    this.calcXY = { x: 0, y: 0 }
     this._removeWindowState()
   },
   _removeWindowState: function() {
