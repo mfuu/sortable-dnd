@@ -5,6 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sortable</title>
+  <script src="./dist/sortable.min.js"></script>
   <style>
     html, body {
       width: 100%;
@@ -71,8 +72,6 @@
   <ul id="flexgroup" class="horizontal"></ul>
   <ul id="flexdrag" class="flex-group"></ul>
   <script type="module">
-    import Sortable from './src/index.js';
-
     const group = document.getElementById('group');
     const children1 = [];
     for(let i = 0; i < 100; i++) {
