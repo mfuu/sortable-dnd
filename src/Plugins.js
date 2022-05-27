@@ -1,5 +1,14 @@
 import { css, getRect, setTransition, setTransform } from './utils.js'
 
+export class State {
+  constructor() {
+    this.sortableDown = false
+    this.sortableMove = false
+    this.animationEnd = false
+  }
+}
+
+
 /**
  * 拖拽前后差异初始化
  */

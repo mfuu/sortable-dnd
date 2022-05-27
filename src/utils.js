@@ -322,6 +322,25 @@ export function debounce(fn, delay) {
   }
 }
 
+let _throttleTimeout
+export function throttle(callback, ms) {
+	return function () {
+		if (!_throttleTimeout) {
+			let args = arguments, _this = this
+
+			if (args.length === 1) {
+				callback.call(_this, args[0])
+			} else {
+				callback.apply(_this, args)
+			}
+
+			_throttleTimeout = setTimeout(function () {
+				_throttleTimeout = void 0
+			}, ms)
+		}
+	};
+}
+
 export function _nextTick(fn) {
   return setTimeout(fn, 0)
 }
@@ -332,8 +351,9 @@ export default {
   css,
   getRect,
   matches,
-  getIndex,
+  throttle,
   debounce,
+  getIndex,
   _nextTick,
   isChildOf,
   getElement,
