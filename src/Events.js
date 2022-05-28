@@ -1,63 +1,54 @@
-import { on, off, debounce } from './utils.js'
+import { on, off } from './utils.js'
 
 export default function DNDEvent() {
   return {
     _bindEventListener() {
-      this._onStart = this._onStart.bind(this)
-      this._onMove = this._onMove.bind(this)
-      this._onDrop = this._onDrop.bind(this)
-  
-      const { supportPointer, supportTouch, supportPassive } = this.options
+      const { supportPointer, supportTouch } = this.options
       if (supportPointer) {
-        on(this.$el, 'pointerdown', this._onStart, supportPassive)
+        on(this.$el, 'pointerdown', this._onStart)
       } else if (supportTouch) {
-        on(this.$el, 'touchstart', this._onStart, supportPassive)
+        on(this.$el, 'touchstart', this._onStart)
       } else {
-        on(this.$el, 'mousedown', this._onStart, supportPassive)
+        on(this.$el, 'mousedown', this._onStart)
       }
     },
   
     _unbindEventListener() {
-      const { supportPassive } = this.options
-      off(this.$el, 'pointerdown', this._onStart, supportPassive)
-      off(this.$el, 'touchstart', this._onStart, supportPassive)
-      off(this.$el, 'mousedown', this._onStart, supportPassive)
+      off(this.$el, 'pointerdown', this._onStart)
+      off(this.$el, 'touchstart', this._onStart)
+      off(this.$el, 'mousedown', this._onStart)
     },
     
     _bindMoveEvents(touch) {
-      const { supportPointer, ownerDocument, supportPassive } = this.options
-      if (supportPointer) {
-        on(ownerDocument, 'pointermove', this._onMove, supportPassive)
+      if (this.options.supportPointer) {
+        on(this.ownerDocument, 'pointermove', this._onMove)
       } else if (touch) {
-        on(ownerDocument, 'touchmove', this._onMove, supportPassive)
+        on(this.ownerDocument, 'touchmove', this._onMove)
       } else {
-        on(ownerDocument, 'mousemove', this._onMove, supportPassive)
+        on(this.ownerDocument, 'mousemove', this._onMove)
       }
     },
   
     _bindUpEvents() {
-      const { ownerDocument, supportPassive } = this.options
-      on(ownerDocument, 'pointerup', this._onDrop, supportPassive)
-      on(ownerDocument, 'pointercancel', this._onDrop, supportPassive)
-      on(ownerDocument, 'touchend', this._onDrop, supportPassive)
-      on(ownerDocument, 'touchcancel', this._onDrop, supportPassive)
-      on(ownerDocument, 'mouseup', this._onDrop, supportPassive)
+      on(this.ownerDocument, 'pointerup', this._onDrop)
+      on(this.ownerDocument, 'pointercancel', this._onDrop)
+      on(this.ownerDocument, 'touchend', this._onDrop)
+      on(this.ownerDocument, 'touchcancel', this._onDrop)
+      on(this.ownerDocument, 'mouseup', this._onDrop)
     },
   
     _unbindMoveEvents() {
-      const { ownerDocument, supportPassive } = this.options
-      off(ownerDocument, 'pointermove', this._onMove, supportPassive)
-      off(ownerDocument, 'touchmove', this._onMove, supportPassive)
-      off(ownerDocument, 'mousemove', this._onMove, supportPassive)
+      off(this.ownerDocument, 'pointermove', this._onMove)
+      off(this.ownerDocument, 'touchmove', this._onMove)
+      off(this.ownerDocument, 'mousemove', this._onMove)
     },
   
     _unbindUpEvents() {
-      const { ownerDocument, supportPassive } = this.options
-      off(ownerDocument, 'pointerup', this._onDrop, supportPassive)
-      off(ownerDocument, 'pointercancel', this._onDrop, supportPassive)
-      off(ownerDocument, 'touchend', this._onDrop, supportPassive)
-      off(ownerDocument, 'touchcancel', this._onDrop, supportPassive)
-      off(ownerDocument, 'mouseup', this._onDrop, supportPassive)
+      off(this.ownerDocument, 'pointerup', this._onDrop)
+      off(this.ownerDocument, 'pointercancel', this._onDrop)
+      off(this.ownerDocument, 'touchend', this._onDrop)
+      off(this.ownerDocument, 'touchcancel', this._onDrop)
+      off(this.ownerDocument, 'mouseup', this._onDrop)
     }
   }
 }

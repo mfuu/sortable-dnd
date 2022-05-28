@@ -9,6 +9,7 @@ const R_SPACE = /\s+/g
 
 export const CSSTRANSITIONS = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition']
 export const CSSTRANSFORMS = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform']
+export const SUPPORTPASSIVE = supportPassive()
 
 /**
  * set transition style
@@ -55,9 +56,9 @@ export function supportPassive() {
 * @param {Function} fn 
 * @param {Boolean} sp
 */
-export function on(el, event, fn, sp) {
+export function on(el, event, fn) {
   if (window.addEventListener) {
-    el.addEventListener(event, fn, (sp || !IE11OrLess) ? captureMode : false)
+    el.addEventListener(event, fn, (SUPPORTPASSIVE || !IE11OrLess) ? captureMode : false)
   } else if (window.attachEvent) {
     el.attachEvent('on' + event, fn)
   }
@@ -70,9 +71,9 @@ export function on(el, event, fn, sp) {
 * @param {Function} fn 
 * @param {Boolean} sp
 */
-export function off(el, event, fn, sp) {
+export function off(el, event, fn) {
   if (window.removeEventListener) {
-    el.removeEventListener(event, fn, (sp || !IE11OrLess) ? captureMode : false)
+    el.removeEventListener(event, fn, (SUPPORTPASSIVE || !IE11OrLess) ? captureMode : false)
   } else if (window.detachEvent) {
     el.detachEvent('on' + event, fn)
   }

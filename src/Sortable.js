@@ -7,7 +7,6 @@ import {
   _nextTick,
   getElement,
   toggleClass,
-  supportPassive,
   getParentAutoScrollElement
 } from './utils.js'
 import { IOS, Edge, Safari, IE11OrLess, ChromeForAndroid } from './Brower.js'
@@ -15,14 +14,13 @@ import { Ghost, Differ, State } from './Plugins.js'
 import Animation from './Animation.js'
 import Events from './events.js'
 
-
 // -------------------------------- Sortable ----------------------------------
 const documentExists = typeof document !== 'undefined'
 const supportDraggable = documentExists && !ChromeForAndroid && !IOS && ('draggable' in document.createElement('div'))
 
 /**
  * @class  Sortable
- * @param  {HTMLElement}  el
+ * @param  {HTMLElement}  el group element
  * @param  {Object}       options
  */
 function Sortable(el, options) {
@@ -31,13 +29,15 @@ function Sortable(el, options) {
 	}
 
   this.$el = el // root element
+  this.ownerDocument = el.ownerDocument,
   this.options = options = Object.assign({}, options)
 
+  this.move = { x: 0, y: 0 }
   this.state = new State // 拖拽过程中状态记录
+  this.differ = new Differ() // 记录拖拽前后差异
+  this.ghost = new Ghost(options) // 拖拽时蒙版元素
   this.dragEl = null // 拖拽元素
   this.dropEl = null // 释放元素
-  this.differ = null // 记录拖拽前后差异
-  this.ghost = null // 拖拽时蒙版元素
 
   const defaults = {
     delay: 0, // 定义鼠标选中列表单元可以开始拖动的延迟时间
@@ -60,10 +60,8 @@ function Sortable(el, options) {
     forceFallback: false, // 忽略 HTML5拖拽行为，强制回调进行
     stopPropagation: false, // 阻止捕获和冒泡阶段中当前事件的进一步传播
 
-    supportPassive: supportPassive(),
     supportPointer: ('PointerEvent' in window) && !Safari,
     supportTouch: 'ontouchstart' in window,
-    ownerDocument: this.$el.ownerDocument,
   }
 
   // Set default options
@@ -73,11 +71,11 @@ function Sortable(el, options) {
 
   this.nativeDraggable = this.options.forceFallback ? false : supportDraggable
 
-  this.differ = new Differ()
-  this.ghost = new Ghost(this.options)
-
   Object.assign(this, Animation(), Events())
 
+  this._onStart = this._onStart.bind(this)
+  this._onMove = this._onMove.bind(this)
+  this._onDrop = this._onDrop.bind(this)
   this._bindEventListener()
 }
 
@@ -92,7 +90,7 @@ Sortable.prototype = {
     this._clearState()
   },
 
-  // -------------------------------- drag and drop ----------------------------------
+  // -------------------------------- prepare start ----------------------------------
   _onStart: function(/** Event|TouchEvent */evt) {
     const { delay, disabled, stopPropagation, delayOnTouchOnly } = this.options
     if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || disabled) return // only left button and enabled
@@ -125,16 +123,7 @@ Sortable.prototype = {
       throw new Error(`draggable expected "function" or "string" but received "${typeof draggable}"`)
     }
 
-    try {
-			if (document.selection) {
-				// Timeout neccessary for IE9
-				_nextTick(() => { document.selection.empty() })
-			} else {
-				window.getSelection().removeAllRanges()
-			}
-		} catch (error) {
-      //
-		}
+    this.removeSelection()
 
     // 获取拖拽元素                 
     if (dragging) {
@@ -151,9 +140,9 @@ Sortable.prototype = {
     const { rect, offset } = getElement(this.$el, this.dragEl)
 
     this.state.sortableDown = true
+    this.move = { x: e.clientX, y: e.clientY }
 
-    this.ghost.setPosition(rect.left, rect.top)
-    this.ghost.diff = {
+    this.ghost.distance = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
     }
@@ -162,48 +151,56 @@ Sortable.prototype = {
     this._bindMoveEvents(touch)
     this._bindUpEvents(touch)
   },
+  
+  // -------------------------------- is started ----------------------------------
+  _onStarted: function(e, /** originalEvent */evt) {
+    const { onDrag } = this.options
+    const { rect } = this.differ.from
+    // 将初始化放到move事件中，防止与click事件冲突
+    if (!this.ghost.$el) {
+      this.ghost.init(this.dragEl.cloneNode(true), rect)
+
+      // onDrag callback
+      if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt)
+    }
+  },
+
+  // -------------------------------- on move ----------------------------------
   _onMove: function(/** Event|TouchEvent */evt) {
     const touch = evt.touches && evt.touches[0]
     const e = touch || evt
     const { clientX, clientY } = e
     const target = touch ? document.elementFromPoint(clientX, clientY) : e.target
-    const { chosenClass, stopPropagation, onMove, onDrag } = this.options
+
+    const distanceX = clientX - this.move.x
+    const distanceY = clientY - this.move.y
+
+    if ((clientX !== void 0 && Math.abs(distanceX) <= 0) && (clientY !== void 0 && Math.abs(distanceY) <= 0)) {
+      return
+    }
+
+    const { chosenClass, stopPropagation, onMove } = this.options
 
     stopPropagation && evt.stopPropagation && evt.stopPropagation() // 阻止事件冒泡
     evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault() // prevent scrolling
 
-    // 将初始化放到move事件中，防止与click事件冲突
-    // 将拖拽元素克隆一份作为蒙版
-    if (!this.ghost.$el) {
-      this.ghost.init(this.dragEl.cloneNode(true), this.differ.from.rect)
-      if (onDrag !== undefined) {
-        if (typeof onDrag === 'function') onDrag(this.dragEl, e, /** originalEvent */evt)
-        else throw new Error(`onDrag expected "function" but received "${typeof onDrag}"`)
-      }
-    }
-
+    this._onStarted(e, evt)
+    
+    this.ghost.move(distanceX, distanceY)
     // 拖拽过程中触发的回调
-    if (onMove !== undefined) {
-      if (typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, /** originalEvent */evt)
-      else throw new Error(`onMove expected "function" but received "${typeof onMove}"`)
-    }
+    if (onMove && typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, evt)
 
     toggleClass(this.dragEl, chosenClass, true)
-    this.ghost.move()
 
     if (!this.state.sortableDown) return
     if (clientX < 0 || clientY < 0) return
 
     this.state.sortableMove = true
 
-    this.ghost.setPosition(clientX, clientY)
-    this.ghost.move()
-
     // 判断边界值
     const rc = getRect(this.$el)
 
     if (clientX < rc.left || clientX > rc.right || clientY < rc.top || clientY > rc.bottom) {
-      this.ghost.setStyle({ cursor: 'not-allowed' })
       return
     }
 
@@ -230,10 +227,7 @@ Sortable.prototype = {
         const _offset = getOffset(_this.dragEl) // 获取拖拽元素的 offset 值
 
         // 元素发生位置交换时触发的回调
-        if (onChange !== undefined) {
-          if (typeof onChange === 'function') onChange(_this.differ.from, _this.differ.to, e, evt)
-          else throw new Error(`onChange expected "function" but received "${typeof onChange}"`)
-        }
+        if (onChange && typeof onChange === 'function') onChange(_this.differ.from, _this.differ.to, e, evt)
         
         // 优先比较 top 值，top 值相同再比较 left
         if (_offset.top < offset.top || _offset.left < offset.left) {
@@ -245,7 +239,9 @@ Sortable.prototype = {
         _this.animateRange()
       }
     }
-  }, 5),
+  }, 10),
+
+  // -------------------------------- on drop ----------------------------------
   _onDrop: function(/** Event|TouchEvent */evt) {
     this._unbindMoveEvents()
     this._unbindUpEvents()
@@ -269,19 +265,28 @@ Sortable.prototype = {
       // 通过 offset 比较是否进行了元素交换
       const changed = from.offset.top !== to.offset.top || from.offset.left !== to.offset.left
       
-      // 拖拽完成触发回调函数
-      if (onDrop !== undefined) {
-        if (typeof onDrop === 'function') onDrop(changed, evt)
-        else throw new Error(`onDrop expected "function" but received "${typeof onDrop}"`)
-      }
+      // onDrop callback
+      if (onDrop && typeof onDrop === 'function') onDrop(changed, evt)
 
-      this.ghost.destroy(getRect(this.dragEl))
+      this.ghost.destroy(to.rect)
     }
     this.differ.destroy()
     this.state = new State
   },
 
-  // -------------------------------- reset state ----------------------------------
+  // -------------------------------- clear ----------------------------------
+  removeSelection() {
+    try {
+      if (document.selection) {
+        // Timeout neccessary for IE9
+        _nextTick(() => { document.selection.empty() })
+      } else {
+        window.getSelection().removeAllRanges()
+      }
+    } catch (error) {
+      //
+    }
+  },
   _clearState: function() {
     this.dragEl = null
     this.dropEl = null
