@@ -13,7 +13,7 @@ export default function Animation() {
   return {
 
     captureAnimationState() {
-      const children = [...Array.from(this.$el.children)]
+      const children = [...Array.from(this.rootEl.children)]
       const { start, end } = getRange(children, this.dragEl, this.dropEl)
 
       animationState.length = 0 // 重置
@@ -29,7 +29,7 @@ export default function Animation() {
     animateRange() {
       animationState.forEach(state => {
         const { target, rect } = state
-        this.animate(target, rect, this.animation)
+        this.animate(target, rect, this.options.animation)
       })
     },
 

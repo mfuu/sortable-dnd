@@ -33,10 +33,11 @@ export class Differ {
  * 拖拽中的元素
  */
 export class Ghost {
-  constructor(options) {
+  constructor(sortable) {
     this.$el = null
-    this.options = options
     this.distance = { x: 0, y: 0 }
+    this.options = sortable.options
+    this.container = sortable.container
   }
 
   init(el, rect) {
@@ -61,7 +62,7 @@ export class Ghost {
     setTransition(this.$el, 'none')
     setTransform(this.$el, 'translate3d(0px, 0px, 0px)')
 
-    document.body.appendChild(this.$el)
+    this.container.appendChild(this.$el)
 
     css(this.$el, 'transform-origin', (this.distance.x / parseInt(this.$el.style.width) * 100) + '% ' + (this.distance.y / parseInt(this.$el.style.height) * 100) + '%')
   }

@@ -5,18 +5,18 @@ export default function DNDEvent() {
     _bindEventListener() {
       const { supportPointer, supportTouch } = this.options
       if (supportPointer) {
-        on(this.$el, 'pointerdown', this._onStart)
+        on(this.rootEl, 'pointerdown', this._onStart)
       } else if (supportTouch) {
-        on(this.$el, 'touchstart', this._onStart)
+        on(this.rootEl, 'touchstart', this._onStart)
       } else {
-        on(this.$el, 'mousedown', this._onStart)
+        on(this.rootEl, 'mousedown', this._onStart)
       }
     },
   
     _unbindEventListener() {
-      off(this.$el, 'pointerdown', this._onStart)
-      off(this.$el, 'touchstart', this._onStart)
-      off(this.$el, 'mousedown', this._onStart)
+      off(this.rootEl, 'pointerdown', this._onStart)
+      off(this.rootEl, 'touchstart', this._onStart)
+      off(this.rootEl, 'mousedown', this._onStart)
     },
     
     _bindMoveEvents(touch) {

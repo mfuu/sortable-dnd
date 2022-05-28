@@ -28,16 +28,9 @@ function Sortable(el, options) {
 		throw `Sortable: \`el\` must be an HTMLElement, not ${ {}.toString.call(el) }`;
 	}
 
-  this.$el = el // root element
+  this.rootEl = el // root element
   this.ownerDocument = el.ownerDocument,
   this.options = options = Object.assign({}, options)
-
-  this.move = { x: 0, y: 0 }
-  this.state = new State // 拖拽过程中状态记录
-  this.differ = new Differ() // 记录拖拽前后差异
-  this.ghost = new Ghost(options) // 拖拽时蒙版元素
-  this.dragEl = null // 拖拽元素
-  this.dropEl = null // 释放元素
 
   const defaults = {
     delay: 0, // 定义鼠标选中列表单元可以开始拖动的延迟时间
@@ -57,6 +50,7 @@ function Sortable(el, options) {
     onDrop: undefined, // 拖拽完成时的回调函数: (from, to, changed) => {}
     onChange: undefined, // 拖拽元素改变位置的时候: (from, to) => {}
 
+    fallbackOnBody: false,
     forceFallback: false, // 忽略 HTML5拖拽行为，强制回调进行
     stopPropagation: false, // 阻止捕获和冒泡阶段中当前事件的进一步传播
 
@@ -69,7 +63,15 @@ function Sortable(el, options) {
     !(name in this.options) && (this.options[name] = defaults[name])
   }
 
+  this.container = this.options.fallbackOnBody ? document.body : this.rootEl
   this.nativeDraggable = this.options.forceFallback ? false : supportDraggable
+
+  this.move = { x: 0, y: 0 }
+  this.state = new State // 拖拽过程中状态记录
+  this.differ = new Differ() // 记录拖拽前后差异
+  this.ghost = new Ghost(this) // 拖拽时蒙版元素
+  this.dragEl = null // 拖拽元素
+  this.dropEl = null // 释放元素
 
   Object.assign(this, Animation(), Events())
 
@@ -100,7 +102,7 @@ Sortable.prototype = {
 
     // Safari ignores further event handling after mousedown
 		if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return
-    if (e.target === this.$el) return true
+    if (e.target === this.rootEl) return true
 
     if (stopPropagation) evt.stopPropagation()
 
@@ -130,14 +132,14 @@ Sortable.prototype = {
       if (typeof dragging === 'function') this.dragEl = dragging(e)
       else throw new Error(`dragging expected "function" or "string" but received "${typeof dragging}"`)
     } else {
-      this.dragEl = getElement(this.$el, e.target, true)
+      this.dragEl = getElement(this.rootEl, e.target, true)
     }
 
     // 不存在拖拽元素时不允许拖拽
     if (!this.dragEl || this.dragEl.animated) return true
 
     // 获取拖拽元素在列表中的位置
-    const { rect, offset } = getElement(this.$el, this.dragEl)
+    const { rect, offset } = getElement(this.rootEl, this.dragEl)
 
     this.state.sortableDown = true
     this.move = { x: e.clientX, y: e.clientY }
@@ -157,7 +159,7 @@ Sortable.prototype = {
     const { onDrag } = this.options
     const { rect } = this.differ.from
     // 将初始化放到move事件中，防止与click事件冲突
-    if (!this.ghost.$el) {
+    if (!this.ghost.rootEl) {
       this.ghost.init(this.dragEl.cloneNode(true), rect)
 
       // onDrag callback
@@ -198,7 +200,7 @@ Sortable.prototype = {
     this.state.sortableMove = true
 
     // 判断边界值
-    const rc = getRect(this.$el)
+    const rc = getRect(this.rootEl)
 
     if (clientX < rc.left || clientX > rc.right || clientY < rc.top || clientY > rc.bottom) {
       return
@@ -207,7 +209,7 @@ Sortable.prototype = {
     this._onChange(this, target, e, evt)
   },
   _onChange: throttle(function(_this, target, e, evt) {
-    const { el, rect, offset } = getElement(_this.$el, target)
+    const { el, rect, offset } = getElement(_this.rootEl, target)
     
     if (!el || (el && el.animated)) return
     
@@ -231,9 +233,9 @@ Sortable.prototype = {
         
         // 优先比较 top 值，top 值相同再比较 left
         if (_offset.top < offset.top || _offset.left < offset.left) {
-          _this.$el.insertBefore(_this.dragEl, el.nextElementSibling)
+          _this.rootEl.insertBefore(_this.dragEl, el.nextElementSibling)
         } else {
-          _this.$el.insertBefore(_this.dragEl, el)
+          _this.rootEl.insertBefore(_this.dragEl, el)
         }
 
         _this.animateRange()
