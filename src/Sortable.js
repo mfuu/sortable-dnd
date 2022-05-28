@@ -159,7 +159,7 @@ Sortable.prototype = {
     const { onDrag } = this.options
     const { rect } = this.differ.from
     // 将初始化放到move事件中，防止与click事件冲突
-    if (!this.ghost.rootEl) {
+    if (!this.ghost.$el) {
       this.ghost.init(this.dragEl.cloneNode(true), rect)
 
       // onDrag callback
@@ -173,6 +173,8 @@ Sortable.prototype = {
     const e = touch || evt
     const { clientX, clientY } = e
     const target = touch ? document.elementFromPoint(clientX, clientY) : e.target
+
+    console.log(e, evt)
 
     const distanceX = clientX - this.move.x
     const distanceY = clientY - this.move.y

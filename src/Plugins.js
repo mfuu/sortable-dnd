@@ -53,7 +53,8 @@ export class Ghost {
     css(this.$el, 'width', rect.width)
     css(this.$el, 'height', rect.height)
     css(this.$el, 'opacity', '0.8')
-    css(this.$el, 'position', IOS ? 'absolute' : 'fixed')
+    // css(this.$el, 'position', IOS ? 'absolute' : 'fixed')
+    css(this.$el, 'position', 'fixed')
     css(this.$el, 'zIndex', '100000')
 		css(this.$el, 'pointerEvents', 'none')
 
