@@ -1,4 +1,5 @@
 import {
+  css,
   matches,
   getRect,
   throttle,
@@ -138,17 +139,21 @@ Sortable.prototype = {
     // 不存在拖拽元素时不允许拖拽
     if (!this.dragEl || this.dragEl.animated) return true
 
+    // 解决移动端无法拖拽问题
+    css(this.dragEl, 'touch-action', 'none')
+
     // 获取拖拽元素在列表中的位置
     const { rect, offset } = getElement(this.rootEl, this.dragEl)
-
-    this.state.sortableDown = true
-    this.move = { x: e.clientX, y: e.clientY }
-
+    this.move = {
+      x: e.clientX,
+      y: e.clientY
+    }
     this.ghost.distance = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top
     }
     this.differ.from = { node: this.dragEl, rect, offset}
+    this.state.sortableDown = true
 
     this._bindMoveEvents(touch)
     this._bindUpEvents(touch)
@@ -165,16 +170,17 @@ Sortable.prototype = {
       // onDrag callback
       if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt)
     }
+    if (Safari) {
+			css(document.body, 'user-select', 'none');
+		}
   },
 
   // -------------------------------- on move ----------------------------------
   _onMove: function(/** Event|TouchEvent */evt) {
-    const touch = evt.touches && evt.touches[0]
+    const touch = (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt)
     const e = touch || evt
     const { clientX, clientY } = e
     const target = touch ? document.elementFromPoint(clientX, clientY) : e.target
-
-    console.log(e, evt)
 
     const distanceX = clientX - this.move.x
     const distanceY = clientY - this.move.y
@@ -257,6 +263,7 @@ Sortable.prototype = {
     evt.cancelable && evt.preventDefault()
 
     toggleClass(this.dragEl, chosenClass, false)
+    css(this.dragEl, 'touch-action', '')
 
     if (this.state.sortableDown && this.state.sortableMove) {
 
@@ -274,6 +281,8 @@ Sortable.prototype = {
 
       this.ghost.destroy(to.rect)
     }
+    // Safari
+    if (Safari) css(document.body, 'user-select', '')
     this.differ.destroy()
     this.state = new State
   },
