@@ -315,29 +315,51 @@ Sortable.prototype = {
       const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = this.scrollEl
       const { top, right, bottom, left } = getRect(this.scrollEl)
       const { scrollStep, scrollThreshold } = this.options
+      // check direction
+      const totop = scrollTop > 0 && clientY >= top && clientY <= (top + scrollThreshold)
+      const toleft = scrollLeft > 0 && clientX >= left && clientX <= (left + scrollThreshold)
+      const toright = scrollLeft <= scrollWidth && clientX <= right && clientX >= (right - scrollThreshold)
+      const tobottom = scrollTop <= scrollHeight && clientY <= bottom && clientY >= (bottom - scrollThreshold)
 
-      if (scrollTop > 0 && clientY >= top && clientY <= (top + scrollThreshold)) {
-        // to top
-        requestAnimationFrame(() => {
-          this.scrollEl.scrollTo(scrollLeft, scrollTop - scrollStep)
-          this._autoScroll()
-        })
-      } else if (scrollLeft <= scrollWidth && clientX <= right && clientX >= (right - scrollThreshold)) {
-        // to right
-        requestAnimationFrame(() => {
-          this.scrollEl.scrollTo(scrollLeft + scrollStep, scrollTop)
-          this._autoScroll()
-        })
-      } else if (scrollTop <= scrollHeight && clientY <= bottom && clientY >= (bottom - scrollThreshold)) {
-        // to bottom
-        requestAnimationFrame(() => {
-          this.scrollEl.scrollTo(scrollLeft, scrollTop + scrollStep)
-          this._autoScroll()
-        })
-      } else if (scrollLeft > 0 && clientX >= left && clientX <= (left + scrollThreshold)) {
+      const position = { x: scrollLeft, y: scrollTop }
+
+      if (totop) {
+        if (toleft) {
+          // to top-left
+          position.x = scrollLeft - scrollStep
+        } else if (toright) {
+          // to top-right
+          position.x = scrollLeft + scrollStep
+        } else {
+          // to top
+          position.x = scrollLeft
+        }
+        position.y = scrollTop - scrollStep
+      } else if (tobottom) {
+        if (toleft) {
+          // to bottom-left
+          position.x = scrollLeft - scrollStep
+        } else if (toright) {
+          // to bottom-right
+          position.x = scrollLeft + scrollStep
+        } else {
+          // to bottom
+          position.x = scrollLeft
+        }
+        position.y = scrollTop + scrollStep
+      } else if (toleft) {
         // to left
+        position.x = scrollLeft - scrollStep
+        position.y = scrollTop
+      } else if (toright) {
+        // to right
+        position.x = scrollLeft + scrollStep
+        position.y = scrollTop
+      }
+      // if need to scroll
+      if ((position.x || position.y) && (position.x !== scrollLeft || position.y !== scrollTop)) {
         requestAnimationFrame(() => {
-          this.scrollEl.scrollTo(scrollLeft - scrollStep, scrollTop)
+          this.scrollEl.scrollTo(position.x, position.y)
           this._autoScroll()
         })
       }
@@ -345,7 +367,7 @@ Sortable.prototype = {
   },
 
   // -------------------------------- clear ----------------------------------
-  _removeSelection() {
+  _removeSelection: function() {
     try {
       if (document.selection) {
         // Timeout neccessary for IE9
