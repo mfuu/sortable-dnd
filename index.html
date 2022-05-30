@@ -4,154 +4,23 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="./docs/css/sortable.css">
   <title>Sortable</title>
-  <script src="./dist/sortable.min.js"></script>
-  <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    ul {
-      padding: 0;
-      margin: 0;
-    }
-    li {
-      list-style: none;
-    }
-    .group {
-      height: 500px;
-      overflow: auto;
-      width: 100px;
-      margin: 0 auto;
-      border: 1px solid #ccc;
-      margin-bottom: 100px;
-    }
-    .group li {
-      text-align: center;
-      padding: 5px;
-      margin: 5px;
-      border: 1px solid #aaa;
-    }
-    .flex-group {
-      width: 500px;
-      height: 500px;
-      overflow: hidden auto;
-      margin: 0 auto;
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-bottom: 100px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-    }
-    .flex-group li, .horizontal li {
-      text-align: center;
-      width: 100px;
-      height: 100px;
-      padding: 5px;
-      margin: 5px;
-      border: 1px solid #aaa;
-      display: inline-block;
-    }
-    .chosen {
-      background-color: #c8ebfb;
-    }
-    .horizontal {
-      width: 50%;
-      margin: 0 auto;
-      overflow: auto;
-      white-space: nowrap;
-      margin-bottom: 100px;
-    }
-    .drag {
-      cursor: grab;
-    }
-  </style>
+  <script src="./dist/sortable.js"></script>
 </head>
 <body>
-  <ul id="group" class="group"></ul>
-  <ul id="flexgroup" class="horizontal"></ul>
-  <ul id="flexdrag" class="flex-group"></ul>
-  <script type="module">
-    const group = document.getElementById('group');
-    const children1 = [];
-    for(let i = 0; i < 100; i++) {
-      let li = document.createElement('li');
-      li.innerText = i + 1;
-      children1.push(li);
-    }
-    group.append(...children1);
-    new Sortable(
-      document.getElementById('group'),
-      {
-        animation: 500,
-        ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
-        chosenClass: 'chosen',
-        onDrag: (e) => {
-          console.log(e, 'ondrag')
-        },
-        onDrop: (changed) => {
-          console.log(changed, 'changed')
-        }
-      }
-    );
+  <h1>vertical</h1>
+  <ul id="verticalGroup" class="vertical-group"></ul>
+  <h1>horizontal</h1>
+  <ul id="horizontalGroup" class="horizontal-group"></ul>
+  <h1>flex</h1>
+  <ul id="flexGroup" class="flex-group"></ul>
+  <h1>grid</h1>
+  <ul id="gridGroup" class="grid-group"></ul>
 
-    const flexG = document.getElementById('flexgroup');
-    const children2 = [];
-    for(let i = 0; i < 16; i++) {
-      let li = document.createElement('li');
-      li.innerText = i + 1;
-      children2.push(li);
-    }
-    flexG.append(...children2);
-    new Sortable(
-      document.getElementById('flexgroup'),
-      {
-        animation: 500,
-        ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
-        chosenClass: 'chosen',
-        onDrag: (e) => {
-          console.log(e, 'ondrag')
-        },
-        onDrop: (changed) => {
-          console.log(changed, 'changed')
-        },
-        onChange: (from, to) => {
-          console.log(from, to)
-        }
-      }
-    );
-
-    const flexDrag = document.getElementById('flexdrag');
-    const children3 = [];
-    for(let i = 0; i < 16; i++) {
-      let li = document.createElement('li');
-      li.innerHTML = `<i class="drag">drag me</i><p>${i + 1}</p>`;
-      children3.push(li);
-    }
-    flexDrag.append(...children3);
-    new Sortable(
-      document.getElementById('flexdrag'),
-      {
-        animation: 500,
-        ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
-        chosenClass: 'chosen',
-        draggable: (e) => {
-          return e.target.tagName === 'I' ? true : false
-        },
-        onDrag: (e) => {
-          console.log(e, 'ondrag')
-        },
-        onDrop: (changed) => {
-          console.log(changed, 'changed')
-        },
-        onChange: (from, to) => {
-          console.log(from, to)
-        }
-      }
-    );
-  </script>
+  <script src="./docs/js/flex.js"></script>
+  <script src="./docs/js/grid.js"></script>
+  <script src="./docs/js/horizontal.js"></script>
+  <script src="./docs/js/vertical.js"></script>
 </body>
 </html>
