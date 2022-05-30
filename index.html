@@ -65,6 +65,9 @@
       white-space: nowrap;
       margin-bottom: 100px;
     }
+    .drag {
+      cursor: grab;
+    }
   </style>
 </head>
 <body>
@@ -83,7 +86,7 @@
     new Sortable(
       document.getElementById('group'),
       {
-        ghostAnimation: 500,
+        animation: 500,
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
         onDrag: (e) => {
@@ -106,7 +109,7 @@
     new Sortable(
       document.getElementById('flexgroup'),
       {
-        ghostAnimation: 500,
+        animation: 500,
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
         onDrag: (e) => {
@@ -125,14 +128,14 @@
     const children3 = [];
     for(let i = 0; i < 16; i++) {
       let li = document.createElement('li');
-      li.innerHTML = `<i>drag me</i><p>${i + 1}</p>`;
+      li.innerHTML = `<i class="drag">drag me</i><p>${i + 1}</p>`;
       children3.push(li);
     }
     flexDrag.append(...children3);
     new Sortable(
       document.getElementById('flexdrag'),
       {
-        ghostAnimation: 500,
+        animation: 500,
         ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
         chosenClass: 'chosen',
         draggable: (e) => {
