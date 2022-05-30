@@ -10,7 +10,6 @@ new Sortable(
   flexGroup,
   {
     animation: 500,
-    ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
     chosenClass: 'chosen',
     draggable: (e) => {
       return e.target.tagName === 'I' ? true : false

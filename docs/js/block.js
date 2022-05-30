@@ -1,13 +1,13 @@
-const gridGroup = document.getElementById('gridGroup');
-const gridChildren = [];
+const blockGroup = document.getElementById('blockGroup');
+const blockChildren = [];
 for(let i = 0; i < 64; i++) {
   let li = document.createElement('li');
   li.innerHTML = `<i class="drag">drag me</i><p>${i + 1}</p>`;
-  gridChildren.push(li);
+  blockChildren.push(li);
 }
-gridGroup.append(...gridChildren);
+blockGroup.append(...blockChildren);
 new Sortable(
-  gridGroup,
+  blockGroup,
   {
     animation: 500,
     chosenClass: 'chosen',

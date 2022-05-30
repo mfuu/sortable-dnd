@@ -10,7 +10,6 @@ new Sortable(
   verticalGroup,
   {
     animation: 500,
-    ghostStyle: { border: '1px solid #aaa', textAlign: 'center' },
     chosenClass: 'chosen',
     onDrag: (e) => {
       console.log(e, 'ondrag')
