@@ -3,9 +3,9 @@ import { IOS } from './Brower.js'
 
 export class State {
   constructor() {
-    this.sortableDown = false
-    this.sortableMove = false
-    this.animationEnd = false
+    this.sortableDown = undefined
+    this.sortableMove = undefined
+    this.animationEnd = undefined
   }
 }
 

@@ -30,10 +30,15 @@ function Sortable(el, options) {
 	}
 
   this.rootEl = el // root element
-  this.ownerDocument = el.ownerDocument,
+  this.scrollEl = getParentAutoScrollElement(el, true) // scroll element
   this.options = options = Object.assign({}, options)
+  this.ownerDocument = el.ownerDocument
 
   const defaults = {
+    autoScroll: true, // 拖拽到容器边缘时自动滚动
+    scrollStep: 3, // 每一帧滚动的距离
+    scrollThreshold: 20, // 自动滚动的阈值
+    
     delay: 0, // 定义鼠标选中列表单元可以开始拖动的延迟时间
     delayOnTouchOnly: false, // only delay if user is using touch
     disabled: false, // 定义是否此sortable对象是否可用，为true时sortable对象不能拖放排序等功能，为false时为可以进行排序，相当于一个开关
@@ -73,6 +78,7 @@ function Sortable(el, options) {
   this.ghost = new Ghost(this) // 拖拽时蒙版元素
   this.dragEl = null // 拖拽元素
   this.dropEl = null // 释放元素
+  this.dragStartTimer = null // setTimeout timer
 
   Object.assign(this, Animation(), Events())
 
@@ -80,6 +86,12 @@ function Sortable(el, options) {
   this._onMove = this._onMove.bind(this)
   this._onDrop = this._onDrop.bind(this)
   this._bindEventListener()
+
+  if (!window.requestAnimationFrame) {
+    window.requestAnimationFrame = function(callback) {
+      return setTimeout(callback, 17)
+    }
+  }
 }
 
 Sortable.prototype = {
@@ -108,7 +120,8 @@ Sortable.prototype = {
     if (stopPropagation) evt.stopPropagation()
 
     if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
-      this.dragStartTimer = setTimeout(this._onDrag(e, touch), delay)
+      clearTimeout(this.dragStartTimer)
+      this.dragStartTimer = setTimeout(() => this._onDrag(e, touch), delay)
     } else {
       this._onDrag(e, touch)
     }
@@ -126,7 +139,7 @@ Sortable.prototype = {
       throw new Error(`draggable expected "function" or "string" but received "${typeof draggable}"`)
     }
 
-    this.removeSelection()
+    this._removeSelection()
 
     // 获取拖拽元素                 
     if (dragging) {
@@ -153,7 +166,7 @@ Sortable.prototype = {
       y: e.clientY - rect.top
     }
     this.differ.from = { node: this.dragEl, rect, offset}
-    this.state.sortableDown = true
+    this.state.sortableDown = e
 
     this._bindMoveEvents(touch)
     this._bindUpEvents(touch)
@@ -189,23 +202,23 @@ Sortable.prototype = {
       return
     }
 
-    const { chosenClass, stopPropagation, onMove } = this.options
-
+    const { stopPropagation } = this.options
     stopPropagation && evt.stopPropagation && evt.stopPropagation() // 阻止事件冒泡
     evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault() // prevent scrolling
 
     this._onStarted(e, evt)
-    
     this.ghost.move(distanceX, distanceY)
+
     // 拖拽过程中触发的回调
+    const { onMove } = this.options
     if (onMove && typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, evt)
 
-    toggleClass(this.dragEl, chosenClass, true)
+    toggleClass(this.dragEl, this.options.chosenClass, true)
 
     if (!this.state.sortableDown) return
     if (clientX < 0 || clientY < 0) return
 
-    this.state.sortableMove = true
+    this.state.sortableMove = e
 
     // 判断边界值
     const rc = getRect(this.rootEl)
@@ -213,8 +226,10 @@ Sortable.prototype = {
     if (clientX < rc.left || clientX > rc.right || clientY < rc.top || clientY > rc.bottom) {
       return
     }
-
+    // check if element will exchange
     this._onChange(this, target, e, evt)
+    // auto scroll
+    this.options.autoScroll && this._autoScroll()
   },
   _onChange: throttle(function(_this, target, e, evt) {
     const { el, rect, offset } = getElement(_this.rootEl, target)
@@ -249,7 +264,7 @@ Sortable.prototype = {
         _this.animateRange()
       }
     }
-  }, 10),
+  }, 5),
 
   // -------------------------------- on drop ----------------------------------
   _onDrop: function(/** Event|TouchEvent */evt) {
@@ -287,8 +302,50 @@ Sortable.prototype = {
     this.state = new State
   },
 
+  // -------------------------------- auto scroll ----------------------------------
+  _autoScroll: function() {
+    // check if is moving now
+    if (!this.state.sortableMove) return
+    const { clientX, clientY } = this.state.sortableMove
+    if (clientX === void 0 || clientY === void 0) return
+
+    if (this.scrollEl === this.ownerDocument) {
+      // does not support now
+    } else {
+      const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = this.scrollEl
+      const { top, right, bottom, left } = getRect(this.scrollEl)
+      const { scrollStep, scrollThreshold } = this.options
+
+      if (scrollTop > 0 && clientY >= top && clientY <= (top + scrollThreshold)) {
+        // to top
+        requestAnimationFrame(() => {
+          this.scrollEl.scrollTo(scrollLeft, scrollTop - scrollStep)
+          this._autoScroll()
+        })
+      } else if (scrollLeft <= scrollWidth && clientX <= right && clientX >= (right - scrollThreshold)) {
+        // to right
+        requestAnimationFrame(() => {
+          this.scrollEl.scrollTo(scrollLeft + scrollStep, scrollTop)
+          this._autoScroll()
+        })
+      } else if (scrollTop <= scrollHeight && clientY <= bottom && clientY >= (bottom - scrollThreshold)) {
+        // to bottom
+        requestAnimationFrame(() => {
+          this.scrollEl.scrollTo(scrollLeft, scrollTop + scrollStep)
+          this._autoScroll()
+        })
+      } else if (scrollLeft > 0 && clientX >= left && clientX <= (left + scrollThreshold)) {
+        // to left
+        requestAnimationFrame(() => {
+          this.scrollEl.scrollTo(scrollLeft - scrollStep, scrollTop)
+          this._autoScroll()
+        })
+      }
+    }
+  },
+
   // -------------------------------- clear ----------------------------------
-  removeSelection() {
+  _removeSelection() {
     try {
       if (document.selection) {
         // Timeout neccessary for IE9
