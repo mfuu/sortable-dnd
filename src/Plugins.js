@@ -85,6 +85,7 @@ export class Ghost {
   }
 
   destroy(rect) {
+    if (!this.$el) return
     const left = parseInt(this.$el.style.left)
     const top = parseInt(this.$el.style.top)
     this.move(rect.left - left, rect.top - top, true)
