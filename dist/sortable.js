@@ -1041,33 +1041,57 @@
 
         var _this$options4 = this.options,
             scrollStep = _this$options4.scrollStep,
-            scrollThreshold = _this$options4.scrollThreshold;
+            scrollThreshold = _this$options4.scrollThreshold; // check direction
 
-        if (scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold) {
-          // to top
-          requestAnimationFrame(function () {
-            _this3.scrollEl.scrollTo(scrollLeft, scrollTop - scrollStep);
+        var totop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
+        var toleft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
+        var toright = scrollLeft <= scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
+        var tobottom = scrollTop <= scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold;
+        var position = {
+          x: scrollLeft,
+          y: scrollTop
+        };
 
-            _this3._autoScroll();
-          });
-        } else if (scrollLeft <= scrollWidth && clientX <= right && clientX >= right - scrollThreshold) {
-          // to right
-          requestAnimationFrame(function () {
-            _this3.scrollEl.scrollTo(scrollLeft + scrollStep, scrollTop);
+        if (totop) {
+          if (toleft) {
+            // to top-left
+            position.x = scrollLeft - scrollStep;
+          } else if (toright) {
+            // to top-right
+            position.x = scrollLeft + scrollStep;
+          } else {
+            // to top
+            position.x = scrollLeft;
+          }
 
-            _this3._autoScroll();
-          });
-        } else if (scrollTop <= scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold) {
-          // to bottom
-          requestAnimationFrame(function () {
-            _this3.scrollEl.scrollTo(scrollLeft, scrollTop + scrollStep);
+          position.y = scrollTop - scrollStep;
+        } else if (tobottom) {
+          if (toleft) {
+            // to bottom-left
+            position.x = scrollLeft - scrollStep;
+          } else if (toright) {
+            // to bottom-right
+            position.x = scrollLeft + scrollStep;
+          } else {
+            // to bottom
+            position.x = scrollLeft;
+          }
 
-            _this3._autoScroll();
-          });
-        } else if (scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold) {
+          position.y = scrollTop + scrollStep;
+        } else if (toleft) {
           // to left
+          position.x = scrollLeft - scrollStep;
+          position.y = scrollTop;
+        } else if (toright) {
+          // to right
+          position.x = scrollLeft + scrollStep;
+          position.y = scrollTop;
+        } // if need to scroll
+
+
+        if ((position.x || position.y) && (position.x !== scrollLeft || position.y !== scrollTop)) {
           requestAnimationFrame(function () {
-            _this3.scrollEl.scrollTo(scrollLeft - scrollStep, scrollTop);
+            _this3.scrollEl.scrollTo(position.x, position.y);
 
             _this3._autoScroll();
           });
