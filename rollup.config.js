@@ -22,7 +22,7 @@ export default [
       format: 'umd',
       file: 'dist/sortable.js',
       name: 'Sortable',
-      sourcemap: true,
+      sourcemap: false,
       banner: banner.replace(/\n/, '')
     },
     plugins: [
@@ -38,7 +38,7 @@ export default [
       format: 'umd',
       file: 'dist/sortable.min.js',
       name: 'Sortable',
-      sourcemap: true,
+      sourcemap: false,
       banner: banner.replace(/\n/, '')
     },
     plugins: [
