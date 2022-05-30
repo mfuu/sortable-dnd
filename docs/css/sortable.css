@@ -1,0 +1,111 @@
+html, body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+h1 {
+  text-align: center;
+}
+ul {
+  padding: 0;
+  margin: 0;
+}
+li {
+  list-style: none;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+  border-radius: 5px;
+  background-color: transparent;
+}
+::-webkit-scrollbar-thumb {
+  width: 5px;
+  height: 5px;
+  border-radius: 5px;
+  background-color: #e5bbbb;
+}
+
+.drag {
+  cursor: grab;
+}
+
+.chosen {
+  background-color: #c8ebfb;
+}
+
+.vertical-group {
+  height: 500px;
+  overflow: auto;
+  width: 100px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  margin-bottom: 100px;
+}
+
+.vertical-group li {
+  text-align: center;
+  padding: 5px;
+  margin: 5px;
+  border: 1px solid #aaa;
+}
+
+.horizontal-group {
+  width: 600px;
+  margin: 0 auto;
+  overflow: auto;
+  white-space: nowrap;
+  margin-bottom: 100px;
+  border: 1px solid #ccc;
+}
+
+.horizontal-group li {
+  text-align: center;
+  width: 100px;
+  height: 100px;
+  padding: 5px;
+  margin: 5px;
+  border: 1px solid #aaa;
+  display: inline-block;
+}
+
+.flex-group {
+  width: 600px;
+  height: 500px;
+  overflow: hidden auto;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  padding: 15px;
+  margin-bottom: 100px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.flex-group li {
+  text-align: center;
+  width: 100px;
+  height: 100px;
+  padding: 5px;
+  margin: 5px;
+  border: 1px solid #aaa;
+  display: inline-block;
+}
+
+.grid-group {
+  width: 600px;
+  height: 500px;
+  overflow: auto;
+  margin: 0 auto;
+  margin-bottom: 100px;
+  border: 1px solid #ccc;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.grid-group li {
+  padding: 5px;
+  margin: 5px;
+  border: 1px solid #aaa;
+}
