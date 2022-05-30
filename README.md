@@ -59,7 +59,11 @@ var DND = new Sortable(
 )
 ```
 
-The component you created will clear all state after destroyed
+# Methods
+
+| **method** | **Description** |
+|--------------|--------------|
+| `destroy()` | Manually clear all the state of the component, using this method the component will not be draggable |
 
 
 # Options
@@ -83,8 +87,3 @@ The component you created will clear all state after destroyed
 | `forceFallback`   | `Boolean`         | `false`     | true: ignore the HTML5 DnD behaviour and force the fallback to kick in |
 | `stopPropagation` | `Boolean`         | `false`     | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
 
-# Methods
-
-| **method** | **Description** |
-|--------------|--------------|
-| `destroy()` | Manually clear all the state of the component, using this method the component will not be draggable |
