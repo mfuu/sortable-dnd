@@ -68,22 +68,33 @@ var DND = new Sortable(
 
 # Options
 
+**Common used**
+
 |     **option**    |      **type**     | **default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
-| `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
+| `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
 | `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable, the function type must return a boolean |
-| `dragging`        | `Function`        | `undefined` | Specifies the element witch you want to drag: <br /> `(e) => return e.target` |
 | `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started: <br />`(dragEl, event, originalEvent) => {}` |
 | `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving: <br /> `(from, ghostEl, event, originalEvent) => {}` |
 | `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed: <br /> `(changed, originalEvent) => {}` |
 | `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position: <br /> `(from, to, event, originalEvent) => {}` |
+| `autoScroll`      | `Boolean`         | `true`      | Automatic scrolling when moving to the edge of the container |
+| `scrollStep`      | `Number`          | `3`         | The distance to scroll each frame when autoscrolling |
+| `scrollThreshold` | `Number`          | `20`        | Threshold to trigger autoscroll |
+
+
+**Other**
+
+|     **option**    |      **type**     | **default** | **Description** |
+|-------------------|-------------------|-------------|--------------|
+| `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
+| `dragging`        | `Function`        | `undefined` | Specifies the element witch you want to drag: <br /> `(e) => return e.target` |
+| `delay`           | `Number`          | `0`         | time in milliseconds to define when the sorting should start |
+| `delayOnTouchOnly`| `Boolean`         | `false`     | only delay if user is using touch |
+| `ghostAnimation`  | `Number`          | `0`         | Ghost element animation delay before destroyed |
 | `ghostStyle`      | `Object`          | `{}`        | The style of the mask element when dragging |
 | `ghostClass`      | `String`          | `''`        | The class of the mask element when dragging |
 | `chosenClass`     | `String`          | `{}`        | The class of the selected element when dragging |
-| `delay`           | `Number`          | `0`         | time in milliseconds to define when the sorting should start |
-| `delayOnTouchOnly`| `Boolean`         | `false`     | only delay if user is using touch |
-| `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
-| `ghostAnimation`  | `Number`          | `0`         | Ghost element animation delay before destroyed |
 | `forceFallback`   | `Boolean`         | `false`     | true: ignore the HTML5 DnD behaviour and force the fallback to kick in |
 | `stopPropagation` | `Boolean`         | `false`     | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
 
