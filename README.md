@@ -63,7 +63,7 @@ var DND = new Sortable(
 
 # Methods
 
-| **method** | **Description** |
+| **Method** | **Description** |
 |--------------|--------------|
 | `destroy()` | Manually clear all the state of the component, using this method the component will not be draggable |
 
@@ -72,7 +72,7 @@ var DND = new Sortable(
 
 **Common used**
 
-|     **option**    |      **type**     | **default** | **Description** |
+|     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
 | `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable, the function type must return a boolean |
@@ -85,9 +85,9 @@ var DND = new Sortable(
 | `scrollThreshold` | `Number`          | `15`        | Threshold to trigger autoscroll |
 
 
-**Other**
+**Others**
 
-|     **option**    |      **type**     | **default** | **Description** |
+|     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
 | `dragging`        | `Function`        | `undefined` | Specifies the element witch you want to drag: <br /> `(e) => return e.target` |
