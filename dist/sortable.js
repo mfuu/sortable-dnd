@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.2.3
+ * sortable-dnd v0.2.5
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -396,24 +396,30 @@
       }
     }
   }
-
-  var _throttleTimeout;
-
-  function throttle(callback, ms) {
+  function debounce(fn, delay, immediate) {
+    var timer = null;
     return function () {
-      if (!_throttleTimeout) {
-        var args = arguments,
-            _this = this;
+      var context = this,
+          args = arguments;
+      timer && clearTimeout(timer);
+      immediate && !timer && fn.apply(context, args); // 首次立即触发
 
-        if (args.length === 1) {
-          callback.call(_this, args[0]);
-        } else {
-          callback.apply(_this, args);
-        }
+      timer = setTimeout(function () {
+        fn.apply(context, args);
+      }, delay);
+    };
+  }
+  function throttle(fn, delay) {
+    var timer = null;
+    return function () {
+      var context = this,
+          args = arguments;
 
-        _throttleTimeout = setTimeout(function () {
-          _throttleTimeout = void 0;
-        }, ms);
+      if (!timer) {
+        timer = setTimeout(function () {
+          timer = null;
+          fn.apply(context, args);
+        }, delay);
       }
     };
   }
@@ -544,6 +550,7 @@
       value: function destroy(rect) {
         var _this = this;
 
+        if (!this.$el) return;
         var left = parseInt(this.$el.style.left);
         var top = parseInt(this.$el.style.top);
         this.move(rect.left - left, rect.top - top, true);
@@ -703,9 +710,9 @@
     var defaults = {
       autoScroll: true,
       // 拖拽到容器边缘时自动滚动
-      scrollStep: 3,
+      scrollStep: 5,
       // 每一帧滚动的距离
-      scrollThreshold: 20,
+      scrollThreshold: 15,
       // 自动滚动的阈值
       delay: 0,
       // 定义鼠标选中列表单元可以开始拖动的延迟时间
@@ -766,6 +773,7 @@
 
     this.dragStartTimer = null; // setTimeout timer
 
+    this.autoScrollTimer = null;
     Object.assign(this, Animation(), DNDEvent());
     this._onStart = this._onStart.bind(this);
     this._onMove = this._onMove.bind(this);
@@ -791,28 +799,41 @@
 
       this._clearState();
     },
+
+    /**
+     * set value for options by key
+     */
+    set: function set(key, value) {
+      this.options[key] = value;
+    },
+
+    /**
+     * get value from options by key
+     */
+    get: function get(key) {
+      return this.options[key];
+    },
     // -------------------------------- prepare start ----------------------------------
     _onStart: function _onStart(
     /** Event|TouchEvent */
     evt) {
       var _this2 = this;
 
-      var _this$options = this.options,
-          delay = _this$options.delay,
-          disabled = _this$options.disabled,
-          stopPropagation = _this$options.stopPropagation,
-          delayOnTouchOnly = _this$options.delayOnTouchOnly;
-      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || disabled) return; // only left button and enabled
+      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled) return; // only left button and enabled
 
       var touch = evt.touches && evt.touches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
       var e = touch || evt; // Safari ignores further event handling after mousedown
 
       if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return;
       if (e.target === this.rootEl) return true;
-      if (stopPropagation) evt.stopPropagation();
+      if (this.options.stopPropagation) evt.stopPropagation();
+      var _this$options = this.options,
+          delay = _this$options.delay,
+          delayOnTouchOnly = _this$options.delayOnTouchOnly;
 
       if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
-        clearTimeout(this.dragStartTimer);
+        clearTimeout(this.dragStartTimer); // delay to start
+
         this.dragStartTimer = setTimeout(function () {
           return _this2._onDrag(e, touch);
         }, delay);
@@ -845,9 +866,7 @@
       } // 不存在拖拽元素时不允许拖拽
 
 
-      if (!this.dragEl || this.dragEl.animated) return true; // 解决移动端无法拖拽问题
-
-      css(this.dragEl, 'touch-action', 'none'); // 获取拖拽元素在列表中的位置
+      if (!this.dragEl || this.dragEl.animated) return true; // 获取拖拽元素在列表中的位置
 
       var _getElement = getElement(this.rootEl, this.dragEl),
           rect = _getElement.rect,
@@ -857,16 +876,16 @@
         x: e.clientX,
         y: e.clientY
       };
-      this.ghost.distance = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      };
       this.differ.from = {
         node: this.dragEl,
         rect: rect,
         offset: offset
       };
-      this.state.sortableDown = e;
+      this.ghost.distance = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+      this.state.sortableDown = e; // sortable state down is active
 
       this._bindMoveEvents(touch);
 
@@ -876,23 +895,28 @@
     _onStarted: function _onStarted(e,
     /** originalEvent */
     evt) {
-      var onDrag = this.options.onDrag;
-      var rect = this.differ.from.rect; // 将初始化放到move事件中，防止与click事件冲突
-
       if (!this.ghost.$el) {
-        this.ghost.init(this.dragEl.cloneNode(true), rect); // onDrag callback
+        // 将初始化放到move事件中，防止与click事件冲突
+        var rect = this.differ.from.rect;
+        this.ghost.init(this.dragEl.cloneNode(true), rect); // add class for drag element
 
+        toggleClass(this.dragEl, this.options.chosenClass, true); // 解决移动端无法拖拽问题
+
+        this.dragEl.style['touch-action'] = 'none';
+        this.dragEl.style['will-change'] = 'transform'; // onDrag callback
+
+        var onDrag = this.options.onDrag;
         if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt);
-      }
-
-      if (Safari) {
-        css(document.body, 'user-select', 'none');
+        if (Safari) css(document.body, 'user-select', 'none');
       }
     },
     // -------------------------------- on move ----------------------------------
     _onMove: function _onMove(
     /** Event|TouchEvent */
     evt) {
+      var _this3 = this;
+
+      if (!this.state.sortableDown) return;
       var touch = evt.touches && evt.touches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
       var e = touch || evt;
       var clientX = e.clientX,
@@ -905,6 +929,8 @@
         return;
       }
 
+      this.state.sortableMove = e; // sortable state move is active
+
       var stopPropagation = this.options.stopPropagation;
       stopPropagation && evt.stopPropagation && evt.stopPropagation(); // 阻止事件冒泡
 
@@ -915,25 +941,30 @@
       this.ghost.move(distanceX, distanceY); // 拖拽过程中触发的回调
 
       var onMove = this.options.onMove;
-      if (onMove && typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, evt);
-      toggleClass(this.dragEl, this.options.chosenClass, true);
-      if (!this.state.sortableDown) return;
+      if (onMove && typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, evt); // 判断边界值
+
       if (clientX < 0 || clientY < 0) return;
-      this.state.sortableMove = e; // 判断边界值
 
-      var rc = getRect(this.rootEl);
+      var _getRect = getRect(this.rootEl),
+          top = _getRect.top,
+          right = _getRect.right,
+          bottom = _getRect.bottom,
+          left = _getRect.left;
 
-      if (clientX < rc.left || clientX > rc.right || clientY < rc.top || clientY > rc.bottom) {
-        return;
-      } // check if element will exchange
-
+      if (clientX < left || clientX > right || clientY < top || clientY > bottom) return; // check if element will exchange
 
       this._onChange(this, target, e, evt); // auto scroll
 
 
-      this.options.autoScroll && this._autoScroll();
+      this.autoScrollTimer && clearTimeout(this.autoScrollTimer);
+
+      if (this.options.autoScroll) {
+        this.autoScrollTimer = setTimeout(function () {
+          return _this3._autoScroll(_this3);
+        }, 0);
+      }
     },
-    _onChange: throttle(function (_this, target, e, evt) {
+    _onChange: debounce(function (_this, target, e, evt) {
       var _getElement2 = getElement(_this.rootEl, target),
           el = _getElement2.el,
           rect = _getElement2.rect,
@@ -986,15 +1017,14 @@
       this._unbindUpEvents();
 
       clearTimeout(this.dragStartTimer);
-      var _this$options3 = this.options,
-          onDrop = _this$options3.onDrop,
-          chosenClass = _this$options3.chosenClass,
-          stopPropagation = _this$options3.stopPropagation;
+      var stopPropagation = this.options.stopPropagation;
       stopPropagation && evt.stopPropagation(); // 阻止事件冒泡
 
-      evt.cancelable && evt.preventDefault();
-      toggleClass(this.dragEl, chosenClass, false);
-      css(this.dragEl, 'touch-action', '');
+      evt.cancelable && evt.preventDefault(); // clear style and class
+
+      toggleClass(this.dragEl, this.options.chosenClass, false);
+      this.dragEl.style['touch-action'] = '';
+      this.dragEl.style['will-change'] = '';
 
       if (this.state.sortableDown && this.state.sortableMove) {
         // 重新获取一次拖拽元素的 offset 和 rect 值作为拖拽完成后的值
@@ -1006,47 +1036,48 @@
 
         var changed = from.offset.top !== to.offset.top || from.offset.left !== to.offset.left; // onDrop callback
 
+        var onDrop = this.options.onDrop;
         if (onDrop && typeof onDrop === 'function') onDrop(changed, evt);
         this.ghost.destroy(to.rect);
-      } // Safari
+      }
 
-
-      if (Safari) css(document.body, 'user-select', '');
       this.differ.destroy();
       this.state = new State();
+      if (Safari) css(document.body, 'user-select', '');
     },
     // -------------------------------- auto scroll ----------------------------------
-    _autoScroll: function _autoScroll() {
-      var _this3 = this;
-
+    _autoScroll: throttle(function (_this) {
       // check if is moving now
-      if (!this.state.sortableMove) return;
-      var _this$state$sortableM = this.state.sortableMove,
+      if (!(_this.state.sortableDown && _this.state.sortableMove)) return;
+      var _this$state$sortableM = _this.state.sortableMove,
           clientX = _this$state$sortableM.clientX,
           clientY = _this$state$sortableM.clientY;
       if (clientX === void 0 || clientY === void 0) return;
 
-      if (this.scrollEl === this.ownerDocument) ; else {
-        var _this$scrollEl = this.scrollEl,
+      if (_this.scrollEl === _this.ownerDocument) ; else {
+        var _this$scrollEl = _this.scrollEl,
             scrollTop = _this$scrollEl.scrollTop,
             scrollLeft = _this$scrollEl.scrollLeft,
             scrollHeight = _this$scrollEl.scrollHeight,
             scrollWidth = _this$scrollEl.scrollWidth;
 
-        var _getRect = getRect(this.scrollEl),
-            top = _getRect.top,
-            right = _getRect.right,
-            bottom = _getRect.bottom,
-            left = _getRect.left;
+        var _getRect2 = getRect(_this.scrollEl),
+            top = _getRect2.top,
+            right = _getRect2.right,
+            bottom = _getRect2.bottom,
+            left = _getRect2.left,
+            height = _getRect2.height,
+            width = _getRect2.width;
 
-        var _this$options4 = this.options,
-            scrollStep = _this$options4.scrollStep,
-            scrollThreshold = _this$options4.scrollThreshold; // check direction
+        var _this$options3 = _this.options,
+            scrollStep = _this$options3.scrollStep,
+            scrollThreshold = _this$options3.scrollThreshold; // check direction
 
         var totop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
         var toleft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
-        var toright = scrollLeft <= scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
-        var tobottom = scrollTop <= scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold;
+        var toright = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
+        var tobottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold; // scroll position
+
         var position = {
           x: scrollLeft,
           y: scrollTop
@@ -1089,15 +1120,15 @@
         } // if need to scroll
 
 
-        if ((position.x || position.y) && (position.x !== scrollLeft || position.y !== scrollTop)) {
+        if (totop || toleft || toright || tobottom) {
           requestAnimationFrame(function () {
-            _this3.scrollEl.scrollTo(position.x, position.y);
+            _this.scrollEl.scrollTo(position.x, position.y);
 
-            _this3._autoScroll();
+            _this._autoScroll(_this);
           });
         }
       }
-    },
+    }, 10),
     // -------------------------------- clear ----------------------------------
     _removeSelection: function _removeSelection() {
       try {
@@ -1119,6 +1150,13 @@
       this.ghost.destroy();
       this.differ.destroy();
     }
+  };
+  Sortable.utils = {
+    getRect: getRect,
+    getOffset: getOffset,
+    debounce: debounce,
+    throttle: throttle,
+    getParentAutoScrollElement: getParentAutoScrollElement
   };
 
   return Sortable;
