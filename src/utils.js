@@ -314,32 +314,29 @@ export function css(el, prop, val) {
   }
 }
 
-export function debounce(fn, delay) {
-  return function (...args) {
-    clearTimeout(fn.id)
-    fn.id = setTimeout(() => {
-      fn.call(this, ...args)
+export function debounce(fn, delay, immediate) {
+  let timer = null
+  return function() {
+    const context = this, args = arguments
+    timer && clearTimeout(timer)
+    immediate && !timer && fn.apply(context, args) // 首次立即触发
+    timer = setTimeout(function() {
+      fn.apply(context, args)
     }, delay)
   }
 }
 
-let _throttleTimeout
-export function throttle(callback, ms) {
-	return function () {
-		if (!_throttleTimeout) {
-			let args = arguments, _this = this
-
-			if (args.length === 1) {
-				callback.call(_this, args[0])
-			} else {
-				callback.apply(_this, args)
-			}
-
-			_throttleTimeout = setTimeout(function () {
-				_throttleTimeout = void 0
-			}, ms)
-		}
-	};
+export function throttle(fn, delay) {
+  let timer = null
+  return function() {
+    const context = this, args = arguments
+    if(!timer) {
+      timer = setTimeout(function() {
+        timer = null
+        fn.apply(context, args)
+      }, delay)
+    }
+  }
 }
 
 export function _nextTick(fn) {

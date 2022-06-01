@@ -36,8 +36,8 @@ function Sortable(el, options) {
 
   const defaults = {
     autoScroll: true, // 拖拽到容器边缘时自动滚动
-    scrollStep: 3, // 每一帧滚动的距离
-    scrollThreshold: 20, // 自动滚动的阈值
+    scrollStep: 5, // 每一帧滚动的距离
+    scrollThreshold: 15, // 自动滚动的阈值
     
     delay: 0, // 定义鼠标选中列表单元可以开始拖动的延迟时间
     delayOnTouchOnly: false, // only delay if user is using touch
@@ -79,6 +79,7 @@ function Sortable(el, options) {
   this.dragEl = null // 拖拽元素
   this.dropEl = null // 释放元素
   this.dragStartTimer = null // setTimeout timer
+  this.autoScrollTimer = null
 
   Object.assign(this, Animation(), Events())
 
@@ -105,10 +106,17 @@ Sortable.prototype = {
     this._clearState()
   },
 
+  set (key, value) {
+    this[key] = value
+  },
+
+  get (key) {
+    return this[key]
+  },
+
   // -------------------------------- prepare start ----------------------------------
   _onStart: function(/** Event|TouchEvent */evt) {
-    const { delay, disabled, stopPropagation, delayOnTouchOnly } = this.options
-    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || disabled) return // only left button and enabled
+    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled) return // only left button and enabled
 
     const touch = (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt)
     const e = touch || evt
@@ -117,10 +125,12 @@ Sortable.prototype = {
 		if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return
     if (e.target === this.rootEl) return true
 
-    if (stopPropagation) evt.stopPropagation()
+    if (this.options.stopPropagation) evt.stopPropagation()
 
+    const { delay, delayOnTouchOnly } = this.options
     if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
       clearTimeout(this.dragStartTimer)
+      // delay to start
       this.dragStartTimer = setTimeout(() => this._onDrag(e, touch), delay)
     } else {
       this._onDrag(e, touch)
@@ -157,15 +167,10 @@ Sortable.prototype = {
 
     // 获取拖拽元素在列表中的位置
     const { rect, offset } = getElement(this.rootEl, this.dragEl)
-    this.move = {
-      x: e.clientX,
-      y: e.clientY
-    }
-    this.ghost.distance = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    }
+    this.move = { x: e.clientX, y: e.clientY }
     this.differ.from = { node: this.dragEl, rect, offset}
+    this.ghost.distance = { x: e.clientX - rect.left, y: e.clientY - rect.top }
+    // sortable state down is active
     this.state.sortableDown = e
 
     this._bindMoveEvents(touch)
@@ -174,13 +179,13 @@ Sortable.prototype = {
   
   // -------------------------------- is started ----------------------------------
   _onStarted: function(e, /** originalEvent */evt) {
-    const { onDrag } = this.options
     const { rect } = this.differ.from
     // 将初始化放到move事件中，防止与click事件冲突
     if (!this.ghost.$el) {
       this.ghost.init(this.dragEl.cloneNode(true), rect)
 
       // onDrag callback
+      const { onDrag } = this.options
       if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt)
     }
     if (Safari) {
@@ -218,6 +223,7 @@ Sortable.prototype = {
     if (!this.state.sortableDown) return
     if (clientX < 0 || clientY < 0) return
 
+    // sortable state move is active
     this.state.sortableMove = e
 
     // 判断边界值
@@ -229,15 +235,17 @@ Sortable.prototype = {
     // check if element will exchange
     this._onChange(this, target, e, evt)
     // auto scroll
-    this.options.autoScroll && this._autoScroll()
+    this.autoScrollTimer && clearTimeout(this.autoScrollTimer)
+    if (this.options.autoScroll) {
+      this.autoScrollTimer = setTimeout(() => this._autoScroll(this), 0)
+    }
   },
-  _onChange: throttle(function(_this, target, e, evt) {
+  _onChange: debounce(function(_this, target, e, evt) {
     const { el, rect, offset } = getElement(_this.rootEl, target)
     
     if (!el || (el && el.animated)) return
     
     _this.dropEl = el
-
     const { clientX, clientY } = e
     const { left, right, top, bottom } = rect
 
@@ -272,28 +280,25 @@ Sortable.prototype = {
     this._unbindUpEvents()
     clearTimeout(this.dragStartTimer)
 
-    const { onDrop, chosenClass, stopPropagation } = this.options
-
+    const { stopPropagation } = this.options
     stopPropagation && evt.stopPropagation() // 阻止事件冒泡
     evt.cancelable && evt.preventDefault()
 
-    toggleClass(this.dragEl, chosenClass, false)
+    toggleClass(this.dragEl, this.options.chosenClass, false)
     css(this.dragEl, 'touch-action', '')
 
     if (this.state.sortableDown && this.state.sortableMove) {
-
       // 重新获取一次拖拽元素的 offset 和 rect 值作为拖拽完成后的值
       this.differ.to.offset = getOffset(this.dragEl)
       this.differ.to.rect = getRect(this.dragEl)
 
       const { from, to } = this.differ
-
       // 通过 offset 比较是否进行了元素交换
       const changed = from.offset.top !== to.offset.top || from.offset.left !== to.offset.left
-      
       // onDrop callback
+      const { onDrop } = this.options
       if (onDrop && typeof onDrop === 'function') onDrop(changed, evt)
-
+      // destroy ghost
       this.ghost.destroy(to.rect)
     }
     // Safari
@@ -303,24 +308,24 @@ Sortable.prototype = {
   },
 
   // -------------------------------- auto scroll ----------------------------------
-  _autoScroll: function() {
+  _autoScroll: throttle(function(_this) {
     // check if is moving now
-    if (!this.state.sortableMove) return
-    const { clientX, clientY } = this.state.sortableMove
+    if (!(_this.state.sortableDown && _this.state.sortableMove)) return
+    const { clientX, clientY } = _this.state.sortableMove
     if (clientX === void 0 || clientY === void 0) return
 
-    if (this.scrollEl === this.ownerDocument) {
+    if (_this.scrollEl === _this.ownerDocument) {
       // does not support now
     } else {
-      const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = this.scrollEl
-      const { top, right, bottom, left } = getRect(this.scrollEl)
-      const { scrollStep, scrollThreshold } = this.options
+      const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = _this.scrollEl
+      const { top, right, bottom, left, height, width } = getRect(_this.scrollEl)
+      const { scrollStep, scrollThreshold } = _this.options
       // check direction
       const totop = scrollTop > 0 && clientY >= top && clientY <= (top + scrollThreshold)
       const toleft = scrollLeft > 0 && clientX >= left && clientX <= (left + scrollThreshold)
-      const toright = scrollLeft <= scrollWidth && clientX <= right && clientX >= (right - scrollThreshold)
-      const tobottom = scrollTop <= scrollHeight && clientY <= bottom && clientY >= (bottom - scrollThreshold)
-
+      const toright = (scrollLeft + width) < scrollWidth && clientX <= right && clientX >= (right - scrollThreshold)
+      const tobottom = (scrollTop + height) < scrollHeight && clientY <= bottom && clientY >= (bottom - scrollThreshold)
+      // scroll position
       const position = { x: scrollLeft, y: scrollTop }
 
       if (totop) {
@@ -357,14 +362,14 @@ Sortable.prototype = {
         position.y = scrollTop
       }
       // if need to scroll
-      if ((position.x || position.y) && (position.x !== scrollLeft || position.y !== scrollTop)) {
+      if (totop || toleft || toright || tobottom) {
         requestAnimationFrame(() => {
-          this.scrollEl.scrollTo(position.x, position.y)
-          this._autoScroll()
+          _this.scrollEl.scrollTo(position.x, position.y)
+          _this._autoScroll(_this)
         })
       }
     }
-  },
+  }, 10),
 
   // -------------------------------- clear ----------------------------------
   _removeSelection: function() {
@@ -386,6 +391,14 @@ Sortable.prototype = {
     this.ghost.destroy()
     this.differ.destroy()
   }
+}
+
+Sortable.utils = {
+  getRect,
+  getOffset,
+  debounce,
+  throttle,
+  getParentAutoScrollElement
 }
 
 export default Sortable
