@@ -1,6 +1,6 @@
 {
   "name": "sortable-dnd",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "description": "JS Library for Drag and Drop, supports Sortable and Draggable",
   "main": "dist/sortable.min.js",
   "files": [
@@ -17,12 +17,13 @@
     "url": "git+https://github.com/mfuu/sortable-dnd.git"
   },
   "keywords": [
+    "list",
     "drag",
     "drop",
     "sort",
     "sortable",
     "draggable",
-    "list"
+    "drag and drop"
   ],
   "author": "mfuu",
   "license": "ISC",
