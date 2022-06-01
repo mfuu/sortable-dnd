@@ -106,12 +106,18 @@ Sortable.prototype = {
     this._clearState()
   },
 
+  /**
+   * set value for options by key
+   */
   set (key, value) {
-    this[key] = value
+    this.options[key] = value
   },
 
+  /**
+   * get value from options by key
+   */
   get (key) {
-    return this[key]
+    return this.options[key]
   },
 
   // -------------------------------- prepare start ----------------------------------
