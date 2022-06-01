@@ -11,6 +11,8 @@
 
 A JS Library for Drag and Drop, supports Sortable and Draggable
 
+## [Demo](https://mfuu.github.io/sortable-dnd/)
+
 # Usage
 
 **HTML**
@@ -79,8 +81,8 @@ var DND = new Sortable(
 | `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed: <br /> `(changed, originalEvent) => {}` |
 | `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position: <br /> `(from, to, event, originalEvent) => {}` |
 | `autoScroll`      | `Boolean`         | `true`      | Automatic scrolling when moving to the edge of the container |
-| `scrollStep`      | `Number`          | `3`         | The distance to scroll each frame when autoscrolling |
-| `scrollThreshold` | `Number`          | `20`        | Threshold to trigger autoscroll |
+| `scrollStep`      | `Number`          | `5`         | The distance to scroll each frame when autoscrolling |
+| `scrollThreshold` | `Number`          | `15`        | Threshold to trigger autoscroll |
 
 
 **Other**
