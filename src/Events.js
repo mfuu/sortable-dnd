@@ -2,21 +2,25 @@ import { on, off } from './utils.js'
 
 export default function DNDEvent() {
   return {
-    _bindEventListener() {
+    _bindDragEventListener() {
+      this._onDrag = this._onDrag.bind(this)
+      this._onMove = this._onMove.bind(this)
+      this._onDrop = this._onDrop.bind(this)
+
       const { supportPointer, supportTouch } = this.options
       if (supportPointer) {
-        on(this.rootEl, 'pointerdown', this._onStart)
+        on(this.rootEl, 'pointerdown', this._onDrag)
       } else if (supportTouch) {
-        on(this.rootEl, 'touchstart', this._onStart)
+        on(this.rootEl, 'touchstart', this._onDrag)
       } else {
-        on(this.rootEl, 'mousedown', this._onStart)
+        on(this.rootEl, 'mousedown', this._onDrag)
       }
     },
   
-    _unbindEventListener() {
-      off(this.rootEl, 'pointerdown', this._onStart)
-      off(this.rootEl, 'touchstart', this._onStart)
-      off(this.rootEl, 'mousedown', this._onStart)
+    _unbindDragEventListener() {
+      off(this.rootEl, 'pointerdown', this._onDrag)
+      off(this.rootEl, 'touchstart', this._onDrag)
+      off(this.rootEl, 'mousedown', this._onDrag)
     },
     
     _bindMoveEvents(touch) {
@@ -29,26 +33,26 @@ export default function DNDEvent() {
       }
     },
   
-    _bindUpEvents() {
-      on(this.ownerDocument, 'pointerup', this._onDrop)
-      on(this.ownerDocument, 'pointercancel', this._onDrop)
-      on(this.ownerDocument, 'touchend', this._onDrop)
-      on(this.ownerDocument, 'touchcancel', this._onDrop)
-      on(this.ownerDocument, 'mouseup', this._onDrop)
-    },
-  
     _unbindMoveEvents() {
       off(this.ownerDocument, 'pointermove', this._onMove)
       off(this.ownerDocument, 'touchmove', this._onMove)
       off(this.ownerDocument, 'mousemove', this._onMove)
     },
   
-    _unbindUpEvents() {
+    _unbindDropEvents() {
       off(this.ownerDocument, 'pointerup', this._onDrop)
       off(this.ownerDocument, 'pointercancel', this._onDrop)
       off(this.ownerDocument, 'touchend', this._onDrop)
       off(this.ownerDocument, 'touchcancel', this._onDrop)
       off(this.ownerDocument, 'mouseup', this._onDrop)
+    },
+
+    _unbindDragEvents() {
+      if (this.nativeDraggable) {
+        off(this.rootEl, 'dragstart', this._onDragStart)
+        off(this.rootEl, 'dragover', this._onDragOver)
+        off(this.rootEl, 'dragend', this._onDrop)
+      }
     }
   }
 }

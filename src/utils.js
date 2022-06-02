@@ -208,7 +208,7 @@ export function getRect(el) {
 export function getElement(group, el, onlyEl) {
   const children = [...Array.from(group.children)]
 
-  // 如果能直接在子元素中找到，返回对应的index
+  // If it can be found directly in the child element, return
   const index = children.indexOf(el)
   if (index > -1)
     return onlyEl ? children[index] : {
@@ -218,7 +218,7 @@ export function getElement(group, el, onlyEl) {
       offset: getOffset(children[index])
     }
 
-  // children 中无法直接找到对应的dom时，需要向下寻找
+  // When the dom cannot be found directly in children, need to look down
   for (let i = 0; i < children.length; i++) {
     if (isChildOf(el, children[i])) {
       return onlyEl ? children[i] : {
@@ -319,7 +319,7 @@ export function debounce(fn, delay, immediate) {
   return function() {
     const context = this, args = arguments
     timer && clearTimeout(timer)
-    immediate && !timer && fn.apply(context, args) // 首次立即触发
+    immediate && !timer && fn.apply(context, args)
     timer = setTimeout(function() {
       fn.apply(context, args)
     }, delay)

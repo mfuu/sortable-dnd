@@ -40,7 +40,7 @@ export class Ghost {
     this.container = sortable.container
   }
 
-  init(el, rect) {
+  init(el, rect, append = true) {
     this.$el = el
     const { ghostClass, ghostStyle = {} } = this.options
 
@@ -63,7 +63,7 @@ export class Ghost {
     setTransition(this.$el, 'none')
     setTransform(this.$el, 'translate3d(0px, 0px, 0px)')
 
-    this.container.appendChild(this.$el)
+    if (append) this.container.appendChild(this.$el)
 
     css(this.$el, 'transform-origin', (this.distance.x / parseInt(this.$el.style.width) * 100) + '% ' + (this.distance.y / parseInt(this.$el.style.height) * 100) + '%')
   }

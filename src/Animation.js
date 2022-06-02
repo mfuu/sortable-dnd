@@ -16,7 +16,7 @@ export default function Animation() {
       const children = [...Array.from(this.rootEl.children)]
       const { start, end } = getRange(children, this.dragEl, this.dropEl)
 
-      animationState.length = 0 // 重置
+      animationState.length = 0 // reset
 
       children.slice(start, end + 1).forEach(child => {
         animationState.push({
@@ -41,7 +41,7 @@ export default function Animation() {
       setTransition(el, 'none')
       setTransform(el, `translate3d(${left}px, ${top}px, 0)`)
   
-      el.offsetLeft // 触发重绘
+      el.offsetLeft // trigger repaint
   
       setTransition(el, `${animation}ms`)
       setTransform(el, 'translate3d(0px, 0px, 0px)')
