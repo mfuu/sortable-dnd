@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.2.5
+ * sortable-dnd v0.2.6
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -281,7 +281,7 @@
    */
 
   function getElement(group, el, onlyEl) {
-    var children = _toConsumableArray(Array.from(group.children)); // 如果能直接在子元素中找到，返回对应的index
+    var children = _toConsumableArray(Array.from(group.children)); // If it can be found directly in the child element, return
 
 
     var index = children.indexOf(el);
@@ -290,7 +290,7 @@
       el: children[index],
       rect: getRect(children[index]),
       offset: getOffset(children[index])
-    }; // children 中无法直接找到对应的dom时，需要向下寻找
+    }; // When the dom cannot be found directly in children, need to look down
 
     for (var i = 0; i < children.length; i++) {
       if (isChildOf(el, children[i])) {
@@ -402,8 +402,7 @@
       var context = this,
           args = arguments;
       timer && clearTimeout(timer);
-      immediate && !timer && fn.apply(context, args); // 首次立即触发
-
+      immediate && !timer && fn.apply(context, args);
       timer = setTimeout(function () {
         fn.apply(context, args);
       }, delay);
@@ -502,6 +501,7 @@
     _createClass(Ghost, [{
       key: "init",
       value: function init(el, rect) {
+        var append = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
         this.$el = el;
         var _this$options = this.options,
             ghostClass = _this$options.ghostClass,
@@ -522,7 +522,7 @@
         this.setStyle(ghostStyle);
         setTransition(this.$el, 'none');
         setTransform(this.$el, 'translate3d(0px, 0px, 0px)');
-        this.container.appendChild(this.$el);
+        if (append) this.container.appendChild(this.$el);
         css(this.$el, 'transform-origin', this.distance.x / parseInt(this.$el.style.width) * 100 + '% ' + this.distance.y / parseInt(this.$el.style.height) * 100 + '%');
       }
     }, {
@@ -574,6 +574,100 @@
     return Ghost;
   }();
 
+  function AutoScroll() {
+    if (!window.requestAnimationFrame) {
+      window.requestAnimationFrame = function (callback) {
+        return setTimeout(callback, 17);
+      };
+    }
+
+    return {
+      _autoScroll: throttle(function (_this) {
+        // check if is moving now
+        if (!(_this.state.sortableDown && _this.state.sortableMove)) return;
+        var _this$state$sortableM = _this.state.sortableMove,
+            clientX = _this$state$sortableM.clientX,
+            clientY = _this$state$sortableM.clientY;
+        if (clientX === void 0 || clientY === void 0) return;
+
+        if (_this.scrollEl === _this.ownerDocument) ; else {
+          var _this$scrollEl = _this.scrollEl,
+              scrollTop = _this$scrollEl.scrollTop,
+              scrollLeft = _this$scrollEl.scrollLeft,
+              scrollHeight = _this$scrollEl.scrollHeight,
+              scrollWidth = _this$scrollEl.scrollWidth;
+
+          var _getRect = getRect(_this.scrollEl),
+              top = _getRect.top,
+              right = _getRect.right,
+              bottom = _getRect.bottom,
+              left = _getRect.left,
+              height = _getRect.height,
+              width = _getRect.width;
+
+          var _this$options = _this.options,
+              scrollStep = _this$options.scrollStep,
+              scrollThreshold = _this$options.scrollThreshold; // check direction
+
+          var totop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
+          var toleft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
+          var toright = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
+          var tobottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold; // scroll position
+
+          var position = {
+            x: scrollLeft,
+            y: scrollTop
+          };
+
+          if (totop) {
+            if (toleft) {
+              // to top-left
+              position.x = scrollLeft - scrollStep;
+            } else if (toright) {
+              // to top-right
+              position.x = scrollLeft + scrollStep;
+            } else {
+              // to top
+              position.x = scrollLeft;
+            }
+
+            position.y = scrollTop - scrollStep;
+          } else if (tobottom) {
+            if (toleft) {
+              // to bottom-left
+              position.x = scrollLeft - scrollStep;
+            } else if (toright) {
+              // to bottom-right
+              position.x = scrollLeft + scrollStep;
+            } else {
+              // to bottom
+              position.x = scrollLeft;
+            }
+
+            position.y = scrollTop + scrollStep;
+          } else if (toleft) {
+            // to left
+            position.x = scrollLeft - scrollStep;
+            position.y = scrollTop;
+          } else if (toright) {
+            // to right
+            position.x = scrollLeft + scrollStep;
+            position.y = scrollTop;
+          } // if need to scroll
+
+
+          if (totop || toleft || toright || tobottom) {
+            requestAnimationFrame(function () {
+              _this.scrollEl.scrollTo(position.x, position.y);
+
+              _this._autoScroll(_this);
+            });
+          }
+        }
+      }, 10)
+    };
+  }
+
   function Animation() {
     var animationState = [];
 
@@ -597,7 +691,7 @@
             start = _getRange.start,
             end = _getRange.end;
 
-        animationState.length = 0; // 重置
+        animationState.length = 0; // reset
 
         children.slice(start, end + 1).forEach(function (child) {
           animationState.push({
@@ -623,7 +717,7 @@
         var top = preRect.top - curRect.top;
         setTransition(el, 'none');
         setTransform(el, "translate3d(".concat(left, "px, ").concat(top, "px, 0)"));
-        el.offsetLeft; // 触发重绘
+        el.offsetLeft; // trigger repaint
 
         setTransition(el, "".concat(animation, "ms"));
         setTransform(el, 'translate3d(0px, 0px, 0px)');
@@ -639,23 +733,26 @@
 
   function DNDEvent() {
     return {
-      _bindEventListener: function _bindEventListener() {
+      _bindDragEventListener: function _bindDragEventListener() {
+        this._onDrag = this._onDrag.bind(this);
+        this._onMove = this._onMove.bind(this);
+        this._onDrop = this._onDrop.bind(this);
         var _this$options = this.options,
             supportPointer = _this$options.supportPointer,
             supportTouch = _this$options.supportTouch;
 
         if (supportPointer) {
-          on(this.rootEl, 'pointerdown', this._onStart);
+          on(this.rootEl, 'pointerdown', this._onDrag);
         } else if (supportTouch) {
-          on(this.rootEl, 'touchstart', this._onStart);
+          on(this.rootEl, 'touchstart', this._onDrag);
         } else {
-          on(this.rootEl, 'mousedown', this._onStart);
+          on(this.rootEl, 'mousedown', this._onDrag);
         }
       },
-      _unbindEventListener: function _unbindEventListener() {
-        off(this.rootEl, 'pointerdown', this._onStart);
-        off(this.rootEl, 'touchstart', this._onStart);
-        off(this.rootEl, 'mousedown', this._onStart);
+      _unbindDragEventListener: function _unbindDragEventListener() {
+        off(this.rootEl, 'pointerdown', this._onDrag);
+        off(this.rootEl, 'touchstart', this._onDrag);
+        off(this.rootEl, 'mousedown', this._onDrag);
       },
       _bindMoveEvents: function _bindMoveEvents(touch) {
         if (this.options.supportPointer) {
@@ -666,24 +763,24 @@
           on(this.ownerDocument, 'mousemove', this._onMove);
         }
       },
-      _bindUpEvents: function _bindUpEvents() {
-        on(this.ownerDocument, 'pointerup', this._onDrop);
-        on(this.ownerDocument, 'pointercancel', this._onDrop);
-        on(this.ownerDocument, 'touchend', this._onDrop);
-        on(this.ownerDocument, 'touchcancel', this._onDrop);
-        on(this.ownerDocument, 'mouseup', this._onDrop);
-      },
       _unbindMoveEvents: function _unbindMoveEvents() {
         off(this.ownerDocument, 'pointermove', this._onMove);
         off(this.ownerDocument, 'touchmove', this._onMove);
         off(this.ownerDocument, 'mousemove', this._onMove);
       },
-      _unbindUpEvents: function _unbindUpEvents() {
+      _unbindDropEvents: function _unbindDropEvents() {
         off(this.ownerDocument, 'pointerup', this._onDrop);
         off(this.ownerDocument, 'pointercancel', this._onDrop);
         off(this.ownerDocument, 'touchend', this._onDrop);
         off(this.ownerDocument, 'touchcancel', this._onDrop);
         off(this.ownerDocument, 'mouseup', this._onDrop);
+      },
+      _unbindDragEvents: function _unbindDragEvents() {
+        if (this.nativeDraggable) {
+          off(this.rootEl, 'dragstart', this._onDragStart);
+          off(this.rootEl, 'dragover', this._onDragOver);
+          off(this.rootEl, 'dragend', this._onDrop);
+        }
       }
     };
   }
@@ -709,44 +806,44 @@
     this.ownerDocument = el.ownerDocument;
     var defaults = {
       autoScroll: true,
-      // 拖拽到容器边缘时自动滚动
+      // Auto scrolling when dragging to the edge of the container
       scrollStep: 5,
-      // 每一帧滚动的距离
+      // The distance to scroll each frame
       scrollThreshold: 15,
-      // 自动滚动的阈值
+      // Autoscroll threshold
       delay: 0,
-      // 定义鼠标选中列表单元可以开始拖动的延迟时间
+      // Defines the delay time after which the mouse-selected list cell can start dragging
       delayOnTouchOnly: false,
       // only delay if user is using touch
       disabled: false,
-      // 定义是否此sortable对象是否可用，为true时sortable对象不能拖放排序等功能，为false时为可以进行排序，相当于一个开关
+      // Defines whether the sortable object is available or not. When it is true, the sortable object cannot drag and drop sorting and other functions. When it is false, it can be sorted, which is equivalent to a switch.
       animation: 150,
-      // 定义排序动画的时间
+      // Define the timing of the sorting animation
       ghostAnimation: 0,
-      // 拖拽元素销毁时动画效果
+      // Animation when the ghost element is destroyed
       ghostClass: '',
-      // 拖拽元素Class类名
+      // Ghost element class name
       ghostStyle: {},
-      // 拖拽元素样式
+      // Ghost element style
       chosenClass: '',
-      // 选中元素样式
+      // Chosen element style
       draggable: undefined,
-      // String: css选择器, Function: (e) => return true
+      // String: css selector, Function: (e) => return true
       dragging: undefined,
-      // 设置拖拽元素，必须为函数且必须返回一个 HTMLElement: (e) => return e.target
+      // Set the drag element, must be a function and must return an HTMLElement: (e) => return e.target
       onDrag: undefined,
-      // 拖拽开始时触发的回调函数: () => {}
+      // The callback function triggered when dragging starts: () => {}
       onMove: undefined,
-      // 拖拽过程中的回调函数: (from, to) => {}
+      // The callback function during drag and drop: (from, to) => {}
       onDrop: undefined,
-      // 拖拽完成时的回调函数: (from, to, changed) => {}
+      // The callback function when the drag is completed: (from, to, changed) => {}
       onChange: undefined,
-      // 拖拽元素改变位置的时候: (from, to) => {}
+      // The callback function when dragging an element to change its position: (from, to) => {}
       fallbackOnBody: false,
       forceFallback: false,
-      // 忽略 HTML5拖拽行为，强制回调进行
+      // Ignore HTML5 drag and drop behavior, force callback to proceed
       stopPropagation: false,
-      // 阻止捕获和冒泡阶段中当前事件的进一步传播
+      // Prevents further propagation of the current event in the capture and bubbling phases
       supportPointer: 'PointerEvent' in window && !Safari,
       supportTouch: 'ontouchstart' in window
     }; // Set default options
@@ -761,31 +858,22 @@
       x: 0,
       y: 0
     };
-    this.state = new State(); // 拖拽过程中状态记录
+    this.state = new State(); // Status record during drag and drop
 
-    this.differ = new Differ(); // 记录拖拽前后差异
+    this.differ = new Differ(); // Record the difference before and after dragging
 
-    this.ghost = new Ghost(this); // 拖拽时蒙版元素
+    this.ghost = new Ghost(this); // Mask element while dragging
 
-    this.dragEl = null; // 拖拽元素
+    this.dragEl = null; // Drag element
 
-    this.dropEl = null; // 释放元素
+    this.dropEl = null; // Drop element
 
     this.dragStartTimer = null; // setTimeout timer
 
     this.autoScrollTimer = null;
-    Object.assign(this, Animation(), DNDEvent());
-    this._onStart = this._onStart.bind(this);
-    this._onMove = this._onMove.bind(this);
-    this._onDrop = this._onDrop.bind(this);
+    Object.assign(this, Animation(), AutoScroll(), DNDEvent());
 
-    this._bindEventListener();
-
-    if (!window.requestAnimationFrame) {
-      window.requestAnimationFrame = function (callback) {
-        return setTimeout(callback, 17);
-      };
-    }
+    this._bindDragEventListener();
   }
 
   Sortable.prototype = {
@@ -795,9 +883,14 @@
      * Destroy
      */
     destroy: function destroy() {
-      this._unbindEventListener();
-
       this._clearState();
+
+      this._unbindDragEventListener(); // Remove draggable attributes
+
+
+      Array.prototype.forEach.call(this.rootEl.querySelectorAll('[draggable]'), function (el) {
+        el.removeAttribute('draggable');
+      });
     },
 
     /**
@@ -814,7 +907,7 @@
       return this.options[key];
     },
     // -------------------------------- prepare start ----------------------------------
-    _onStart: function _onStart(
+    _onDrag: function _onDrag(
     /** Event|TouchEvent */
     evt) {
       var _this2 = this;
@@ -828,25 +921,8 @@
       if (e.target === this.rootEl) return true;
       if (this.options.stopPropagation) evt.stopPropagation();
       var _this$options = this.options,
-          delay = _this$options.delay,
-          delayOnTouchOnly = _this$options.delayOnTouchOnly;
-
-      if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
-        clearTimeout(this.dragStartTimer); // delay to start
-
-        this.dragStartTimer = setTimeout(function () {
-          return _this2._onDrag(e, touch);
-        }, delay);
-      } else {
-        this._onDrag(e, touch);
-      }
-    },
-    _onDrag: function _onDrag(
-    /** Event|TouchEvent */
-    e, touch) {
-      var _this$options2 = this.options,
-          draggable = _this$options2.draggable,
-          dragging = _this$options2.dragging;
+          draggable = _this$options.draggable,
+          dragging = _this$options.dragging;
 
       if (typeof draggable === 'function') {
         if (!draggable(e)) return true;
@@ -854,19 +930,17 @@
         if (!matches(e.target, draggable)) return true;
       } else if (draggable !== undefined) {
         throw new Error("draggable expected \"function\" or \"string\" but received \"".concat(_typeof(draggable), "\""));
-      }
-
-      this._removeSelection(); // 获取拖拽元素                 
+      } // Get the dragged element               
 
 
       if (dragging) {
         if (typeof dragging === 'function') this.dragEl = dragging(e);else throw new Error("dragging expected \"function\" or \"string\" but received \"".concat(_typeof(dragging), "\""));
       } else {
         this.dragEl = getElement(this.rootEl, e.target, true);
-      } // 不存在拖拽元素时不允许拖拽
+      } // No dragging is allowed when there is no dragging element
 
 
-      if (!this.dragEl || this.dragEl.animated) return true; // 获取拖拽元素在列表中的位置
+      if (!this.dragEl || this.dragEl.animated) return true; // get the position of the dragged element in the list
 
       var _getElement = getElement(this.rootEl, this.dragEl),
           rect = _getElement.rect,
@@ -886,29 +960,82 @@
         y: e.clientY - rect.top
       };
       this.state.sortableDown = e; // sortable state down is active
+      // Solve the problem that `dragend` does not take effect when the `dragover` event is not triggered
 
-      this._bindMoveEvents(touch);
+      on(this.ownerDocument, 'pointerup', this._onDrop);
+      on(this.ownerDocument, 'touchend', this._onDrop);
+      on(this.ownerDocument, 'mouseup', this._onDrop);
+      var _this$options2 = this.options,
+          delay = _this$options2.delay,
+          delayOnTouchOnly = _this$options2.delayOnTouchOnly;
 
-      this._bindUpEvents(touch);
-    },
-    // -------------------------------- is started ----------------------------------
-    _onStarted: function _onStarted(e,
-    /** originalEvent */
-    evt) {
-      if (!this.ghost.$el) {
-        // 将初始化放到move事件中，防止与click事件冲突
-        var rect = this.differ.from.rect;
-        this.ghost.init(this.dragEl.cloneNode(true), rect); // add class for drag element
+      if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
+        clearTimeout(this.dragStartTimer); // delay to start
 
-        toggleClass(this.dragEl, this.options.chosenClass, true); // 解决移动端无法拖拽问题
-
-        this.dragEl.style['touch-action'] = 'none';
-        this.dragEl.style['will-change'] = 'transform'; // onDrag callback
-
-        var onDrag = this.options.onDrag;
-        if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt);
-        if (Safari) css(document.body, 'user-select', 'none');
+        this.dragStartTimer = setTimeout(function () {
+          return _this2._onStart(e, touch);
+        }, delay);
+      } else {
+        this._onStart(e, touch);
       }
+    },
+    _onStart: function _onStart(
+    /** Event|TouchEvent */
+    e, touch) {
+      if (!this.nativeDraggable || touch) {
+        this._bindMoveEvents(touch);
+
+        on(this.ownerDocument, 'pointercancel', this._onDrop);
+        on(this.ownerDocument, 'touchcancel', this._onDrop);
+      } else {
+        this.dragEl.draggable = true;
+        this._onDragStart = this._onDragStart.bind(this);
+        this._onDragOver = this._onDragOver.bind(this);
+        on(this.rootEl, 'dragstart', this._onDragStart);
+      } // clear selection
+
+
+      try {
+        if (document.selection) {
+          // Timeout neccessary for IE9
+          _nextTick(function () {
+            document.selection.empty();
+          });
+        } else {
+          window.getSelection().removeAllRanges();
+        }
+      } catch (error) {//
+      }
+    },
+    // -------------------------------- drag event ----------------------------------
+    _onDragStart: function _onDragStart(evt) {
+      // elements can only be dragged after firefox sets setData
+      evt.dataTransfer.setData('te', evt.target.innerText);
+      on(this.rootEl, 'dragover', this._onDragOver);
+      on(this.rootEl, 'dragend', this._onDrop);
+    },
+    _onDragOver: function _onDragOver(evt) {
+      if (!this.state.sortableDown) return;
+      var stopPropagation = this.options.stopPropagation;
+      stopPropagation && evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
+
+      evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault(); // prevent scrolling
+
+      var clientX = evt.clientX,
+          clientY = evt.clientY;
+      var distanceX = clientX - this.move.x;
+      var distanceY = clientY - this.move.y;
+
+      if (clientX !== void 0 && Math.abs(distanceX) <= 0 && clientY !== void 0 && Math.abs(distanceY) <= 0) {
+        return;
+      } // truly started
+
+
+      this._onStarted(evt, evt);
+
+      if (evt.target === this.rootEl) return;
+
+      this._onChange(this, evt.target, evt, evt);
     },
     // -------------------------------- on move ----------------------------------
     _onMove: function _onMove(
@@ -929,19 +1056,17 @@
         return;
       }
 
-      this.state.sortableMove = e; // sortable state move is active
-
       var stopPropagation = this.options.stopPropagation;
-      stopPropagation && evt.stopPropagation && evt.stopPropagation(); // 阻止事件冒泡
+      stopPropagation && evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
 
       evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault(); // prevent scrolling
 
       this._onStarted(e, evt);
 
-      this.ghost.move(distanceX, distanceY); // 拖拽过程中触发的回调
+      this.ghost.move(distanceX, distanceY); // onMove callback
 
       var onMove = this.options.onMove;
-      if (onMove && typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, evt); // 判断边界值
+      if (onMove && typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, evt); // boundary value judgment
 
       if (clientX < 0 || clientY < 0) return;
 
@@ -964,6 +1089,28 @@
         }, 0);
       }
     },
+    _onStarted: function _onStarted(e,
+    /** originalEvent */
+    evt) {
+      this.state.sortableMove = e; // sortable state move is active
+
+      if (!this.ghost.$el) {
+        // Init in the move event to prevent conflict with the click event
+        var rect = this.differ.from.rect;
+        var ghostEl = this.dragEl.cloneNode(true);
+        this.ghost.init(ghostEl, rect, !this.nativeDraggable); // add class for drag element
+
+        toggleClass(this.dragEl, this.options.chosenClass, true); // solve the problem that the mobile cannot be dragged
+
+        this.dragEl.style['touch-action'] = 'none';
+        this.dragEl.style['will-change'] = 'transform'; // onDrag callback
+
+        var onDrag = this.options.onDrag;
+        if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt);
+        if (Safari) css(document.body, 'user-select', 'none');
+        if (this.nativeDraggable) this._unbindDropEvents();
+      }
+    },
     _onChange: debounce(function (_this, target, e, evt) {
       var _getElement2 = getElement(_this.rootEl, target),
           el = _getElement2.el,
@@ -980,7 +1127,7 @@
           bottom = rect.bottom;
 
       if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
-        // 拖拽前后元素不一致时交换
+        // swap when the elements before and after the drag are inconsistent
         if (el !== _this.dragEl) {
           _this.differ.to = {
             node: _this.dropEl,
@@ -992,11 +1139,10 @@
 
           var onChange = _this.options.onChange;
 
-          var _offset = getOffset(_this.dragEl); // 获取拖拽元素的 offset 值
-          // 元素发生位置交换时触发的回调
+          var _offset = getOffset(_this.dragEl); // onChange callback
 
 
-          if (onChange && typeof onChange === 'function') onChange(_this.differ.from, _this.differ.to, e, evt); // 优先比较 top 值，top 值相同再比较 left
+          if (onChange && typeof onChange === 'function') onChange(_this.differ.from, _this.differ.to, e, evt); // the top value is compared first, and the left is compared if the top value is the same
 
           if (_offset.top < offset.top || _offset.left < offset.left) {
             _this.rootEl.insertBefore(_this.dragEl, el.nextElementSibling);
@@ -1012,146 +1158,50 @@
     _onDrop: function _onDrop(
     /** Event|TouchEvent */
     evt) {
+      this._unbindDragEvents();
+
       this._unbindMoveEvents();
 
-      this._unbindUpEvents();
+      this._unbindDropEvents();
 
-      clearTimeout(this.dragStartTimer);
+      this.dragStartTimer && clearTimeout(this.dragStartTimer);
       var stopPropagation = this.options.stopPropagation;
-      stopPropagation && evt.stopPropagation(); // 阻止事件冒泡
-
-      evt.cancelable && evt.preventDefault(); // clear style and class
+      stopPropagation && evt.stopPropagation();
+      evt.preventDefault && evt.preventDefault(); // clear style and class
 
       toggleClass(this.dragEl, this.options.chosenClass, false);
       this.dragEl.style['touch-action'] = '';
       this.dragEl.style['will-change'] = '';
+      this.dragEl.draggable = false;
 
       if (this.state.sortableDown && this.state.sortableMove) {
-        // 重新获取一次拖拽元素的 offset 和 rect 值作为拖拽完成后的值
+        // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
         this.differ.to.offset = getOffset(this.dragEl);
         this.differ.to.rect = getRect(this.dragEl);
         var _this$differ = this.differ,
             from = _this$differ.from,
-            to = _this$differ.to; // 通过 offset 比较是否进行了元素交换
+            to = _this$differ.to; // compare whether the element is swapped by offset
 
         var changed = from.offset.top !== to.offset.top || from.offset.left !== to.offset.left; // onDrop callback
 
         var onDrop = this.options.onDrop;
         if (onDrop && typeof onDrop === 'function') onDrop(changed, evt);
-        this.ghost.destroy(to.rect);
       }
 
-      this.differ.destroy();
-      this.state = new State();
+      this._clearState();
+
+      this.ghost.destroy(this.differ.to.rect);
       if (Safari) css(document.body, 'user-select', '');
     },
-    // -------------------------------- auto scroll ----------------------------------
-    _autoScroll: throttle(function (_this) {
-      // check if is moving now
-      if (!(_this.state.sortableDown && _this.state.sortableMove)) return;
-      var _this$state$sortableM = _this.state.sortableMove,
-          clientX = _this$state$sortableM.clientX,
-          clientY = _this$state$sortableM.clientY;
-      if (clientX === void 0 || clientY === void 0) return;
-
-      if (_this.scrollEl === _this.ownerDocument) ; else {
-        var _this$scrollEl = _this.scrollEl,
-            scrollTop = _this$scrollEl.scrollTop,
-            scrollLeft = _this$scrollEl.scrollLeft,
-            scrollHeight = _this$scrollEl.scrollHeight,
-            scrollWidth = _this$scrollEl.scrollWidth;
-
-        var _getRect2 = getRect(_this.scrollEl),
-            top = _getRect2.top,
-            right = _getRect2.right,
-            bottom = _getRect2.bottom,
-            left = _getRect2.left,
-            height = _getRect2.height,
-            width = _getRect2.width;
-
-        var _this$options3 = _this.options,
-            scrollStep = _this$options3.scrollStep,
-            scrollThreshold = _this$options3.scrollThreshold; // check direction
-
-        var totop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
-        var toleft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
-        var toright = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
-        var tobottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold; // scroll position
-
-        var position = {
-          x: scrollLeft,
-          y: scrollTop
-        };
-
-        if (totop) {
-          if (toleft) {
-            // to top-left
-            position.x = scrollLeft - scrollStep;
-          } else if (toright) {
-            // to top-right
-            position.x = scrollLeft + scrollStep;
-          } else {
-            // to top
-            position.x = scrollLeft;
-          }
-
-          position.y = scrollTop - scrollStep;
-        } else if (tobottom) {
-          if (toleft) {
-            // to bottom-left
-            position.x = scrollLeft - scrollStep;
-          } else if (toright) {
-            // to bottom-right
-            position.x = scrollLeft + scrollStep;
-          } else {
-            // to bottom
-            position.x = scrollLeft;
-          }
-
-          position.y = scrollTop + scrollStep;
-        } else if (toleft) {
-          // to left
-          position.x = scrollLeft - scrollStep;
-          position.y = scrollTop;
-        } else if (toright) {
-          // to right
-          position.x = scrollLeft + scrollStep;
-          position.y = scrollTop;
-        } // if need to scroll
-
-
-        if (totop || toleft || toright || tobottom) {
-          requestAnimationFrame(function () {
-            _this.scrollEl.scrollTo(position.x, position.y);
-
-            _this._autoScroll(_this);
-          });
-        }
-      }
-    }, 10),
     // -------------------------------- clear ----------------------------------
-    _removeSelection: function _removeSelection() {
-      try {
-        if (document.selection) {
-          // Timeout neccessary for IE9
-          _nextTick(function () {
-            document.selection.empty();
-          });
-        } else {
-          window.getSelection().removeAllRanges();
-        }
-      } catch (error) {//
-      }
-    },
     _clearState: function _clearState() {
       this.dragEl = null;
       this.dropEl = null;
       this.state = new State();
-      this.ghost.destroy();
       this.differ.destroy();
     }
   };
-  Sortable.utils = {
+  Sortable.prototype.utils = {
     getRect: getRect,
     getOffset: getOffset,
     debounce: debounce,
