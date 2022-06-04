@@ -45,6 +45,7 @@ var DND = new Sortable(
     // draggable: 'i' // use tagName 
     // draggable: '.drag' // use class
     // draggable: '#drag' // use id
+    // dragging: (e) => e.target.parentNode // set dragging HTMLElement
     onDrag: (dragEl, event, originalEvent) => {
       // code
     },
@@ -76,9 +77,9 @@ var DND = new Sortable(
 |-------------------|-------------------|-------------|--------------|
 | `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
 | `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable, the function type must return a boolean |
-| `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started: <br />`(dragEl, event, originalEvent) => {}` |
-| `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving: <br /> `(from, ghostEl, event, originalEvent) => {}` |
-| `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed: <br /> `(changed, originalEvent) => {}` |
+| `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started |
+| `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving |
+| `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed |
 | `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position: <br /> `(from, to, event, originalEvent) => {}` |
 | `autoScroll`      | `Boolean`         | `true`      | Automatic scrolling when moving to the edge of the container, **for browsers that do not support HTML5 drag events** |
 | `scrollStep`      | `Number`          | `5`         | The distance to scroll each frame when autoscrolling |
@@ -90,7 +91,7 @@ var DND = new Sortable(
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
-| `dragging`        | `Function`        | `undefined` | Specifies the element witch you want to drag: <br /> `(e) => return e.target` |
+| `dragging`        | `Function`        | `undefined` | Specifies the element witch you want to drag |
 | `delay`           | `Number`          | `0`         | time in milliseconds to define when the sorting should start |
 | `delayOnTouchOnly`| `Boolean`         | `false`     | only delay if user is using touch |
 | `ghostAnimation`  | `Number`          | `0`         | Ghost element animation delay before destroyed |
