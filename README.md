@@ -80,7 +80,7 @@ var DND = new Sortable(
 | `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started |
 | `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving |
 | `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed |
-| `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position: <br /> `(from, to, event, originalEvent) => {}` |
+| `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position |
 | `autoScroll`      | `Boolean`         | `true`      | Automatic scrolling when moving to the edge of the container, **for browsers that do not support HTML5 drag events** |
 | `scrollStep`      | `Number`          | `5`         | The distance to scroll each frame when autoscrolling |
 | `scrollThreshold` | `Number`          | `15`        | Threshold to trigger autoscroll |
