@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.2.6
+ * sortable-dnd v0.2.7
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -127,6 +127,21 @@
     });else CSSTRANSFORMS.forEach(function (tf) {
       return css(el, tf, '');
     });
+  }
+  /**
+   * get touch event and current event
+   * @param {Event} evt 
+   */
+
+  function getEvent(evt) {
+    var touch = evt.touches && evt.touches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
+    var e = touch || evt;
+    var target = touch ? document.elementFromPoint(e.clientX, e.clientY) : e.target;
+    return {
+      touch: touch,
+      e: e,
+      target: target
+    };
   }
   /**
    * detect passive event support
@@ -733,7 +748,7 @@
 
   function DNDEvent() {
     return {
-      _bindDragEventListener: function _bindDragEventListener() {
+      _bindEventListener: function _bindEventListener() {
         this._onDrag = this._onDrag.bind(this);
         this._onMove = this._onMove.bind(this);
         this._onDrop = this._onDrop.bind(this);
@@ -749,7 +764,7 @@
           on(this.rootEl, 'mousedown', this._onDrag);
         }
       },
-      _unbindDragEventListener: function _unbindDragEventListener() {
+      _clearEvent: function _clearEvent() {
         off(this.rootEl, 'pointerdown', this._onDrag);
         off(this.rootEl, 'touchstart', this._onDrag);
         off(this.rootEl, 'mousedown', this._onDrag);
@@ -871,9 +886,9 @@
     this.dragStartTimer = null; // setTimeout timer
 
     this.autoScrollTimer = null;
-    Object.assign(this, Animation(), AutoScroll(), DNDEvent());
+    Object.assign(this, DNDEvent(), Animation(), AutoScroll());
 
-    this._bindDragEventListener();
+    this._bindEventListener();
   }
 
   Sortable.prototype = {
@@ -885,7 +900,7 @@
     destroy: function destroy() {
       this._clearState();
 
-      this._unbindDragEventListener(); // Remove draggable attributes
+      this._clearEvent(); // Remove draggable attributes
 
 
       Array.prototype.forEach.call(this.rootEl.querySelectorAll('[draggable]'), function (el) {
@@ -914,11 +929,14 @@
 
       if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled) return; // only left button and enabled
 
-      var touch = evt.touches && evt.touches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
-      var e = touch || evt; // Safari ignores further event handling after mousedown
+      var _getEvent = getEvent(evt),
+          touch = _getEvent.touch,
+          e = _getEvent.e,
+          target = _getEvent.target; // Safari ignores further event handling after mousedown
 
-      if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return;
-      if (e.target === this.rootEl) return true;
+
+      if (!this.nativeDraggable && Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
+      if (target === this.rootEl) return true;
       if (this.options.stopPropagation) evt.stopPropagation();
       var _this$options = this.options,
           draggable = _this$options.draggable,
@@ -927,7 +945,7 @@
       if (typeof draggable === 'function') {
         if (!draggable(e)) return true;
       } else if (typeof draggable === 'string') {
-        if (!matches(e.target, draggable)) return true;
+        if (!matches(target, draggable)) return true;
       } else if (draggable !== undefined) {
         throw new Error("draggable expected \"function\" or \"string\" but received \"".concat(_typeof(draggable), "\""));
       } // Get the dragged element               
@@ -936,11 +954,13 @@
       if (dragging) {
         if (typeof dragging === 'function') this.dragEl = dragging(e);else throw new Error("dragging expected \"function\" or \"string\" but received \"".concat(_typeof(dragging), "\""));
       } else {
-        this.dragEl = getElement(this.rootEl, e.target, true);
+        this.dragEl = getElement(this.rootEl, target, true);
       } // No dragging is allowed when there is no dragging element
 
 
-      if (!this.dragEl || this.dragEl.animated) return true; // get the position of the dragged element in the list
+      if (!this.dragEl || this.dragEl.animated) return true; // solve the problem that the mobile cannot be dragged
+
+      if (touch) this.dragEl.style['touch-action'] = 'none'; // get the position of the dragged element in the list
 
       var _getElement = getElement(this.rootEl, this.dragEl),
           rect = _getElement.rect,
@@ -988,6 +1008,7 @@
         on(this.ownerDocument, 'pointercancel', this._onDrop);
         on(this.ownerDocument, 'touchcancel', this._onDrop);
       } else {
+        // allow HTML5 drag event
         this.dragEl.draggable = true;
         this._onDragStart = this._onDragStart.bind(this);
         this._onDragOver = this._onDragOver.bind(this);
@@ -1044,11 +1065,13 @@
       var _this3 = this;
 
       if (!this.state.sortableDown) return;
-      var touch = evt.touches && evt.touches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
-      var e = touch || evt;
+
+      var _getEvent2 = getEvent(evt),
+          e = _getEvent2.e,
+          target = _getEvent2.target;
+
       var clientX = e.clientX,
           clientY = e.clientY;
-      var target = touch ? document.elementFromPoint(clientX, clientY) : e.target;
       var distanceX = clientX - this.move.x;
       var distanceY = clientY - this.move.y;
 
@@ -1095,18 +1118,16 @@
       this.state.sortableMove = e; // sortable state move is active
 
       if (!this.ghost.$el) {
-        // Init in the move event to prevent conflict with the click event
+        // onDrag callback
+        var onDrag = this.options.onDrag;
+        if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt); // Init in the move event to prevent conflict with the click event
+
         var rect = this.differ.from.rect;
         var ghostEl = this.dragEl.cloneNode(true);
         this.ghost.init(ghostEl, rect, !this.nativeDraggable); // add class for drag element
 
-        toggleClass(this.dragEl, this.options.chosenClass, true); // solve the problem that the mobile cannot be dragged
-
-        this.dragEl.style['touch-action'] = 'none';
-        this.dragEl.style['will-change'] = 'transform'; // onDrag callback
-
-        var onDrag = this.options.onDrag;
-        if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt);
+        toggleClass(this.dragEl, this.options.chosenClass, true);
+        this.dragEl.style['will-change'] = 'transform';
         if (Safari) css(document.body, 'user-select', 'none');
         if (this.nativeDraggable) this._unbindDropEvents();
       }
@@ -1167,12 +1188,16 @@
       this.dragStartTimer && clearTimeout(this.dragStartTimer);
       var stopPropagation = this.options.stopPropagation;
       stopPropagation && evt.stopPropagation();
-      evt.preventDefault && evt.preventDefault(); // clear style and class
+      evt.preventDefault && evt.preventDefault();
+
+      var _getEvent3 = getEvent(evt),
+          touch = _getEvent3.touch; // clear style and class
+
 
       toggleClass(this.dragEl, this.options.chosenClass, false);
-      this.dragEl.style['touch-action'] = '';
+      if (this.nativeDraggable) this.dragEl.draggable = false;
+      if (touch) this.dragEl.style['touch-action'] = '';
       this.dragEl.style['will-change'] = '';
-      this.dragEl.draggable = false;
 
       if (this.state.sortableDown && this.state.sortableMove) {
         // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
@@ -1188,17 +1213,16 @@
         if (onDrop && typeof onDrop === 'function') onDrop(changed, evt);
       }
 
-      this._clearState();
-
-      this.ghost.destroy(this.differ.to.rect);
       if (Safari) css(document.body, 'user-select', '');
+      this.ghost.destroy(this.differ.to.rect);
+      this.state = new State();
     },
     // -------------------------------- clear ----------------------------------
     _clearState: function _clearState() {
-      this.dragEl = null;
-      this.dropEl = null;
       this.state = new State();
       this.differ.destroy();
+      this.dragEl = null;
+      this.dropEl = null;
     }
   };
   Sortable.prototype.utils = {
