@@ -4,6 +4,7 @@ import {
   css,
   matches,
   getRect,
+  getEvent,
   throttle,
   debounce,
   getOffset,
@@ -84,8 +85,13 @@ function Sortable(el, options) {
   this.dragStartTimer = null // setTimeout timer
   this.autoScrollTimer = null
 
-  Object.assign(this, Animation(), AutoScroll(), Events())
-  this._bindDragEventListener()
+  Object.assign(
+    this,
+    Events(),
+    Animation(),
+    AutoScroll(),
+  )
+  this._bindEventListener()
 }
 
 Sortable.prototype = {
@@ -96,7 +102,7 @@ Sortable.prototype = {
    */
   destroy: function() {
     this._clearState()
-    this._unbindDragEventListener()
+    this._clearEvent()
     // Remove draggable attributes
 		Array.prototype.forEach.call(this.rootEl.querySelectorAll('[draggable]'), function (el) {
 			el.removeAttribute('draggable')
@@ -121,12 +127,11 @@ Sortable.prototype = {
   _onDrag: function(/** Event|TouchEvent */evt) {
     if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled) return // only left button and enabled
 
-    const touch = (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt)
-    const e = touch || evt
+    const { touch, e, target } = getEvent(evt)
 
     // Safari ignores further event handling after mousedown
-		if (!this.nativeDraggable && Safari && e.target && e.target.tagName.toUpperCase() === 'SELECT') return
-    if (e.target === this.rootEl) return true
+		if (!this.nativeDraggable && Safari && target && target.tagName.toUpperCase() === 'SELECT') return
+    if (target === this.rootEl) return true
 
     if (this.options.stopPropagation) evt.stopPropagation()
 
@@ -136,7 +141,7 @@ Sortable.prototype = {
       if (!draggable(e)) return true
 
     } else if (typeof draggable === 'string') {
-      if (!matches(e.target, draggable)) return true
+      if (!matches(target, draggable)) return true
 
     } else if (draggable !== undefined) {
       throw new Error(`draggable expected "function" or "string" but received "${typeof draggable}"`)
@@ -147,12 +152,15 @@ Sortable.prototype = {
       if (typeof dragging === 'function') this.dragEl = dragging(e)
       else throw new Error(`dragging expected "function" or "string" but received "${typeof dragging}"`)
     } else {
-      this.dragEl = getElement(this.rootEl, e.target, true)
+      this.dragEl = getElement(this.rootEl, target, true)
     }
 
     // No dragging is allowed when there is no dragging element
     if (!this.dragEl || this.dragEl.animated) return true
 
+    // solve the problem that the mobile cannot be dragged
+    if (touch) this.dragEl.style['touch-action'] = 'none'
+    
     // get the position of the dragged element in the list
     const { rect, offset } = getElement(this.rootEl, this.dragEl)
     this.move = { x: e.clientX, y: e.clientY }
@@ -180,6 +188,7 @@ Sortable.prototype = {
       on(this.ownerDocument, 'pointercancel', this._onDrop)
       on(this.ownerDocument, 'touchcancel', this._onDrop)
     } else {
+      // allow HTML5 drag event
       this.dragEl.draggable = true
 
       this._onDragStart = this._onDragStart.bind(this)
@@ -232,10 +241,8 @@ Sortable.prototype = {
   // -------------------------------- on move ----------------------------------
   _onMove: function(/** Event|TouchEvent */evt) {
     if (!this.state.sortableDown) return
-    const touch = (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt)
-    const e = touch || evt
+    const { touch, e, target } = getEvent(evt)
     const { clientX, clientY } = e
-    const target = touch ? document.elementFromPoint(clientX, clientY) : e.target
     const distanceX = clientX - this.move.x
     const distanceY = clientY - this.move.y
 
@@ -271,6 +278,9 @@ Sortable.prototype = {
   _onStarted: function(e, /** originalEvent */evt) {
     this.state.sortableMove = e // sortable state move is active
     if (!this.ghost.$el) {
+      // onDrag callback
+      const { onDrag } = this.options
+      if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt)
 
       // Init in the move event to prevent conflict with the click event
       const { rect } = this.differ.from
@@ -279,14 +289,7 @@ Sortable.prototype = {
 
       // add class for drag element
       toggleClass(this.dragEl, this.options.chosenClass, true)
-
-      // solve the problem that the mobile cannot be dragged
-      this.dragEl.style['touch-action'] = 'none'
       this.dragEl.style['will-change'] = 'transform'
-
-      // onDrag callback
-      const { onDrag } = this.options
-      if (onDrag && typeof onDrag === 'function') onDrag(this.dragEl, e, evt)
 
       if (Safari) css(document.body, 'user-select', 'none')
       if (this.nativeDraggable) this._unbindDropEvents()
@@ -336,11 +339,12 @@ Sortable.prototype = {
     stopPropagation && evt.stopPropagation()
     evt.preventDefault && evt.preventDefault()
 
+    const { touch } = getEvent(evt)
     // clear style and class
     toggleClass(this.dragEl, this.options.chosenClass, false)
-    this.dragEl.style['touch-action'] = ''
+    if (this.nativeDraggable) this.dragEl.draggable = false
+    if (touch) this.dragEl.style['touch-action'] = ''
     this.dragEl.style['will-change'] = ''
-    this.dragEl.draggable = false
 
     if (this.state.sortableDown && this.state.sortableMove) {
       // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
@@ -354,17 +358,17 @@ Sortable.prototype = {
       const { onDrop } = this.options
       if (onDrop && typeof onDrop === 'function') onDrop(changed, evt)
     }
-    this._clearState()
-    this.ghost.destroy(this.differ.to.rect)
     if (Safari) css(document.body, 'user-select', '')
+    this.ghost.destroy(this.differ.to.rect)
+    this.state = new State
   },
 
   // -------------------------------- clear ----------------------------------
   _clearState: function() {
-    this.dragEl = null
-    this.dropEl = null
     this.state = new State
     this.differ.destroy()
+    this.dragEl = null
+    this.dropEl = null
   }
 }
 

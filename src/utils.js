@@ -35,6 +35,17 @@ export function setTransform(el, transform) {
 }
 
 /**
+ * get touch event and current event
+ * @param {Event} evt 
+ */
+export function getEvent(evt) {
+  const touch = (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt)
+  const e = touch || evt
+  const target = touch ? document.elementFromPoint(e.clientX, e.clientY) : e.target
+  return { touch, e, target }
+}
+
+/**
  * detect passive event support
  */
 export function supportPassive() {

@@ -2,7 +2,7 @@ import { on, off } from './utils.js'
 
 export default function DNDEvent() {
   return {
-    _bindDragEventListener() {
+    _bindEventListener() {
       this._onDrag = this._onDrag.bind(this)
       this._onMove = this._onMove.bind(this)
       this._onDrop = this._onDrop.bind(this)
@@ -17,7 +17,7 @@ export default function DNDEvent() {
       }
     },
   
-    _unbindDragEventListener() {
+    _clearEvent() {
       off(this.rootEl, 'pointerdown', this._onDrag)
       off(this.rootEl, 'touchstart', this._onDrag)
       off(this.rootEl, 'mousedown', this._onDrag)
