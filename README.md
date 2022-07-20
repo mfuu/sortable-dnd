@@ -91,7 +91,6 @@ var DND = new Sortable(
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
-| `dragging`        | `Function`        | `undefined` | Specifies the element witch you want to drag |
 | `delay`           | `Number`          | `0`         | time in milliseconds to define when the sorting should start |
 | `delayOnTouchOnly`| `Boolean`         | `false`     | only delay if user is using touch |
 | `ghostAnimation`  | `Number`          | `0`         | Ghost element animation delay before destroyed |

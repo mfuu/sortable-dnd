@@ -39,6 +39,8 @@ function Sortable(el, options) {
   this.ownerDocument = el.ownerDocument
 
   const defaults = {
+    group: '', // string: 'group' or object: { name: 'group', put: true | false, pull: true | false }
+
     autoScroll: true, // Auto scrolling when dragging to the edge of the container
     scrollStep: 5, // The distance to scroll each frame
     scrollThreshold: 15, // Autoscroll threshold
@@ -54,7 +56,6 @@ function Sortable(el, options) {
     chosenClass: '', // Chosen element style
     
     draggable: undefined, // String: css selector, Function: (e) => return true
-    dragging: undefined, // Set the drag element, must be a function and must return an HTMLElement: (e) => return e.target
     onDrag: undefined, // The callback function triggered when dragging starts: () => {}
     onMove: undefined, // The callback function during drag and drop: (from, to) => {}
     onDrop: undefined, // The callback function when the drag is completed: (from, to, changed) => {}
@@ -133,27 +134,19 @@ Sortable.prototype = {
 		if (!this.nativeDraggable && Safari && target && target.tagName.toUpperCase() === 'SELECT') return
     if (target === this.rootEl) return true
 
-    if (this.options.stopPropagation) evt.stopPropagation()
+    if (this.options.stopPropagation) evt.stopPropagation && evt.stopPropagation()
 
-    const { draggable, dragging } = this.options
-
+    const { draggable } = this.options
     if (typeof draggable === 'function') {
       if (!draggable(e)) return true
-
     } else if (typeof draggable === 'string') {
       if (!matches(target, draggable)) return true
-
     } else if (draggable !== undefined) {
       throw new Error(`draggable expected "function" or "string" but received "${typeof draggable}"`)
     }
 
     // Get the dragged element               
-    if (dragging) {
-      if (typeof dragging === 'function') this.dragEl = dragging(e)
-      else throw new Error(`dragging expected "function" or "string" but received "${typeof dragging}"`)
-    } else {
-      this.dragEl = getElement(this.rootEl, target, true)
-    }
+    this.dragEl = getElement(this.rootEl, target, true)
 
     // No dragging is allowed when there is no dragging element
     if (!this.dragEl || this.dragEl.animated) return true
@@ -336,8 +329,8 @@ Sortable.prototype = {
     this.dragStartTimer && clearTimeout(this.dragStartTimer)
 
     const { stopPropagation } = this.options
-    stopPropagation && evt.stopPropagation()
-    evt.preventDefault && evt.preventDefault()
+    stopPropagation && evt.stopPropagation && evt.stopPropagation() // prevent events from bubbling
+    evt.preventDefault !== void 0 && evt.preventDefault()
 
     const { touch } = getEvent(evt)
     // clear style and class
