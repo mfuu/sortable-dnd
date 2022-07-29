@@ -45,7 +45,7 @@ var DND = new Sortable(
     // draggable: 'i' // use tagName 
     // draggable: '.drag' // use class
     // draggable: '#drag' // use id
-    // dragging: (e) => e.target.parentNode // set dragging HTMLElement
+    // draggable: (e) => e.target.parentNode // set drag Element
     onDrag: (dragEl, event, originalEvent) => {
       // code
     },
@@ -76,7 +76,7 @@ var DND = new Sortable(
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
-| `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable, the function type must return a boolean |
+| `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable |
 | `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started |
 | `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving |
 | `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed |

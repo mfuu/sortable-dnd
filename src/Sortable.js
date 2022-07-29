@@ -11,6 +11,8 @@ import {
   _nextTick,
   getElement,
   toggleClass,
+  isHTMLElement,
+  offsetChanged,
   getParentAutoScrollElement
 } from './utils.js'
 import { IOS, Edge, Safari, IE11OrLess, ChromeForAndroid } from './Brower.js'
@@ -138,7 +140,9 @@ Sortable.prototype = {
 
     const { draggable } = this.options
     if (typeof draggable === 'function') {
-      if (!draggable(e)) return true
+      const value = draggable(e)
+      if (!value) return true
+      if (isHTMLElement(value)) this.dragEl = draggable(e) // set drag element
     } else if (typeof draggable === 'string') {
       if (!matches(target, draggable)) return true
     } else if (draggable !== undefined) {
@@ -146,7 +150,7 @@ Sortable.prototype = {
     }
 
     // Get the dragged element               
-    this.dragEl = getElement(this.rootEl, target, true)
+    if (!this.dragEl) this.dragEl = getElement(this.rootEl, target, true)
 
     // No dragging is allowed when there is no dragging element
     if (!this.dragEl || this.dragEl.animated) return true
@@ -254,11 +258,6 @@ Sortable.prototype = {
     const { onMove } = this.options
     if (onMove && typeof onMove === 'function') onMove(this.differ.from, this.ghost.$el, e, evt)
 
-    // boundary value judgment
-    if (clientX < 0 || clientY < 0) return
-    const { top, right, bottom, left } = getRect(this.rootEl)
-    if (clientX < left || clientX > right || clientY < top || clientY > bottom) return
-
     // check if element will exchange
     this._onChange(this, target, e, evt)
 
@@ -291,7 +290,7 @@ Sortable.prototype = {
   _onChange: debounce(function(_this, target, e, evt) {
     const { el, rect, offset } = getElement(_this.rootEl, target)
     if (!el || (el && el.animated)) return
-    
+
     _this.dropEl = el
     const { clientX, clientY } = e
     const { left, right, top, bottom } = rect
@@ -333,7 +332,7 @@ Sortable.prototype = {
     evt.preventDefault !== void 0 && evt.preventDefault()
 
     const { touch } = getEvent(evt)
-    // clear style and class
+    // clear style, attrs and class
     toggleClass(this.dragEl, this.options.chosenClass, false)
     if (this.nativeDraggable) this.dragEl.draggable = false
     if (touch) this.dragEl.style['touch-action'] = ''
@@ -344,16 +343,17 @@ Sortable.prototype = {
       this.differ.to.offset = getOffset(this.dragEl)
       this.differ.to.rect = getRect(this.dragEl)
 
-      const { from, to } = this.differ
-      // compare whether the element is swapped by offset
-      const changed = from.offset.top !== to.offset.top || from.offset.left !== to.offset.left
-      // onDrop callback
       const { onDrop } = this.options
-      if (onDrop && typeof onDrop === 'function') onDrop(changed, evt)
+      if (onDrop && typeof onDrop === 'function') {
+        // compare whether the element is swapped by offset
+        const changed = offsetChanged(this.differ.from.offset, this.differ.to.offset)
+        // onDrop callback
+        onDrop(changed, evt)
+      }
     }
     if (Safari) css(document.body, 'user-select', '')
     this.ghost.destroy(this.differ.to.rect)
-    this.state = new State
+    this._clearState()
   },
 
   // -------------------------------- clear ----------------------------------
@@ -370,7 +370,6 @@ Sortable.prototype.utils = {
   getOffset,
   debounce,
   throttle,
-  getParentAutoScrollElement
 }
 
 export default Sortable

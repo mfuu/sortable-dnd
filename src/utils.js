@@ -12,6 +12,20 @@ export const CSSTRANSFORMS = ['-webkit-transform', '-moz-transform', '-ms-transf
 export const SUPPORTPASSIVE = supportPassive()
 
 /**
+ * check if is HTMLElement
+ */
+export function isHTMLElement(obj) {
+  let d = document.createElement("div")
+  try {
+    d.appendChild(obj.cloneNode(true))
+    return obj.nodeType == 1 ? true : false
+  } catch(e) {
+    return obj == window || obj == document
+  }
+}
+
+
+/**
  * set transition style
  * @param {HTMLElement} el 
  * @param {String | Function} transition 
@@ -304,6 +318,13 @@ export function matches(el, selector) {
   }
 
   return false
+}
+
+/**
+ * Check whether the front and rear positions are consistent
+ */
+export function offsetChanged(o1, o2) {
+  return o1.top !== o2.top || o1.left !== o2.left
 }
 
 export function css(el, prop, val) {

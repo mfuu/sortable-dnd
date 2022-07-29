@@ -8,6 +8,7 @@ export default function AutoScroll() {
   }
   return {
     _autoScroll: throttle(function(_this) {
+      if (!_this.scrollEl) return
       // check if is moving now
       if (!(_this.state.sortableDown && _this.state.sortableMove)) return
       const { clientX, clientY } = _this.state.sortableMove
