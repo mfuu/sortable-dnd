@@ -374,23 +374,3 @@ export function throttle(fn, delay) {
 export function _nextTick(fn) {
   return setTimeout(fn, 0)
 }
-
-export default {
-  on,
-  off,
-  css,
-  getRect,
-  matches,
-  throttle,
-  debounce,
-  getIndex,
-  _nextTick,
-  isChildOf,
-  getElement,
-  toggleClass,
-  setTransform,
-  setTransition,
-  supportPassive,
-  getWindowScrollingElement,
-  getParentAutoScrollElement,
-}

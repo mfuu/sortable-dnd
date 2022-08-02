@@ -1,6 +1,8 @@
 import { css, getRect, toggleClass, setTransition, setTransform } from './utils.js'
-import { IOS } from './Brower.js'
 
+/**
+ * Sortable states
+ */
 export class State {
   constructor() {
     this.sortableDown = undefined
@@ -10,27 +12,21 @@ export class State {
 }
 
 /**
- * 拖拽前后差异初始化
+ * Difference before and after dragging
  */
 export class Differ {
   constructor() {
-    this.from = { node: null, rect: {}, offset: {} }
-    this.to = { node: null, rect: {}, offset: {} }
-  }
-  get(key) {
-    return this[key]
-  }
-  set(key, value) {
-    this[key] = value
+    this.from = { group: null, node: null, rect: {}, offset: {} }
+    this.to = { group: null, node: null, rect: {}, offset: {} }
   }
   destroy() {
-    this.from = { node: null, rect: {}, offset: {} }
-    this.to = { node: null, rect: {}, offset: {} }
+    this.from = { group: null, node: null, rect: {}, offset: {} }
+    this.to = { group: null, node: null, rect: {}, offset: {} }
   }
 }
 
 /**
- * 拖拽中的元素
+ * Elements being dragged
  */
 export class Ghost {
   constructor(sortable) {
@@ -84,6 +80,12 @@ export class Ghost {
     setTransform(this.$el, `translate3d(${x}px, ${y}px, 0)`)
   }
 
+  clear() {
+    this.distance = { x: 0, y: 0 }
+    this.$el && this.$el.remove()
+    this.$el = null
+  }
+
   destroy(rect) {
     if (!this.$el) return
     const left = parseInt(this.$el.style.left)
@@ -91,11 +93,5 @@ export class Ghost {
     this.move(rect.left - left, rect.top - top, true)
     const { ghostAnimation } = this.options
     ghostAnimation ? setTimeout(() => this.clear(), ghostAnimation) : this.clear()
-  }
-
-  clear() {
-    this.$el && this.$el.remove()
-    this.distance = { x: 0, y: 0 }
-    this.$el = null
   }
 }

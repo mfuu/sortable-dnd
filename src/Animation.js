@@ -12,7 +12,7 @@ export default function Animation() {
 
   return {
 
-    captureAnimationState() {
+    _captureAnimationState() {
       const children = [...Array.from(this.rootEl.children)]
       const { start, end } = getRange(children, this.dragEl, this.dropEl)
 
@@ -26,14 +26,14 @@ export default function Animation() {
       })
     },
 
-    animateRange() {
+    _rangeAnimate() {
       animationState.forEach(state => {
         const { target, rect } = state
-        this.animate(target, rect, this.options.animation)
+        this._animate(target, rect, this.options.animation)
       })
     },
 
-    animate(el, preRect, animation = 150) {
+    _animate(el, preRect, animation = 150) {
       const curRect = getRect(el)
       const left = preRect.left - curRect.left
       const top = preRect.top - curRect.top
@@ -41,7 +41,7 @@ export default function Animation() {
       setTransition(el, 'none')
       setTransform(el, `translate3d(${left}px, ${top}px, 0)`)
   
-      el.offsetLeft // trigger repaint
+      el.offsetWidth // trigger repaint
   
       setTransition(el, `${animation}ms`)
       setTransform(el, 'translate3d(0px, 0px, 0px)')
