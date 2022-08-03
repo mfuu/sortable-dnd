@@ -7,18 +7,19 @@ export default function AutoScroll() {
     }
   }
   return {
-    _autoScroll: throttle(function(_this) {
+    _autoScroll: throttle(function(Sortable, state) {
+      if (!Sortable.scrollEl) return
       // check if is moving now
-      if (!(_this.state.sortableDown && _this.state.sortableMove)) return
-      const { clientX, clientY } = _this.state.sortableMove
+      if (!(state.sortableDown && state.sortableMove)) return
+      const { clientX, clientY } = state.sortableMove
       if (clientX === void 0 || clientY === void 0) return
   
-      if (_this.scrollEl === _this.ownerDocument) {
+      if (Sortable.scrollEl === Sortable.ownerDocument) {
         // does not support now
       } else {
-        const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = _this.scrollEl
-        const { top, right, bottom, left, height, width } = getRect(_this.scrollEl)
-        const { scrollStep, scrollThreshold } = _this.options
+        const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = Sortable.scrollEl
+        const { top, right, bottom, left, height, width } = getRect(Sortable.scrollEl)
+        const { scrollStep, scrollThreshold } = Sortable.options
         // check direction
         const totop = scrollTop > 0 && clientY >= top && clientY <= (top + scrollThreshold)
         const toleft = scrollLeft > 0 && clientX >= left && clientX <= (left + scrollThreshold)
@@ -63,8 +64,8 @@ export default function AutoScroll() {
         // if need to scroll
         if (totop || toleft || toright || tobottom) {
           requestAnimationFrame(() => {
-            _this.scrollEl.scrollTo(position.x, position.y)
-            _this._autoScroll(_this)
+            Sortable.scrollEl.scrollTo(position.x, position.y)
+            Sortable._autoScroll(Sortable, state)
           })
         }
       }

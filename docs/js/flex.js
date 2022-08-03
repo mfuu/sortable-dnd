@@ -9,7 +9,7 @@ flexGroup.append(...flexChildren);
 new Sortable(
   flexGroup,
   {
-    animation: 500,
+    animation: 150,
     chosenClass: 'chosen',
     draggable: (e) => {
       return e.target.tagName === 'I' ? true : false

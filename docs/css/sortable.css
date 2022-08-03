@@ -38,7 +38,7 @@ li {
 .vertical-group {
   height: 500px;
   overflow: auto;
-  width: 100px;
+  width: 300px;
   margin: 0 auto;
   border: 1px solid #ccc;
   margin-bottom: 100px;
@@ -97,6 +97,7 @@ li {
   width: 600px;
   height: 500px;
   overflow: auto;
+  padding: 15px;
   margin: 0 auto;
   margin-bottom: 100px;
   border: 1px solid #ccc;
@@ -108,4 +109,26 @@ li {
   padding: 5px;
   margin: 5px;
   border: 1px solid #aaa;
+}
+
+.group {
+  width: 600px;
+  margin: 0 auto;
+  margin-bottom: 100px;
+  display: flex;
+}
+
+.group-item {
+  flex: 0 0 50%;
+  max-width: 50%;
+  padding-right: 15px;
+}
+
+.group-item li {
+  position: relative;
+  display: block;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: -1px;
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,.125);
 }

@@ -1,4 +1,5 @@
 import { IE11OrLess } from './Brower.js'
+import Sortable from './Sortable.js'
 
 const captureMode = {
 	capture: false,
@@ -10,6 +11,20 @@ const R_SPACE = /\s+/g
 export const CSSTRANSITIONS = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition']
 export const CSSTRANSFORMS = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform']
 export const SUPPORTPASSIVE = supportPassive()
+
+/**
+ * check if is HTMLElement
+ */
+export function isHTMLElement(obj) {
+  let d = document.createElement("div")
+  try {
+    d.appendChild(obj.cloneNode(true))
+    return obj.nodeType == 1 ? true : false
+  } catch(e) {
+    return obj == window || obj == document
+  }
+}
+
 
 /**
  * set transition style
@@ -262,6 +277,29 @@ export function isChildOf(child, parent) {
 }
 
 /**
+ * Gets the last child in the el, ignoring ghostEl or invisible elements (clones)
+ * @param  {HTMLElement} el       Parent element
+ * @param  {selector} selector    Any other elements that should be ignored
+ * @return {HTMLElement}          The last child, ignoring ghostEl
+ */
+export function lastChild(el, selector) {
+  let last = el.lastElementChild
+
+  while (
+    last &&
+    (
+      last === Sortable.ghost ||
+      css(last, 'display') === 'none' ||
+      selector && !matches(last, selector)
+    )
+  ) {
+    last = last.previousElementSibling
+  }
+
+  return last || null
+}
+
+/**
  * add or remove element's class
  * @param {HTMLElement} el element
  * @param {String} name class name
@@ -304,6 +342,13 @@ export function matches(el, selector) {
   }
 
   return false
+}
+
+/**
+ * Check whether the front and rear positions are consistent
+ */
+export function offsetChanged(o1, o2) {
+  return o1.top !== o2.top || o1.left !== o2.left
 }
 
 export function css(el, prop, val) {
@@ -354,22 +399,4 @@ export function _nextTick(fn) {
   return setTimeout(fn, 0)
 }
 
-export default {
-  on,
-  off,
-  css,
-  getRect,
-  matches,
-  throttle,
-  debounce,
-  getIndex,
-  _nextTick,
-  isChildOf,
-  getElement,
-  toggleClass,
-  setTransform,
-  setTransition,
-  supportPassive,
-  getWindowScrollingElement,
-  getParentAutoScrollElement,
-}
+export const expando = 'Sortable' + Date.now()

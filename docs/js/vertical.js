@@ -9,7 +9,7 @@ verticalGroup.append(...verticalChildren);
 new Sortable(
   verticalGroup,
   {
-    animation: 500,
+    animation: 150,
     chosenClass: 'chosen',
     onDrag: (e) => {
       console.log(e, 'ondrag')
