@@ -1,6 +1,6 @@
 <p>
   <a href="https://npm-stat.com/charts.html?package=sortable-dnd">
-    <img alt="Downloads" src="https://img.shields.io/npm/dm/sortable-dnd.svg">
+    <img alt="Downloads" src="https://img.shields.io/npm/dt/sortable-dnd.svg">
   </a>
   <a href="https://www.npmjs.com/package/sortable-dnd">
     <img alt="Version" src="https://img.shields.io/npm/v/sortable-dnd.svg"/>
