@@ -1,4 +1,5 @@
 import { IE11OrLess } from './Brower.js'
+import Sortable from './Sortable.js'
 
 const captureMode = {
 	capture: false,
@@ -276,6 +277,29 @@ export function isChildOf(child, parent) {
 }
 
 /**
+ * Gets the last child in the el, ignoring ghostEl or invisible elements (clones)
+ * @param  {HTMLElement} el       Parent element
+ * @param  {selector} selector    Any other elements that should be ignored
+ * @return {HTMLElement}          The last child, ignoring ghostEl
+ */
+export function lastChild(el, selector) {
+  let last = el.lastElementChild
+
+  while (
+    last &&
+    (
+      last === Sortable.ghost ||
+      css(last, 'display') === 'none' ||
+      selector && !matches(last, selector)
+    )
+  ) {
+    last = last.previousElementSibling
+  }
+
+  return last || null
+}
+
+/**
  * add or remove element's class
  * @param {HTMLElement} el element
  * @param {String} name class name
@@ -374,3 +398,5 @@ export function throttle(fn, delay) {
 export function _nextTick(fn) {
   return setTimeout(fn, 0)
 }
+
+export const expando = 'Sortable' + Date.now()

@@ -12,9 +12,9 @@ export default function Animation() {
 
   return {
 
-    _captureAnimationState() {
-      const children = [...Array.from(this.rootEl.children)]
-      const { start, end } = getRange(children, this.dragEl, this.dropEl)
+    _captureAnimationState(dragEl, dropEl) {
+      const children = [...Array.from(this.el.children)]
+      const { start, end } = getRange(children, dragEl, dropEl)
 
       animationState.length = 0 // reset
 

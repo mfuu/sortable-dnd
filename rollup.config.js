@@ -14,38 +14,29 @@ const banner = `
  */
 `
 
-export default [
-  {
-    external: ['vue'],
-    input: 'src/index.js',
-    output: {
+export default {
+  external: ['vue'],
+  input: 'src/Sortable.js',
+  output: [
+    {
       format: 'umd',
       file: 'dist/sortable.js',
       name: 'Sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, '')
     },
-    plugins: [
-      babel(),
-      resolve(),
-      commonJs()
-    ]
-  },
-  {
-    external: ['vue'],
-    input: 'src/index.js',
-    output: {
+    {
       format: 'umd',
       file: 'dist/sortable.min.js',
       name: 'Sortable',
       sourcemap: false,
-      banner: banner.replace(/\n/, '')
+      banner: banner.replace(/\n/, ''),
+      plugins: [uglify()]
     },
-    plugins: [
-      babel(),
-      uglify(),
-      resolve(),
-      commonJs()
-    ]
-  }
-]
+  ],
+  plugins: [
+    babel(),
+    resolve(),
+    commonJs()
+  ]
+}
