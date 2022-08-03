@@ -76,7 +76,7 @@ var DND = new Sortable(
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable |
-| `group`           | `String/Object`   | `-`         |
+| `group`           | `String/Object`   | `-`         | string: 'name' or object: `{ name: 'group', put: true | false, pull: true | false }` |
 | `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started |
 | `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving |
 | `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed |

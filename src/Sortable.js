@@ -33,49 +33,22 @@ let rootEl,
     dropEl,
     nextEl,
     ghostEl,
-    parentEl,
+    activeGroup,
     move = { x: 0, y: 0 },
     state = new State, // Status record during drag and drop
     differ = new Differ() // Record the difference before and after dragging
 
 const _prepareGroup = function (options) {
-  function toFn(value, pull) {
-    return function(to, from, dragEl, evt) {
-      let sameGroup = to.options.group.name &&
-              from.options.group.name &&
-              to.options.group.name === from.options.group.name
-
-      if (value == null && (pull || sameGroup)) {
-        // Default pull value
-        // Default pull and put value if same group
-        return true;
-      } else if (value == null || value === false) {
-        return false;
-      } else if (pull && value === 'clone') {
-        return value;
-      } else if (typeof value === 'function') {
-        return toFn(value(to, from, dragEl, evt), pull)(to, from, dragEl, evt)
-      } else {
-        let otherGroup = (pull ? to : from).options.group.name
-
-        return (value === true ||
-        (typeof value === 'string' && value === otherGroup) ||
-        (value.join && value.indexOf(otherGroup) > -1))
-      }
-    };
-  }
-
   let group = {}
   let originalGroup = options.group
 
   if (!originalGroup || typeof originalGroup != 'object') {
-    originalGroup = {name: originalGroup}
+    originalGroup = { name: originalGroup }
   }
 
   group.name = originalGroup.name
-  group.checkPull = toFn(originalGroup.pull, true)
-  group.checkPut = toFn(originalGroup.put)
-  group.revertClone = originalGroup.revertClone
+  group.pull = originalGroup.pull
+  group.put = originalGroup.put
 
   options.group = group
 }
@@ -84,6 +57,7 @@ const _prepareGroup = function (options) {
  * get nearest Sortable
  */
 const _nearestSortable = function(evt) {
+  _checkPosition(evt)
   if (dragEl) {
     evt = evt.touches ? evt.touches[0] : evt
     const { clientX, clientY } = evt
@@ -127,17 +101,18 @@ const _detectNearestSortable = function(x, y) {
   return result
 }
 
+let lastPosition = { x: 0, y: 0 }
 const _checkPosition = function(evt) {
   const { clientX, clientY } = evt
-  const distanceX = clientX - move.x
-  const distanceY = clientY - move.y
+  const distanceX = clientX - lastPosition.x
+  const distanceY = clientY - lastPosition.y
 
-  if ((clientX !== void 0 && Math.abs(distanceX) <= 0) && (clientY !== void 0 && Math.abs(distanceY) <= 0)) {
+  lastPosition.x = clientX
+  lastPosition.y = clientY
+
+  if ((clientX !== void 0 && Math.abs(distanceX) < 1) && (clientY !== void 0 && Math.abs(distanceY) < 1)) {
     return
   }
-
-  move.x = clientX
-  move.y = clientY
 }
 
 /**
@@ -271,7 +246,7 @@ Sortable.prototype = {
 
   // -------------------------------- prepare start ----------------------------------
   _onDrag: function(/** Event|TouchEvent */evt) {
-    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled) return // only left button and enabled
+    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || !this.options.group.pull) return // only left button and enabled
 
     const { touch, e, target } = getEvent(evt)
 
@@ -331,8 +306,8 @@ Sortable.prototype = {
   _onStart: function(/** Event|TouchEvent */e, touch) {
 
     rootEl = this.el
-    parentEl = this.el
     nextEl = dragEl.nextSibling
+    activeGroup = this.options.group
 
     if (!this.nativeDraggable || touch) {
       if (this.options.supportPointer) {
@@ -368,7 +343,10 @@ Sortable.prototype = {
 
   // -------------------------------- trigger ----------------------------------
   _triggerEvent(evt) {
+    if (activeGroup.name !== this.options.group.name) return
+
     rootEl = evt.rootEl
+
     if (this.nativeDraggable) {
       on(this.el, 'dragend', this._onDrop)
       this._onDragOver(evt)
@@ -380,25 +358,28 @@ Sortable.prototype = {
   // -------------------------------- drag event ----------------------------------
   _onDragStart: function(evt) {
     // elements can only be dragged after firefox sets setData
-    evt.dataTransfer.setData('draggableEffect', evt.target.innerText)
+    if (evt.dataTransfer) {
+      evt.dataTransfer.setData('draggableEffect', evt.target.innerText)
+      evt.dataTransfer.effectAllowed = 'move'
+    }
     
     on(this.el, 'dragover', this._onDragOver)
     on(this.el, 'dragend', this._onDrop)
   },
 
   _onDragOver: function(evt) {
+    if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'
     if (!state.sortableDown || !dragEl) return
-    
     this._preventEvent(evt)
-
     _checkPosition(evt)
+
     // truly started
     this._onStarted(evt, evt)
 
     // onMove callback
     this._dispatchEvent('onMove', { ...differ, ghostEl, event: evt, originalEvent: evt })
 
-    this._onChange(evt.target, evt, evt)
+    if (this.options.group.put || differ.from.group === this.el) this._onChange(evt.target, evt, evt)
   },
 
   // -------------------------------- real started ----------------------------------
@@ -559,10 +540,13 @@ Sortable.prototype = {
   _clearState: function() {
     state = new State
     differ.destroy()
-    dragEl = null
-    dropEl = null
-    nextEl = null
-    ghostEl = null
+    dragEl = 
+    dropEl = 
+    nextEl = 
+    ghostEl = 
+    activeGroup = null
+    move = 
+    lastPosition = { x: 0, y: 0 }
   },
 
   _unbindDragEvents: function() {
