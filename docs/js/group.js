@@ -11,6 +11,7 @@ group1.append(...group1Children);
 new Sortable(
   group1,
   {
+    group: { name: 'g', put: true, pull: true },
     animation: 150,
     chosenClass: 'chosen',
     draggable: (e) => {
@@ -32,6 +33,7 @@ group2.append(...group2Children);
 new Sortable(
   group2,
   {
+    group: { name: 'g', put: false, pull: true },
     animation: 150,
     chosenClass: 'chosen',
     draggable: (e) => {
