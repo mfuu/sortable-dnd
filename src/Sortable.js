@@ -378,7 +378,7 @@ Sortable.prototype = {
     // onMove callback
     this._dispatchEvent('onMove', { ...differ, ghostEl, event: evt, originalEvent: evt })
 
-    if (this.options.group.put || differ.from.group === rootEl) this._onChange(evt.target, evt, evt)
+    if (this.options.group.put || differ.from.group === this.el) this._onChange(evt.target, evt, evt)
   },
 
   // -------------------------------- real started ----------------------------------
@@ -429,7 +429,7 @@ Sortable.prototype = {
     this._dispatchEvent('onMove', { ...differ, ghostEl, event: e, originalEvent: evt })
 
     // check if element will exchange
-    if (this.options.group.put || differ.from.group === rootEl) this._onChange(target, e, evt)
+    if (this.options.group.put || differ.from.group === this.el) this._onChange(target, e, evt)
 
     // auto scroll
     clearTimeout(this.autoScrollTimer)
@@ -470,7 +470,7 @@ Sortable.prototype = {
           // onAdd callback
           this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
 
-          this.el.insertBefore(dragEl, dropEl)
+          this.el.insertBefore(dragEl, el)
         } else {
           // onChange callback
           this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
