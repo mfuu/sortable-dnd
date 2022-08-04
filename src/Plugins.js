@@ -31,7 +31,7 @@ export class Differ {
 export class Ghost {
   constructor(sortable) {
     this.el = null
-    this.distance = { x: 0, y: 0 }
+    this.initPos = this.distance = { x: 0, y: 0 }
     this.options = sortable.options
     this.container = sortable.container
   }
@@ -79,7 +79,7 @@ export class Ghost {
   move(x, y, smooth = false) {
     if (!this.el) return
     setTransition(this.el, smooth ? `${this.options.ghostAnimation}ms` : 'none')
-    setTransform(this.el, `translate3d(${x}px, ${y}px, 0)`)
+    setTransform(this.el, `translate3d(${x - this.initPos.x}px, ${y - this.initPos.y}px, 0)`)
   }
 
   clear() {
@@ -90,9 +90,11 @@ export class Ghost {
 
   destroy(rect) {
     if (!this.el) return
+
     const left = parseInt(this.el.style.left)
     const top = parseInt(this.el.style.top)
     this.move(rect.left - left, rect.top - top, true)
+
     const { ghostAnimation } = this.options
     ghostAnimation ? setTimeout(() => this.clear(), ghostAnimation) : this.clear()
   }
