@@ -430,7 +430,7 @@ Sortable.prototype = {
     this._dispatchEvent('onMove', { ...differ, ghostEl, event: e, originalEvent: evt })
 
     // check if element will exchange
-    this._onChange(target, e, evt)
+    if (this.options.group.put || differ.from.group === this.el) this._onChange(target, e, evt)
 
     // auto scroll
     clearTimeout(this.autoScrollTimer)
