@@ -440,10 +440,13 @@ Sortable.prototype = {
 
   // -------------------------------- on change ----------------------------------
   _onChange: debounce(function(target, e, evt) {
+    const fromSortable = differ.from.sortable
     if (!lastChild(this.el)) {
       differ.to = { sortable: this, group: this.el, node: dragEl, rect: getRect(dragEl), offset: getOffset(dragEl) }
-      // onChange callback
-      this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
+      // onRemove callback
+      fromSortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
+      // onAdd callback
+      this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
 
       this.el.appendChild(dragEl)
     } else {
@@ -461,12 +464,17 @@ Sortable.prototype = {
       if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
         this._captureAnimationState(dragEl, dropEl)
 
-        // onChange callback
-        this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
-
         if (isChildOf(dragEl, rootEl) === false) {
+          // onRemove callback
+          fromSortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
+          // onAdd callback
+          this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
+
           this.el.insertBefore(dragEl, dropEl)
         } else {
+          // onChange callback
+          this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
+
           // the top value is compared first, and the left is compared if the top value is the same
           const _offset = getOffset(dragEl)
           if (_offset.top < offset.top || _offset.left < offset.left) {

@@ -75,13 +75,15 @@ var DND = new Sortable(
 
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
-| `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable |
+| `draggable`       | `String/Function` | `-`         | Specifies which items inside the element should be draggable |
 | `group`           | `String/Object`   | `-`         | string: 'name' or object: `{ name: 'group', put: true/false, pull: true/false }` |
 | `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
-| `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started |
-| `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving |
-| `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed |
-| `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position |
+| `onDrag`          | `Function`        | `-`         | The callback function when the drag is started |
+| `onMove`          | `Function`        | `-`         | The callback function when the dragged element is moving |
+| `onDrop`          | `Function`        | `-`         | The callback function when the drag is completed |
+| `onAdd`           | `Function`        | ``          | The callback function when element is dropped into the list from another list |
+| `onRemove`        | `Function`        | ``          | The callback function when element is removed from the list into another list|
+| `onChange`        | `Function`        | `-`         | The callback function when the dragged element changes position in the list |
 
 
 **Others**
