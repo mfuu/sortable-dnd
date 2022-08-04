@@ -77,26 +77,26 @@ var DND = new Sortable(
 |-------------------|-------------------|-------------|--------------|
 | `draggable`       | `String/Function` | `undefined` | Specifies which items inside the element should be draggable |
 | `group`           | `String/Object`   | `-`         | string: 'name' or object: `{ name: 'group', put: true/false, pull: true/false }` |
+| `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
 | `onDrag`          | `Function`        | `undefined` | The callback function when the drag is started |
 | `onMove`          | `Function`        | `undefined` | The callback function when the dragged element is moving |
 | `onDrop`          | `Function`        | `undefined` | The callback function when the drag is completed |
 | `onChange`        | `Function`        | `undefined` | The callback function when the dragged element changes position |
-| `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
-| `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
 
 
 **Others**
 
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
+| `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
+| `chosenClass`     | `String`          | `{}`        | The class of the selected element when dragging |
+| `ghostStyle`      | `Object`          | `{}`        | The style of the mask element when dragging |
+| `ghostClass`      | `String`          | `''`        | The class of the mask element when dragging |
 | `autoScroll`      | `Boolean`         | `true`      | Automatic scrolling when moving to the edge of the container, **for browsers that do not support HTML5 drag events** |
 | `scrollStep`      | `Number`          | `5`         | The distance to scroll each frame when autoscrolling |
 | `scrollThreshold` | `Number`          | `15`        | Threshold to trigger autoscroll |
 | `delay`           | `Number`          | `0`         | time in milliseconds to define when the sorting should start |
 | `delayOnTouchOnly`| `Boolean`         | `false`     | only delay if user is using touch |
-| `chosenClass`     | `String`          | `{}`        | The class of the selected element when dragging |
-| `ghostStyle`      | `Object`          | `{}`        | The style of the mask element when dragging |
-| `ghostClass`      | `String`          | `''`        | The class of the mask element when dragging |
 | `forceFallback`   | `Boolean`         | `false`     | true: ignore the HTML5 DnD behaviour and force the fallback to kick in |
 | `stopPropagation` | `Boolean`         | `false`     | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
 
