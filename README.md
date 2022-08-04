@@ -55,6 +55,12 @@ var DND = new Sortable(
     onDrop: ({ changed, event, originalEvent }) => {
       // code
     },
+    onAdd: ({ from, to, event, originalEvent }) => {
+      // code
+    },
+    onRemove: ({ from, to, event, originalEvent }) => {
+      // code
+    },
     onChange: ({ from, to, event, originalEvent }) => {
       // code
     }
@@ -81,8 +87,8 @@ var DND = new Sortable(
 | `onDrag`          | `Function`        | `-`         | The callback function when the drag is started |
 | `onMove`          | `Function`        | `-`         | The callback function when the dragged element is moving |
 | `onDrop`          | `Function`        | `-`         | The callback function when the drag is completed |
-| `onAdd`           | `Function`        | ``          | The callback function when element is dropped into the list from another list |
-| `onRemove`        | `Function`        | ``          | The callback function when element is removed from the list into another list|
+| `onAdd`           | `Function`        | `-`          | The callback function when element is dropped into the list from another list |
+| `onRemove`        | `Function`        | `-`          | The callback function when element is removed from the list into another list|
 | `onChange`        | `Function`        | `-`         | The callback function when the dragged element changes position in the list |
 
 
