@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.3.1
+ * sortable-dnd v0.3.2
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -586,7 +586,7 @@
       _classCallCheck(this, Ghost);
 
       this.el = null;
-      this.distance = {
+      this.initPos = this.distance = {
         x: 0,
         y: 0
       };
@@ -641,7 +641,7 @@
         var smooth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
         if (!this.el) return;
         setTransition(this.el, smooth ? "".concat(this.options.ghostAnimation, "ms") : 'none');
-        setTransform(this.el, "translate3d(".concat(x, "px, ").concat(y, "px, 0)"));
+        setTransform(this.el, "translate3d(".concat(x - this.initPos.x, "px, ").concat(y - this.initPos.y, "px, 0)"));
       }
     }, {
       key: "clear",
@@ -837,11 +837,8 @@
       dragEl,
       dropEl,
       ghostEl,
+      fromGroup,
       activeGroup,
-      move = {
-    x: 0,
-    y: 0
-  },
       state = new State(),
       // Status record during drag and drop
   differ = new Differ(); // Record the difference before and after dragging
@@ -867,8 +864,6 @@
 
 
   var _nearestSortable = function _nearestSortable(evt) {
-    _checkPosition(evt);
-
     if (dragEl) {
       evt = evt.touches ? evt.touches[0] : evt;
       var _evt = evt,
@@ -923,7 +918,7 @@
     y: 0
   };
 
-  var _checkPosition = function _checkPosition(evt) {
+  var _positionChanged = function _positionChanged(evt) {
     var clientX = evt.clientX,
         clientY = evt.clientY;
     var distanceX = clientX - lastPosition.x;
@@ -931,9 +926,11 @@
     lastPosition.x = clientX;
     lastPosition.y = clientY;
 
-    if (clientX !== void 0 && Math.abs(distanceX) < 1 && clientY !== void 0 && Math.abs(distanceY) < 1) {
-      return;
+    if (clientX !== void 0 && Math.abs(distanceX) <= 0 && clientY !== void 0 && Math.abs(distanceY) <= 0) {
+      return false;
     }
+
+    return true;
   };
   /**
    * @class  Sortable
@@ -1031,11 +1028,6 @@
       on(el, 'mousedown', this._onDrag);
     }
 
-    if (this.nativeDraggable) {
-      on(el, 'dragover', this);
-      on(el, 'dragenter', this);
-    }
-
     sortables.push(el);
     Object.assign(this, Animation(), AutoScroll());
   }
@@ -1052,11 +1044,6 @@
       off(this.el, 'pointerdown', this._onDrag);
       off(this.el, 'touchstart', this._onDrag);
       off(this.el, 'mousedown', this._onDrag);
-
-      if (this.nativeDraggable) {
-        off(this.el, 'dragover', this);
-        off(this.el, 'dragenter', this);
-      }
 
       this._clearState(); // Remove draggable attributes
 
@@ -1085,7 +1072,7 @@
     evt) {
       var _this = this;
 
-      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || this.options.group.pull === false) return; // only left button and enabled
+      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || this.options.group.pull === false) return true; // only left button and enabled
 
       var _getEvent = getEvent(evt),
           touch = _getEvent.touch,
@@ -1093,7 +1080,7 @@
           target = _getEvent.target; // Safari ignores further event handling after mousedown
 
 
-      if (!this.nativeDraggable && Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
+      if (!this.nativeDraggable && Safari && target && target.tagName.toUpperCase() === 'SELECT') return true;
       if (target === this.el) return true;
       if (this.options.stopPropagation) evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
 
@@ -1116,16 +1103,13 @@
 
       if (!dragEl || dragEl.animated) return true; // solve the problem that the mobile cannot be dragged
 
-      if (touch) dragEl.style['touch-action'] = 'none'; // get the position of the dragged element in the list
+      if (touch) dragEl.style['touch-action'] = 'none';
+      fromGroup = this.el; // get the position of the dragged element in the list
 
       var _getElement = getElement(this.el, dragEl),
           rect = _getElement.rect,
           offset = _getElement.offset;
 
-      move = {
-        x: e.clientX,
-        y: e.clientY
-      };
       differ.from = {
         sortable: this,
         group: this.el,
@@ -1137,11 +1121,16 @@
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
       };
+      this.ghost.initPos = {
+        x: e.clientX,
+        y: e.clientY
+      };
       state.sortableDown = e; // sortable state down is active
 
       on(this.ownerDocument, 'dragover', _nearestSortable);
       on(this.ownerDocument, 'mousemove', _nearestSortable);
-      on(this.ownerDocument, 'touchmove', _nearestSortable); // Solve the problem that `dragend` does not take effect when the `dragover` event is not triggered
+      on(this.ownerDocument, 'touchmove', _nearestSortable);
+      on(this.ownerDocument, 'pointermove', _nearestSortable); // Solve the problem that `dragend` does not take effect when the `dragover` event is not triggered
 
       on(this.ownerDocument, 'pointerup', this._onDrop);
       on(this.ownerDocument, 'touchend', this._onDrop);
@@ -1181,7 +1170,7 @@
         // allow HTML5 drag event
         dragEl.draggable = true;
         on(dragEl, 'dragend', this);
-        on(this.el, 'dragstart', this._onDragStart);
+        on(rootEl, 'dragstart', this._onDragStart);
       } // clear selection
 
 
@@ -1214,7 +1203,7 @@
     _onDragStart: function _onDragStart(evt) {
       // elements can only be dragged after firefox sets setData
       if (evt.dataTransfer) {
-        evt.dataTransfer.setData('draggableEffect', evt.target.innerText);
+        evt.dataTransfer.setData('DRAGGABLE_EFFECT', evt.target.innerText);
         evt.dataTransfer.effectAllowed = 'move';
       }
 
@@ -1222,24 +1211,25 @@
       on(this.el, 'dragend', this._onDrop);
     },
     _onDragOver: function _onDragOver(evt) {
-      if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move';
       if (!state.sortableDown || !dragEl) return;
 
-      this._preventEvent(evt);
-
-      _checkPosition(evt); // truly started
+      this._preventEvent(evt); // truly started
 
 
-      this._onStarted(evt, evt); // onMove callback
+      this._onStarted(evt, evt);
 
+      if (!evt.rootEl) return;
 
-      this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
-        ghostEl: ghostEl,
-        event: evt,
-        originalEvent: evt
-      }));
+      if (_positionChanged(evt)) {
+        // onMove callback
+        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
+          ghostEl: ghostEl,
+          event: evt,
+          originalEvent: evt
+        }));
 
-      if (this.options.group.put || differ.from.group === rootEl) this._onChange(evt.target, evt, evt);
+        if (this.options.group.put || fromGroup === this.el) this._onChange(evt.target, evt, evt);
+      }
     },
     // -------------------------------- real started ----------------------------------
     _onStarted: function _onStarted(e,
@@ -1270,6 +1260,7 @@
           on(document, 'drop', this);
         }
 
+        if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move';
         if (Safari) css(document.body, 'user-select', 'none');
       }
     },
@@ -1281,25 +1272,16 @@
 
       if (!state.sortableDown || !dragEl) return;
 
-      var _getEvent2 = getEvent(evt);
-          _getEvent2.touch;
-          var e = _getEvent2.e,
-          target = _getEvent2.target;
-
-      var clientX = e.clientX,
-          clientY = e.clientY;
-      var distanceX = clientX - move.x;
-      var distanceY = clientY - move.y;
-
-      if (clientX !== void 0 && Math.abs(distanceX) <= 0 && clientY !== void 0 && Math.abs(distanceY) <= 0) {
-        return;
-      }
-
       this._preventEvent(evt);
+
+      var _getEvent2 = getEvent(evt),
+          e = _getEvent2.e,
+          target = _getEvent2.target;
 
       this._onStarted(e, evt);
 
-      this.ghost.move(distanceX, distanceY); // onMove callback
+      this.ghost.move(e.clientX, e.clientY);
+      if (!evt.rootEl) return; // onMove callback
 
       this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
         ghostEl: ghostEl,
@@ -1308,7 +1290,7 @@
       })); // check if element will exchange
 
 
-      if (this.options.group.put || differ.from.group === rootEl) this._onChange(target, e, evt); // auto scroll
+      if (this.options.group.put || fromGroup === this.el) this._onChange(target, e, evt); // auto scroll
 
       clearTimeout(this.autoScrollTimer);
 
@@ -1320,7 +1302,7 @@
     },
     // -------------------------------- on change ----------------------------------
     _onChange: debounce(function (target, e, evt) {
-      var fromSortable = differ.from.sortable;
+      if (!dragEl) return;
 
       if (!lastChild(this.el)) {
         differ.to = {
@@ -1331,7 +1313,7 @@
           offset: getOffset(dragEl)
         }; // onRemove callback
 
-        fromSortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
+        differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
           event: e,
           originalEvent: evt
         })); // onAdd callback
@@ -1343,14 +1325,15 @@
         }));
 
         this.el.appendChild(dragEl);
+        differ.from.sortable = this;
+        differ.from.group = this.el;
       } else {
         var _getElement2 = getElement(rootEl, target),
             el = _getElement2.el,
             rect = _getElement2.rect,
             offset = _getElement2.offset;
 
-        if (!el || !dragEl || el && el.animated) return;
-        if (el === dragEl) return;
+        if (!el || el && el.animated || el === dragEl) return;
         dropEl = el;
         differ.to = {
           sortable: this,
@@ -1371,7 +1354,7 @@
 
           if (isChildOf(dragEl, rootEl) === false) {
             // onRemove callback
-            fromSortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
+            differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
               event: e,
               originalEvent: evt
             })); // onAdd callback
@@ -1382,7 +1365,9 @@
               originalEvent: evt
             }));
 
-            this.el.insertBefore(dragEl, dropEl);
+            this.el.insertBefore(dragEl, el);
+            differ.from.sortable = this;
+            differ.from.group = this.el;
           } else {
             // onChange callback
             this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, differ), {}, {
@@ -1398,6 +1383,9 @@
             } else {
               this.el.insertBefore(dragEl, el);
             }
+
+            differ.from.sortable = this;
+            differ.from.group = this.el;
           }
 
           this._rangeAnimate();
@@ -1463,8 +1451,8 @@
     _clearState: function _clearState() {
       state = new State();
       differ.destroy();
-      dragEl = dropEl = ghostEl = activeGroup = null;
-      move = lastPosition = {
+      dragEl = dropEl = ghostEl = fromGroup = activeGroup = null;
+      lastPosition = {
         x: 0,
         y: 0
       };
@@ -1481,6 +1469,7 @@
       off(this.ownerDocument, 'pointermove', this._onMove);
       off(this.ownerDocument, 'touchmove', this._onMove);
       off(this.ownerDocument, 'mousemove', this._onMove);
+      off(this.ownerDocument, 'pointermove', _nearestSortable);
       off(this.ownerDocument, 'touchmove', _nearestSortable);
       off(this.ownerDocument, 'mousemove', _nearestSortable);
       off(this.ownerDocument, 'dragover', _nearestSortable);
