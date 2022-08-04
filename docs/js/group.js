@@ -33,14 +33,34 @@ group2.append(...group2Children);
 new Sortable(
   group2,
   {
-    group: { name: 'g', put: false, pull: true },
+    group: { name: 'g', put: true, pull: true },
     animation: 150,
     chosenClass: 'chosen',
     draggable: (e) => {
       return e.target.tagName === 'I' ? true : false
     },
-    onChange: ({ from, to, event }) => {
-      console.log(from, to)
+    onDrag: ({ dragEl, event, originalEvent }) => {
+      // code
+      console.log(dragEl, 'drag')
+    },
+    onMove: ({ from, ghostEl, event, originalEvent }) => {
+      // code
+    },
+    onDrop: ({ changed, event, originalEvent }) => {
+      // code
+      console.log(changed, 'drop')
+    },
+    onAdd: ({ from, to, event, originalEvent }) => {
+      // code
+      console.log(from, to, 'add')
+    },
+    onRemove: ({ from, to, event, originalEvent }) => {
+      // code
+      console.log(from, to, 'remove')
+    },
+    onChange: ({ from, to, event, originalEvent }) => {
+      // code
+      console.log(from, to, 'change')
     }
   }
 );
