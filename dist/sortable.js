@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.3.0
+ * sortable-dnd v0.3.1
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -836,7 +836,6 @@
   var rootEl,
       dragEl,
       dropEl,
-      nextEl,
       ghostEl,
       activeGroup,
       move = {
@@ -1086,7 +1085,7 @@
     evt) {
       var _this = this;
 
-      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || !this.options.group.pull) return; // only left button and enabled
+      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || this.options.group.pull === false) return; // only left button and enabled
 
       var _getEvent = getEvent(evt),
           touch = _getEvent.touch,
@@ -1165,7 +1164,6 @@
     /** Event|TouchEvent */
     e, touch) {
       rootEl = this.el;
-      nextEl = dragEl.nextSibling;
       activeGroup = this.options.group;
 
       if (!this.nativeDraggable || touch) {
@@ -1241,7 +1239,7 @@
         originalEvent: evt
       }));
 
-      if (this.options.group.put || differ.from.group === this.el) this._onChange(evt.target, evt, evt);
+      if (this.options.group.put || differ.from.group === rootEl) this._onChange(evt.target, evt, evt);
     },
     // -------------------------------- real started ----------------------------------
     _onStarted: function _onStarted(e,
@@ -1310,8 +1308,7 @@
       })); // check if element will exchange
 
 
-      this._onChange(target, e, evt); // auto scroll
-
+      if (this.options.group.put || differ.from.group === rootEl) this._onChange(target, e, evt); // auto scroll
 
       clearTimeout(this.autoScrollTimer);
 
@@ -1323,20 +1320,29 @@
     },
     // -------------------------------- on change ----------------------------------
     _onChange: debounce(function (target, e, evt) {
+      var fromSortable = differ.from.sortable;
+
       if (!lastChild(this.el)) {
-        this.el.appendChild(dragEl);
         differ.to = {
           sortable: this,
           group: this.el,
           node: dragEl,
           rect: getRect(dragEl),
           offset: getOffset(dragEl)
-        }; // onChange callback
+        }; // onRemove callback
 
-        this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, differ), {}, {
+        fromSortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
+          event: e,
+          originalEvent: evt
+        })); // onAdd callback
+
+
+        this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, differ), {}, {
           event: e,
           originalEvent: evt
         }));
+
+        this.el.appendChild(dragEl);
       } else {
         var _getElement2 = getElement(rootEl, target),
             el = _getElement2.el,
@@ -1361,22 +1367,24 @@
             bottom = rect.bottom; // swap when the elements before and after the drag are inconsistent
 
         if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
-          if (rootEl !== this.el) {
-            if (nextEl) {
-              this.el.insertBefore(dragEl, nextEl);
-            } else {
-              this.el.appendChild(dragEl);
-            } // onChange callback
+          this._captureAnimationState(dragEl, dropEl);
+
+          if (isChildOf(dragEl, rootEl) === false) {
+            // onRemove callback
+            fromSortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
+              event: e,
+              originalEvent: evt
+            })); // onAdd callback
 
 
-            this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, differ), {}, {
+            this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, differ), {}, {
               event: e,
               originalEvent: evt
             }));
+
+            this.el.insertBefore(dragEl, dropEl);
           } else {
-            this._captureAnimationState(dragEl, dropEl); // onChange callback
-
-
+            // onChange callback
             this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, differ), {}, {
               event: e,
               originalEvent: evt
@@ -1390,9 +1398,9 @@
             } else {
               this.el.insertBefore(dragEl, el);
             }
-
-            this._rangeAnimate();
           }
+
+          this._rangeAnimate();
         }
       }
     }, 5),
@@ -1455,7 +1463,7 @@
     _clearState: function _clearState() {
       state = new State();
       differ.destroy();
-      dragEl = dropEl = nextEl = ghostEl = activeGroup = null;
+      dragEl = dropEl = ghostEl = activeGroup = null;
       move = lastPosition = {
         x: 0,
         y: 0
