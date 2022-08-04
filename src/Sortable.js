@@ -10,6 +10,7 @@ import {
   debounce,
   lastChild,
   getOffset,
+  isChildOf,
   _nextTick,
   getElement,
   toggleClass,
@@ -31,7 +32,6 @@ const sortables = []
 let rootEl,
     dragEl,
     dropEl,
-    nextEl,
     ghostEl,
     activeGroup,
     move = { x: 0, y: 0 },
@@ -246,7 +246,7 @@ Sortable.prototype = {
 
   // -------------------------------- prepare start ----------------------------------
   _onDrag: function(/** Event|TouchEvent */evt) {
-    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || !this.options.group.pull) return // only left button and enabled
+    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || this.options.group.pull === false) return // only left button and enabled
 
     const { touch, e, target } = getEvent(evt)
 
@@ -306,7 +306,6 @@ Sortable.prototype = {
   _onStart: function(/** Event|TouchEvent */e, touch) {
 
     rootEl = this.el
-    nextEl = dragEl.nextSibling
     activeGroup = this.options.group
 
     if (!this.nativeDraggable || touch) {
@@ -379,7 +378,7 @@ Sortable.prototype = {
     // onMove callback
     this._dispatchEvent('onMove', { ...differ, ghostEl, event: evt, originalEvent: evt })
 
-    if (this.options.group.put || differ.from.group === this.el) this._onChange(evt.target, evt, evt)
+    if (this.options.group.put || differ.from.group === rootEl) this._onChange(evt.target, evt, evt)
   },
 
   // -------------------------------- real started ----------------------------------
@@ -430,7 +429,7 @@ Sortable.prototype = {
     this._dispatchEvent('onMove', { ...differ, ghostEl, event: e, originalEvent: evt })
 
     // check if element will exchange
-    if (this.options.group.put || differ.from.group === this.el) this._onChange(target, e, evt)
+    if (this.options.group.put || differ.from.group === rootEl) this._onChange(target, e, evt)
 
     // auto scroll
     clearTimeout(this.autoScrollTimer)
@@ -442,11 +441,11 @@ Sortable.prototype = {
   // -------------------------------- on change ----------------------------------
   _onChange: debounce(function(target, e, evt) {
     if (!lastChild(this.el)) {
-      this.el.appendChild(dragEl)
-
       differ.to = { sortable: this, group: this.el, node: dragEl, rect: getRect(dragEl), offset: getOffset(dragEl) }
       // onChange callback
       this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
+
+      this.el.appendChild(dragEl)
     } else {
       const { el, rect, offset } = getElement(rootEl, target)
       if (!el || !dragEl || (el && el.animated)) return
@@ -460,21 +459,14 @@ Sortable.prototype = {
 
       // swap when the elements before and after the drag are inconsistent
       if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
-        if (rootEl !== this.el) {
-          if (nextEl) {
-            this.el.insertBefore(dragEl, nextEl)
-          } else {
-            this.el.appendChild(dragEl)
-          }
+        this._captureAnimationState(dragEl, dropEl)
 
-          // onChange callback
-          this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
+        // onChange callback
+        this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
+
+        if (isChildOf(dragEl, rootEl) === false) {
+          this.el.insertBefore(dragEl, dropEl)
         } else {
-          this._captureAnimationState(dragEl, dropEl)
-
-          // onChange callback
-          this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
-          
           // the top value is compared first, and the left is compared if the top value is the same
           const _offset = getOffset(dragEl)
           if (_offset.top < offset.top || _offset.left < offset.left) {
@@ -482,9 +474,9 @@ Sortable.prototype = {
           } else {
             this.el.insertBefore(dragEl, el)
           }
-
-          this._rangeAnimate()
         }
+
+        this._rangeAnimate()
       }
     }
     
@@ -542,7 +534,6 @@ Sortable.prototype = {
     differ.destroy()
     dragEl = 
     dropEl = 
-    nextEl = 
     ghostEl = 
     activeGroup = null
     move = 
