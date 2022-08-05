@@ -39,9 +39,9 @@ new Sortable(
     draggable: (e) => {
       return e.target.tagName === 'I' ? true : false
     },
-    onDrag: ({ dragEl, event, originalEvent }) => {
+    onDrag: ({ from, event, originalEvent }) => {
       // code
-      console.log(dragEl, 'drag')
+      console.log(from, 'drag')
     },
     onMove: ({ from, ghostEl, event, originalEvent }) => {
       // code

@@ -46,7 +46,7 @@ var DND = new Sortable(
     // draggable: '.drag' // use class
     // draggable: '#drag' // use id
     // draggable: (e) => e.target.parentNode // use fundtion to set drag Element
-    onDrag: ({ dragEl, event, originalEvent }) => {
+    onDrag: ({ from, event, originalEvent }) => {
       // code
     },
     onMove: ({ from, ghostEl, event, originalEvent }) => {
@@ -70,9 +70,9 @@ var DND = new Sortable(
 
 # Methods
 
-| **Method** | **Description** |
+| **Method**   | **Description** |
 |--------------|--------------|
-| `destroy()` | Manually clear all the state of the component, using this method the component will not be draggable |
+| `destroy()`  | Manually clear all the state of the component, using this method the component will not be draggable |
 
 
 # Options

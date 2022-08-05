@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.3.2
+ * sortable-dnd v0.3.3
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -1239,11 +1239,10 @@
 
       if (!ghostEl) {
         // onDrag callback
-        this._dispatchEvent('onDrag', {
-          dragEl: dragEl,
+        this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, differ), {}, {
           event: e,
           originalEvent: evt
-        }); // Init in the move event to prevent conflict with the click event
+        })); // Init in the move event to prevent conflict with the click event
 
 
         var rect = differ.from.rect;

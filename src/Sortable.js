@@ -383,7 +383,7 @@ Sortable.prototype = {
     state.sortableMove = e // sortable state move is active
     if (!ghostEl) {
       // onDrag callback
-      this._dispatchEvent('onDrag', { dragEl, event: e, originalEvent: evt })
+      this._dispatchEvent('onDrag', { ...differ, event: e, originalEvent: evt })
 
       // Init in the move event to prevent conflict with the click event
       const { rect } = differ.from
