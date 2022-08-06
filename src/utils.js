@@ -190,8 +190,9 @@ export function getIndex(group, el) {
 /**
  * Returns the "bounding client rect" of given element
  * @param {HTMLElement} el  The element whose boundingClientRect is wanted
+ * @param {Boolean} checkParent check if parentNode.height < el.height
  */
-export function getRect(el) {
+export function getRect(el, checkParent) {
   if (!el.getBoundingClientRect && el !== window) return
 
   const rect = {
@@ -213,6 +214,24 @@ export function getRect(el) {
     rect.right = elRect.right
     rect.height = elRect.height
     rect.width = elRect.width
+
+    if (checkParent && el.parentNode !== el.ownerDocument.body) {
+      let parentRect, parentNode = el.parentNode
+
+      while(parentNode && parentNode.getBoundingClientRect && parentNode !== el.ownerDocument.body) {
+        parentRect = parentNode.getBoundingClientRect()
+        if (parentRect.height < rect.height) {
+          rect.top = parentRect.top
+          rect.left = parentRect.left
+          rect.bottom = parentRect.bottom
+          rect.right = parentRect.right
+          rect.height = parentRect.height
+          rect.width = parentRect.width
+          return rect
+        }
+        parentNode = parentNode.parentNode
+      }
+    }
   } else {
     rect.top = 0
     rect.left = 0
@@ -288,7 +307,7 @@ export function lastChild(el, selector) {
   while (
     last &&
     (
-      last === Sortable.ghost ||
+      last === Sortable.ghostEl ||
       css(last, 'display') === 'none' ||
       selector && !matches(last, selector)
     )

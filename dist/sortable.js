@@ -310,9 +310,10 @@
   /**
    * Returns the "bounding client rect" of given element
    * @param {HTMLElement} el  The element whose boundingClientRect is wanted
+   * @param {Boolean} checkParent check if parentNode.height < el.height
    */
 
-  function getRect(el) {
+  function getRect(el, checkParent) {
     if (!el.getBoundingClientRect && el !== window) return;
     var rect = {
       top: 0,
@@ -332,6 +333,27 @@
       rect.right = elRect.right;
       rect.height = elRect.height;
       rect.width = elRect.width;
+
+      if (checkParent && el.parentNode !== el.ownerDocument.body) {
+        var parentRect,
+            parentNode = el.parentNode;
+
+        while (parentNode && parentNode.getBoundingClientRect && parentNode !== el.ownerDocument.body) {
+          parentRect = parentNode.getBoundingClientRect();
+
+          if (parentRect.height < rect.height) {
+            rect.top = parentRect.top;
+            rect.left = parentRect.left;
+            rect.bottom = parentRect.bottom;
+            rect.right = parentRect.right;
+            rect.height = parentRect.height;
+            rect.width = parentRect.width;
+            return rect;
+          }
+
+          parentNode = parentNode.parentNode;
+        }
+      }
     } else {
       rect.top = 0;
       rect.left = 0;
@@ -411,7 +433,7 @@
   function lastChild(el, selector) {
     var last = el.lastElementChild;
 
-    while (last && (last === Sortable.ghost || css(last, 'display') === 'none' || selector && !matches(last, selector))) {
+    while (last && (last === Sortable.ghostEl || css(last, 'display') === 'none' || selector && !matches(last, selector))) {
       last = last.previousElementSibling;
     }
 
@@ -596,8 +618,7 @@
 
     _createClass(Ghost, [{
       key: "init",
-      value: function init(el, rect) {
-        var append = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : true;
+      value: function init(el, rect, append) {
         this.el = el;
         if (!append) return;
         var _this$options = this.options,
@@ -902,7 +923,7 @@
     sortables.some(function (sortable) {
       var threshold = sortable[expando].options.emptyInsertThreshold;
       if (!threshold) return;
-      var rect = getRect(sortable),
+      var rect = getRect(sortable, true),
           insideHorizontally = x >= rect.left - threshold && x <= rect.right + threshold,
           insideVertically = y >= rect.top - threshold && y <= rect.bottom + threshold;
 
@@ -1072,7 +1093,8 @@
     evt) {
       var _this = this;
 
-      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || this.options.group.pull === false) return true; // only left button and enabled
+      if (dragEl || this.options.disabled || this.options.group.pull === false) return;
+      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return true; // only left button and enabled
 
       var _getEvent = getEvent(evt),
           touch = _getEvent.touch,
@@ -1238,17 +1260,16 @@
       state.sortableMove = e; // sortable state move is active
 
       if (!ghostEl) {
-        // onDrag callback
+        ghostEl = dragEl.cloneNode(true); // onDrag callback
+
         this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, differ), {}, {
           event: e,
           originalEvent: evt
         })); // Init in the move event to prevent conflict with the click event
 
 
-        var rect = differ.from.rect;
-        ghostEl = dragEl.cloneNode(true);
-        this.ghost.init(ghostEl, rect, !this.nativeDraggable);
-        Sortable.ghost = ghostEl; // add class for drag element
+        this.ghost.init(ghostEl, differ.from.rect, !this.nativeDraggable);
+        Sortable.ghostEl = ghostEl; // add class for drag element
 
         toggleClass(dragEl, this.options.chosenClass, true);
         dragEl.style['will-change'] = 'transform';
@@ -1327,13 +1348,10 @@
         differ.from.sortable = this;
         differ.from.group = this.el;
       } else {
-        var _getElement2 = getElement(rootEl, target),
-            el = _getElement2.el,
-            rect = _getElement2.rect,
-            offset = _getElement2.offset;
-
-        if (!el || el && el.animated || el === dragEl) return;
-        dropEl = el;
+        dropEl = getElement(rootEl, target, true);
+        if (!dropEl || dropEl && dropEl.animated || dropEl === dragEl) return;
+        var rect = getRect(dropEl);
+        var offset = getRect(dropEl);
         differ.to = {
           sortable: this,
           group: this.el,
@@ -1364,7 +1382,7 @@
               originalEvent: evt
             }));
 
-            this.el.insertBefore(dragEl, el);
+            this.el.insertBefore(dragEl, dropEl);
             differ.from.sortable = this;
             differ.from.group = this.el;
           } else {
@@ -1378,9 +1396,9 @@
             var _offset = getOffset(dragEl);
 
             if (_offset.top < offset.top || _offset.left < offset.left) {
-              this.el.insertBefore(dragEl, el.nextElementSibling);
+              this.el.insertBefore(dragEl, dropEl.nextSibling);
             } else {
-              this.el.insertBefore(dragEl, el);
+              this.el.insertBefore(dragEl, dropEl);
             }
 
             differ.from.sortable = this;
@@ -1450,7 +1468,7 @@
     _clearState: function _clearState() {
       state = new State();
       differ.destroy();
-      dragEl = dropEl = ghostEl = fromGroup = activeGroup = null;
+      dragEl = dropEl = ghostEl = fromGroup = activeGroup = Sortable.ghostEl = null;
       lastPosition = {
         x: 0,
         y: 0

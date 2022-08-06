@@ -89,7 +89,7 @@ const _detectNearestSortable = function(x, y) {
     const threshold = sortable[expando].options.emptyInsertThreshold
     if (!threshold) return
 
-    const rect = getRect(sortable),
+    const rect = getRect(sortable, true),
       insideHorizontally = x >= (rect.left - threshold) && x <= (rect.right + threshold),
       insideVertically = y >= (rect.top - threshold) && y <= (rect.bottom + threshold)
 
@@ -237,7 +237,8 @@ Sortable.prototype = {
 
   // -------------------------------- prepare start ----------------------------------
   _onDrag: function(/** Event|TouchEvent */evt) {
-    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0 || this.options.disabled || this.options.group.pull === false) return true // only left button and enabled
+    if (dragEl || this.options.disabled || this.options.group.pull === false) return
+    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return true // only left button and enabled
 
     const { touch, e, target } = getEvent(evt)
 
@@ -382,14 +383,14 @@ Sortable.prototype = {
   _onStarted: function(e, /** originalEvent */evt) {
     state.sortableMove = e // sortable state move is active
     if (!ghostEl) {
+      ghostEl = dragEl.cloneNode(true)
+
       // onDrag callback
       this._dispatchEvent('onDrag', { ...differ, event: e, originalEvent: evt })
 
       // Init in the move event to prevent conflict with the click event
-      const { rect } = differ.from
-      ghostEl = dragEl.cloneNode(true)
-      this.ghost.init(ghostEl, rect, !this.nativeDraggable)
-      Sortable.ghost = ghostEl
+      this.ghost.init(ghostEl, differ.from.rect, !this.nativeDraggable)
+      Sortable.ghostEl = ghostEl
 
       // add class for drag element
       toggleClass(dragEl, this.options.chosenClass, true)
@@ -446,10 +447,11 @@ Sortable.prototype = {
       differ.from.sortable = this
       differ.from.group = this.el
     } else {
-      const { el, rect, offset } = getElement(rootEl, target)
-      if (!el || (el && el.animated) || el === dragEl) return
-
-      dropEl = el
+      dropEl = getElement(rootEl, target, true)
+      if (!dropEl || (dropEl && dropEl.animated) || dropEl === dragEl) return
+      
+      const rect = getRect(dropEl)
+      const offset = getRect(dropEl)
       differ.to = { sortable: this, group: this.el, node: dropEl, rect, offset }
 
       const { clientX, clientY } = e
@@ -465,7 +467,7 @@ Sortable.prototype = {
           // onAdd callback
           this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
 
-          this.el.insertBefore(dragEl, el)
+          this.el.insertBefore(dragEl, dropEl)
 
           differ.from.sortable = this
           differ.from.group = this.el
@@ -476,9 +478,9 @@ Sortable.prototype = {
           // the top value is compared first, and the left is compared if the top value is the same
           const _offset = getOffset(dragEl)
           if (_offset.top < offset.top || _offset.left < offset.left) {
-            this.el.insertBefore(dragEl, el.nextElementSibling)
+            this.el.insertBefore(dragEl, dropEl.nextSibling)
           } else {
-            this.el.insertBefore(dragEl, el)
+            this.el.insertBefore(dragEl, dropEl)
           }
 
           differ.from.sortable = this
@@ -545,7 +547,8 @@ Sortable.prototype = {
     dropEl = 
     ghostEl = 
     fromGroup = 
-    activeGroup = null
+    activeGroup = 
+    Sortable.ghostEl = null
     lastPosition = { x: 0, y: 0 }
   },
 

@@ -36,7 +36,7 @@ export class Ghost {
     this.container = sortable.container
   }
 
-  init(el, rect, append = true) {
+  init(el, rect, append) {
     this.el = el
     if (!append) return
     const { ghostClass, ghostStyle = {} } = this.options
