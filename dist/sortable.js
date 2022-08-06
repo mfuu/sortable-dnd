@@ -1348,10 +1348,13 @@
         differ.from.sortable = this;
         differ.from.group = this.el;
       } else {
-        dropEl = getElement(rootEl, target, true);
-        if (!dropEl || dropEl && dropEl.animated || dropEl === dragEl) return;
-        var rect = getRect(dropEl);
-        var offset = getRect(dropEl);
+        var _getElement2 = getElement(rootEl, target),
+            el = _getElement2.el,
+            rect = _getElement2.rect,
+            offset = _getElement2.offset;
+
+        if (!el || el && el.animated || el === dragEl) return;
+        dropEl = el;
         differ.to = {
           sortable: this,
           group: this.el,

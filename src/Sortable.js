@@ -447,11 +447,10 @@ Sortable.prototype = {
       differ.from.sortable = this
       differ.from.group = this.el
     } else {
-      dropEl = getElement(rootEl, target, true)
-      if (!dropEl || (dropEl && dropEl.animated) || dropEl === dragEl) return
-      
-      const rect = getRect(dropEl)
-      const offset = getRect(dropEl)
+      const { el, rect, offset } = getElement(rootEl, target)
+      if (!el || (el && el.animated) || el === dragEl) return
+
+      dropEl = el
       differ.to = { sortable: this, group: this.el, node: dropEl, rect, offset }
 
       const { clientX, clientY } = e
