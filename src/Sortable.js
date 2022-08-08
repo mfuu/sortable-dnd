@@ -319,7 +319,6 @@ Sortable.prototype = {
       // allow HTML5 drag event
       dragEl.draggable = true
 
-      on(dragEl, 'dragend', this)
       on(rootEl, 'dragstart', this._onDragStart)
     }
 
@@ -396,10 +395,7 @@ Sortable.prototype = {
       toggleClass(dragEl, this.options.chosenClass, true)
       dragEl.style['will-change'] = 'transform'
 
-      if (this.nativeDraggable) {
-        this._unbindDropEvents()
-        on(document, 'drop', this)
-      }
+      if (this.nativeDraggable) this._unbindDropEvents()
 
       if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'
       if (Safari) css(document.body, 'user-select', 'none')
@@ -490,7 +486,7 @@ Sortable.prototype = {
       }
     }
     
-  }, 5),
+  }, 3),
 
   // -------------------------------- on drop ----------------------------------
   _onDrop: function(/** Event|TouchEvent */evt) {
@@ -503,8 +499,6 @@ Sortable.prototype = {
     this.dragStartTimer && clearTimeout(this.dragStartTimer)
 
     if (dragEl) {
-      if (this.nativeDraggable) off(dragEl, 'dragend', this)
-
       const { touch } = getEvent(evt)
       // clear style, attrs and class
       toggleClass(dragEl, this.options.chosenClass, false)
@@ -556,8 +550,6 @@ Sortable.prototype = {
       off(this.el, 'dragstart', this._onDragStart)
       off(this.el, 'dragover', this._onDragOver)
       off(this.el, 'dragend', this._onDrop)
-
-      off(document, 'drop', this)
     }
   },
 
