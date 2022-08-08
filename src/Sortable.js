@@ -456,7 +456,7 @@ Sortable.prototype = {
       if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
         this._captureAnimationState(dragEl, dropEl)
 
-        if (isChildOf(dragEl, rootEl) === false) {
+        if (differ.from.group !== differ.to.group) {
           // onRemove callback
           differ.from.sortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
           // onAdd callback
