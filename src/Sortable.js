@@ -512,7 +512,7 @@ Sortable.prototype = {
         differ.to.rect = getRect(dragEl)
   
         const changed = offsetChanged(differ.from.offset, differ.to.offset)
-        this._dispatchEvent('onDrop', { changed, event: evt, originalEvent: evt })
+        this._dispatchEvent('onDrop', { ...differ, changed, event: evt, originalEvent: evt })
       }
     }
 
