@@ -307,7 +307,7 @@ export function lastChild(el, selector) {
   while (
     last &&
     (
-      last === Sortable.ghostEl ||
+      last === Sortable.ghost ||
       css(last, 'display') === 'none' ||
       selector && !matches(last, selector)
     )
