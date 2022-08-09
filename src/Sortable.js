@@ -71,7 +71,7 @@ const _prepareGroup = function (options) {
   let originalGroup = options.group
 
   if (!originalGroup || typeof originalGroup != 'object') {
-    originalGroup = { name: originalGroup }
+    originalGroup = { name: originalGroup, pull: true, put: true }
   }
 
   group.name = originalGroup.name
@@ -91,7 +91,6 @@ const _nearestSortable = function(evt) {
     const nearest = _detectNearestSortable(clientX, clientY)
 
     if (nearest) {
-      if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'
       // Create imitation event
       let event = {}
       for (let i in evt) {
@@ -142,6 +141,13 @@ const _positionChanged = function(evt) {
   }
 
   return true
+}
+
+const _globalDragOver = function(evt) {
+  if (evt.dataTransfer) {
+    evt.dataTransfer.dropEffect = 'move'
+  }
+  evt.cancelable && evt.preventDefault()
 }
 
 /**
@@ -362,12 +368,10 @@ Sortable.prototype = {
 
   // -------------------------------- trigger ----------------------------------
   _triggerEvent(evt) {
-    if (activeGroup.name !== this.options.group.name) return
-
     rootEl = evt.rootEl
 
     if (this.nativeDraggable) {
-      on(this.el, 'dragover', this._onDragOver)
+      on(this.el, 'dragover', _globalDragOver)
       on(this.el, 'dragend', this._onDrop)
       this._onDragOver(evt)
     } else {
@@ -387,7 +391,7 @@ Sortable.prototype = {
       // onMove callback
       this._dispatchEvent('onMove', { ...differ, ghostEl, event: e, originalEvent: evt })
       // check if element will exchange
-      if (this.options.group.put || fromGroup === this.el) this._onChange(target, e, evt)
+      if (this._allowPut()) this._onChange(target, e, evt)
       // auto scroll
       clearTimeout(this.autoScrollTimer)
       if (this.options.autoScroll) {
@@ -400,7 +404,9 @@ Sortable.prototype = {
     if (!state.sortableDown || !dragEl) return
     this._preventEvent(evt)
 
-    if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'
+    const allowPut = this._allowPut()
+    if (evt.dataTransfer) evt.dataTransfer.dropEffect = allowPut ? 'move' : 'none'
+    
     // truly started
     this._onStarted(evt, evt)
 
@@ -408,7 +414,18 @@ Sortable.prototype = {
       // onMove callback
       this._dispatchEvent('onMove', { ...differ, ghostEl, event: evt, originalEvent: evt })
 
-      if (this.options.group.put || fromGroup === this.el) this._onChange(evt.target, evt, evt)
+      if (allowPut) this._onChange(evt.target, evt, evt)
+    }
+  },
+
+  _allowPut: function() {
+    if (fromGroup === this.el) {
+      return true
+    } else if (!this.options.group.put) {
+      return false
+    } else {
+      const { name } = this.options.group
+      return activeGroup.name && name && activeGroup.name === name
     }
   },
 
@@ -601,7 +618,7 @@ Sortable.prototype = {
   _unbindDragEvents: function() {
     if (this.nativeDraggable) {
       off(this.el, 'dragstart', this._onDragStart)
-      off(this.el, 'dragover', this._onDragOver)
+      off(this.el, 'dragover', _globalDragOver)
       off(this.el, 'dragend', this._onDrop)
     }
   },

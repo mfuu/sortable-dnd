@@ -14,9 +14,14 @@ export default function Animation() {
 
     _captureAnimationState(dragEl, dropEl) {
       const children = [...Array.from(this.el.children)]
-      const { start, end } = getRange(children, dragEl, dropEl)
+      let { start, end } = getRange(children, dragEl, dropEl)
 
       animationState.length = 0 // reset
+
+      if (start < 0) {
+        start = end
+        end = Math.min(children.length - 1, 100)
+      }
 
       children.slice(start, end + 1).forEach(child => {
         animationState.push({
