@@ -132,3 +132,52 @@ li {
   background-color: #fff;
   border: 1px solid rgba(0,0,0,.125);
 }
+
+#nested {
+  width: 600px;
+  margin: 0 auto;
+  margin-bottom: 100px;
+}
+
+.list-group {
+  display: -ms-flexbox;
+  display: flex;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  padding-left: 0;
+  margin-bottom: 0;
+}
+
+.list-group-item {
+  position: relative;
+  display: block;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: -1px;
+  background-color: #fff;
+  border: 1px solid rgba(0,0,0,.125);
+}
+
+.col {
+  -ms-flex-preferred-size: 0;
+  flex-basis: 0;
+  -ms-flex-positive: 1;
+  flex-grow: 1;
+  max-width: 100%;
+}
+
+.nested-1 {
+  background-color: #e6e6e6;
+}
+
+.nested-2 {
+  background-color: #cccccc;
+}
+
+.list-group-item:first-child {
+  border-top-left-radius: 0.25rem;
+  border-top-right-radius: 0.25rem;
+}
+
+#nestedDemo div, .nested-1, .nested-2, .nested-3 {
+  margin-top: 5px;
+}

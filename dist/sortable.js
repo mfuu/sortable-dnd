@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.3.3
+ * sortable-dnd v0.3.4
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -433,7 +433,7 @@
   function lastChild(el, selector) {
     var last = el.lastElementChild;
 
-    while (last && (last === Sortable.ghostEl || css(last, 'display') === 'none' || selector && !matches(last, selector))) {
+    while (last && (last === Sortable.ghost || css(last, 'display') === 'none' || selector && !matches(last, selector))) {
       last = last.previousElementSibling;
     }
 
@@ -541,157 +541,6 @@
     return setTimeout(fn, 0);
   }
   var expando = 'Sortable' + Date.now();
-
-  /**
-   * Sortable states
-   */
-
-  var State = /*#__PURE__*/_createClass(function State() {
-    _classCallCheck(this, State);
-
-    this.sortableDown = undefined;
-    this.sortableMove = undefined;
-    this.animationEnd = undefined;
-  });
-  /**
-   * Difference before and after dragging
-   */
-
-  var Differ = /*#__PURE__*/function () {
-    function Differ() {
-      _classCallCheck(this, Differ);
-
-      this.from = {
-        sortable: null,
-        group: null,
-        node: null,
-        rect: {},
-        offset: {}
-      };
-      this.to = {
-        sortable: null,
-        group: null,
-        node: null,
-        rect: {},
-        offset: {}
-      };
-    }
-
-    _createClass(Differ, [{
-      key: "destroy",
-      value: function destroy() {
-        this.from = {
-          sortable: null,
-          group: null,
-          node: null,
-          rect: {},
-          offset: {}
-        };
-        this.to = {
-          sortable: null,
-          group: null,
-          node: null,
-          rect: {},
-          offset: {}
-        };
-      }
-    }]);
-
-    return Differ;
-  }();
-  /**
-   * Elements being dragged
-   */
-
-  var Ghost = /*#__PURE__*/function () {
-    function Ghost(sortable) {
-      _classCallCheck(this, Ghost);
-
-      this.el = null;
-      this.initPos = this.distance = {
-        x: 0,
-        y: 0
-      };
-      this.options = sortable.options;
-      this.container = sortable.container;
-    }
-
-    _createClass(Ghost, [{
-      key: "init",
-      value: function init(el, rect, append) {
-        this.el = el;
-        if (!append) return;
-        var _this$options = this.options,
-            ghostClass = _this$options.ghostClass,
-            _this$options$ghostSt = _this$options.ghostStyle,
-            ghostStyle = _this$options$ghostSt === void 0 ? {} : _this$options$ghostSt;
-        toggleClass(this.el, ghostClass, true);
-        css(this.el, 'box-sizing', 'border-box');
-        css(this.el, 'margin', 0);
-        css(this.el, 'top', rect.top);
-        css(this.el, 'left', rect.left);
-        css(this.el, 'width', rect.width);
-        css(this.el, 'height', rect.height);
-        css(this.el, 'opacity', '0.8'); // css(this.el, 'position', IOS ? 'absolute' : 'fixed')
-
-        css(this.el, 'position', 'fixed');
-        css(this.el, 'zIndex', '100000');
-        css(this.el, 'pointerEvents', 'none');
-        this.setStyle(ghostStyle);
-        setTransition(this.el, 'none');
-        setTransform(this.el, 'translate3d(0px, 0px, 0px)');
-        this.container.appendChild(this.el);
-        css(this.el, 'transform-origin', this.distance.x / parseInt(this.el.style.width) * 100 + '% ' + this.distance.y / parseInt(this.el.style.height) * 100 + '%');
-        css(this.el, 'transform', 'translateZ(0)');
-      }
-    }, {
-      key: "setStyle",
-      value: function setStyle(style) {
-        for (var key in style) {
-          css(this.el, key, style[key]);
-        }
-      }
-    }, {
-      key: "rect",
-      value: function rect() {
-        return getRect(this.el);
-      }
-    }, {
-      key: "move",
-      value: function move(x, y) {
-        var smooth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
-        if (!this.el) return;
-        setTransition(this.el, smooth ? "".concat(this.options.ghostAnimation, "ms") : 'none');
-        setTransform(this.el, "translate3d(".concat(x - this.initPos.x, "px, ").concat(y - this.initPos.y, "px, 0)"));
-      }
-    }, {
-      key: "clear",
-      value: function clear() {
-        this.distance = {
-          x: 0,
-          y: 0
-        };
-        this.el && this.el.remove();
-        this.el = null;
-      }
-    }, {
-      key: "destroy",
-      value: function destroy(rect) {
-        var _this = this;
-
-        if (!this.el) return;
-        var left = parseInt(this.el.style.left);
-        var top = parseInt(this.el.style.top);
-        this.move(rect.left - left, rect.top - top, true);
-        var ghostAnimation = this.options.ghostAnimation;
-        ghostAnimation ? setTimeout(function () {
-          return _this.clear();
-        }, ghostAnimation) : this.clear();
-      }
-    }]);
-
-    return Ghost;
-  }();
 
   function AutoScroll() {
     if (!window.requestAnimationFrame) {
@@ -851,6 +700,66 @@
     };
   }
 
+  /**
+   * Sortable states
+   */
+
+  var State = /*#__PURE__*/_createClass(function State() {
+    _classCallCheck(this, State);
+
+    this.sortableDown = undefined;
+    this.sortableMove = undefined;
+    this.animationEnd = undefined;
+  });
+  /**
+   * Difference before and after dragging
+   */
+
+
+  var Differ = /*#__PURE__*/function () {
+    function Differ() {
+      _classCallCheck(this, Differ);
+
+      this.from = {
+        sortable: null,
+        group: null,
+        node: null,
+        rect: {},
+        offset: {}
+      };
+      this.to = {
+        sortable: null,
+        group: null,
+        node: null,
+        rect: {},
+        offset: {}
+      };
+    }
+
+    _createClass(Differ, [{
+      key: "destroy",
+      value: function destroy() {
+        this.from = {
+          sortable: null,
+          group: null,
+          node: null,
+          rect: {},
+          offset: {}
+        };
+        this.to = {
+          sortable: null,
+          group: null,
+          node: null,
+          rect: {},
+          offset: {}
+        };
+      }
+    }]);
+
+    return Differ;
+  }(); // -------------------------------- Sortable ----------------------------------
+
+
   var documentExists = typeof document !== 'undefined';
   var supportDraggable = documentExists && !ChromeForAndroid && !IOS && 'draggable' in document.createElement('div');
   var sortables = [];
@@ -863,6 +772,15 @@
       state = new State(),
       // Status record during drag and drop
   differ = new Differ(); // Record the difference before and after dragging
+
+  var distance = {
+    x: 0,
+    y: 0
+  };
+  var lastPosition = {
+    x: 0,
+    y: 0
+  };
 
   var _prepareGroup = function _prepareGroup(options) {
     var group = {};
@@ -894,7 +812,8 @@
       var nearest = _detectNearestSortable(clientX, clientY);
 
       if (nearest) {
-        // Create imitation event
+        if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'; // Create imitation event
+
         var event = {};
 
         for (var i in evt) {
@@ -932,11 +851,6 @@
       }
     });
     return result;
-  };
-
-  var lastPosition = {
-    x: 0,
-    y: 0
   };
 
   var _positionChanged = function _positionChanged(evt) {
@@ -998,8 +912,6 @@
       // only delay if user is using touch
       disabled: false,
       // Defines whether the sortable object is available or not. When it is true, the sortable object cannot drag and drop sorting and other functions. When it is false, it can be sorted, which is equivalent to a switch.
-      ghostAnimation: 0,
-      // Animation when the ghost element is destroyed
       ghostClass: '',
       // Ghost element class name
       ghostStyle: {},
@@ -1020,10 +932,7 @@
       !(name in this.options) && (this.options[name] = defaults[name]);
     }
 
-    this.container = this.options.fallbackOnBody ? document.body : el;
     this.nativeDraggable = this.options.forceFallback ? false : supportDraggable;
-    this.ghost = new Ghost(this); // Mask element while dragging
-
     this.dragStartTimer = null; // setTimeout timer
 
     this.autoScrollTimer = null;
@@ -1073,20 +982,6 @@
         el.removeAttribute('draggable');
       });
     },
-
-    /**
-     * set value for options by key
-     */
-    set: function set(key, value) {
-      this.options[key] = value;
-    },
-
-    /**
-     * get value from options by key
-     */
-    get: function get(key) {
-      return this.options[key];
-    },
     // -------------------------------- prepare start ----------------------------------
     _onDrag: function _onDrag(
     /** Event|TouchEvent */
@@ -1104,8 +999,6 @@
 
       if (!this.nativeDraggable && Safari && target && target.tagName.toUpperCase() === 'SELECT') return true;
       if (target === this.el) return true;
-      if (this.options.stopPropagation) evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
-
       var draggable = this.options.draggable;
 
       if (typeof draggable === 'function') {
@@ -1139,20 +1032,23 @@
         rect: rect,
         offset: offset
       };
-      this.ghost.distance = {
+      distance = {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
       };
-      this.ghost.initPos = {
-        x: e.clientX,
-        y: e.clientY
-      };
       state.sortableDown = e; // sortable state down is active
+      // enable drag between groups
 
       on(this.ownerDocument, 'dragover', _nearestSortable);
-      on(this.ownerDocument, 'mousemove', _nearestSortable);
-      on(this.ownerDocument, 'touchmove', _nearestSortable);
-      on(this.ownerDocument, 'pointermove', _nearestSortable); // Solve the problem that `dragend` does not take effect when the `dragover` event is not triggered
+
+      if (this.options.supportPointer) {
+        on(this.ownerDocument, 'pointermove', _nearestSortable);
+      } else if (touch) {
+        on(this.ownerDocument, 'touchmove', _nearestSortable);
+      } else {
+        on(this.ownerDocument, 'mousemove', _nearestSortable);
+      } // Solve the problem that `dragend` does not take effect when the `dragover` event is not triggered
+
 
       on(this.ownerDocument, 'pointerup', this._onDrop);
       on(this.ownerDocument, 'touchend', this._onDrop);
@@ -1191,7 +1087,7 @@
       } else {
         // allow HTML5 drag event
         dragEl.draggable = true;
-        on(rootEl, 'dragstart', this._onDragStart);
+        on(this.el, 'dragstart', this._onDragStart);
       } // clear selection
 
 
@@ -1207,12 +1103,25 @@
       } catch (error) {//
       }
     },
+    // -------------------------------- drag event ----------------------------------
+    _onDragStart: function _onDragStart(evt) {
+      var dataTransfer = evt.dataTransfer;
+
+      if (dataTransfer) {
+        // elements can only be dragged after firefox sets setData
+        dataTransfer.setData('text', ''); // set ghost element
+
+        dataTransfer.setDragImage(ghostEl, distance.x, distance.y);
+        dataTransfer.effectAllowed = 'move';
+      }
+    },
     // -------------------------------- trigger ----------------------------------
     _triggerEvent: function _triggerEvent(evt) {
       if (activeGroup.name !== this.options.group.name) return;
       rootEl = evt.rootEl;
 
       if (this.nativeDraggable) {
+        on(this.el, 'dragover', this._onDragOver);
         on(this.el, 'dragend', this._onDrop);
 
         this._onDragOver(evt);
@@ -1220,64 +1129,7 @@
         this._onMove(evt);
       }
     },
-    // -------------------------------- drag event ----------------------------------
-    _onDragStart: function _onDragStart(evt) {
-      // elements can only be dragged after firefox sets setData
-      if (evt.dataTransfer) {
-        evt.dataTransfer.setData('DRAGGABLE_EFFECT', evt.target.innerText);
-        evt.dataTransfer.effectAllowed = 'move';
-      }
-
-      on(this.el, 'dragover', this._onDragOver);
-      on(this.el, 'dragend', this._onDrop);
-    },
-    _onDragOver: function _onDragOver(evt) {
-      if (!state.sortableDown || !dragEl) return;
-
-      this._preventEvent(evt); // truly started
-
-
-      this._onStarted(evt, evt);
-
-      if (!evt.rootEl) return;
-
-      if (_positionChanged(evt)) {
-        // onMove callback
-        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
-          ghostEl: ghostEl,
-          event: evt,
-          originalEvent: evt
-        }));
-
-        if (this.options.group.put || fromGroup === this.el) this._onChange(evt.target, evt, evt);
-      }
-    },
-    // -------------------------------- real started ----------------------------------
-    _onStarted: function _onStarted(e,
-    /** originalEvent */
-    evt) {
-      state.sortableMove = e; // sortable state move is active
-
-      if (!ghostEl) {
-        ghostEl = dragEl.cloneNode(true); // onDrag callback
-
-        this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, differ), {}, {
-          event: e,
-          originalEvent: evt
-        })); // Init in the move event to prevent conflict with the click event
-
-
-        this.ghost.init(ghostEl, differ.from.rect, !this.nativeDraggable);
-        Sortable.ghostEl = ghostEl; // add class for drag element
-
-        toggleClass(dragEl, this.options.chosenClass, true);
-        dragEl.style['will-change'] = 'transform';
-        if (this.nativeDraggable) this._unbindDropEvents();
-        if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move';
-        if (Safari) css(document.body, 'user-select', 'none');
-      }
-    },
-    // -------------------------------- on move ----------------------------------
+    // -------------------------------- move ----------------------------------
     _onMove: function _onMove(
     /** Event|TouchEvent */
     evt) {
@@ -1293,25 +1145,114 @@
 
       this._onStarted(e, evt);
 
-      this.ghost.move(e.clientX, e.clientY);
-      if (!evt.rootEl) return; // onMove callback
+      if (evt.rootEl) {
+        // onMove callback
+        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
+          ghostEl: ghostEl,
+          event: e,
+          originalEvent: evt
+        })); // check if element will exchange
 
-      this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
-        ghostEl: ghostEl,
-        event: e,
-        originalEvent: evt
-      })); // check if element will exchange
 
+        if (this.options.group.put || fromGroup === this.el) this._onChange(target, e, evt); // auto scroll
 
-      if (this.options.group.put || fromGroup === this.el) this._onChange(target, e, evt); // auto scroll
+        clearTimeout(this.autoScrollTimer);
 
-      clearTimeout(this.autoScrollTimer);
-
-      if (this.options.autoScroll) {
-        this.autoScrollTimer = setTimeout(function () {
-          return _this2._autoScroll(_this2, state);
-        }, 0);
+        if (this.options.autoScroll) {
+          this.autoScrollTimer = setTimeout(function () {
+            return _this2._autoScroll(_this2, state);
+          }, 0);
+        }
       }
+    },
+    _onDragOver: function _onDragOver(evt) {
+      if (!state.sortableDown || !dragEl) return;
+
+      this._preventEvent(evt);
+
+      if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'; // truly started
+
+      this._onStarted(evt, evt);
+
+      if (evt.rootEl && _positionChanged(evt)) {
+        // onMove callback
+        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
+          ghostEl: ghostEl,
+          event: evt,
+          originalEvent: evt
+        }));
+
+        if (this.options.group.put || fromGroup === this.el) this._onChange(evt.target, evt, evt);
+      }
+    },
+    // -------------------------------- real started ----------------------------------
+    _onStarted: function _onStarted(e,
+    /** originalEvent */
+    evt) {
+      if (!state.sortableMove) {
+        // onDrag callback
+        this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, differ), {}, {
+          event: e,
+          originalEvent: evt
+        })); // Init in the move event to prevent conflict with the click event
+
+
+        this._appendGhost(); // add class for drag element
+
+
+        toggleClass(dragEl, this.options.chosenClass, true);
+        dragEl.style['will-change'] = 'transform';
+        if (this.nativeDraggable) this._unbindDropEvents();
+        if (Safari) css(document.body, 'user-select', 'none');
+      }
+
+      state.sortableMove = e; // sortable state move is active
+
+      if (!this.nativeDraggable) {
+        var _state$sortableDown = state.sortableDown,
+            clientX = _state$sortableDown.clientX,
+            clientY = _state$sortableDown.clientY;
+        setTransition(ghostEl, 'none');
+        setTransform(ghostEl, "translate3d(".concat(e.clientX - clientX, "px, ").concat(e.clientY - clientY, "px, 0)"));
+      }
+    },
+    // -------------------------------- ghost ----------------------------------
+    _appendGhost: function _appendGhost() {
+      if (ghostEl) return;
+      var _this$options3 = this.options,
+          fallbackOnBody = _this$options3.fallbackOnBody,
+          ghostClass = _this$options3.ghostClass,
+          _this$options3$ghostS = _this$options3.ghostStyle,
+          ghostStyle = _this$options3$ghostS === void 0 ? {} : _this$options3$ghostS;
+      var container = fallbackOnBody ? document.body : this.el;
+      var rect = differ.from.rect;
+      ghostEl = dragEl.cloneNode(true);
+      toggleClass(ghostEl, ghostClass, true);
+      css(ghostEl, 'box-sizing', 'border-box');
+      css(ghostEl, 'margin', 0);
+      css(ghostEl, 'top', rect.top);
+      css(ghostEl, 'left', rect.left);
+      css(ghostEl, 'width', rect.width);
+      css(ghostEl, 'height', rect.height);
+      css(ghostEl, 'opacity', '0.8');
+      css(ghostEl, 'position', 'fixed');
+      css(ghostEl, 'zIndex', '100000');
+      css(ghostEl, 'pointerEvents', 'none');
+
+      for (var key in ghostStyle) {
+        css(ghostEl, key, ghostStyle[key]);
+      } // hide ghostEl when use drag event
+
+
+      if (this.nativeDraggable) css(ghostEl, 'top', '-999px');
+      setTransition(ghostEl, 'none');
+      setTransform(ghostEl, 'translate3d(0px, 0px, 0px)');
+      container.appendChild(ghostEl);
+      var ox = distance.x / parseInt(ghostEl.style.width) * 100;
+      var oy = distance.y / parseInt(ghostEl.style.height) * 100;
+      css(ghostEl, 'transform-origin', "".concat(ox, "% ").concat(oy, "%"));
+      css(ghostEl, 'transform', 'translateZ(0)');
+      Sortable.ghost = ghostEl;
     },
     // -------------------------------- on change ----------------------------------
     _onChange: debounce(function (target, e, evt) {
@@ -1365,7 +1306,7 @@
         if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
           this._captureAnimationState(dragEl, dropEl);
 
-          if (isChildOf(dragEl, rootEl) === false) {
+          if (differ.from.group !== differ.to.group) {
             // onRemove callback
             differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
               event: e,
@@ -1435,24 +1376,22 @@
           differ.to.rect = getRect(dragEl);
           var changed = offsetChanged(differ.from.offset, differ.to.offset);
 
-          this._dispatchEvent('onDrop', {
+          this._dispatchEvent('onDrop', _objectSpread2(_objectSpread2({}, differ), {}, {
             changed: changed,
             event: evt,
             originalEvent: evt
-          });
+          }));
         }
       }
 
       if (Safari) css(document.body, 'user-select', '');
-      this.ghost.destroy(differ.to.rect);
 
       this._clearState();
     },
     // -------------------------------- event ----------------------------------
     _preventEvent: function _preventEvent(evt) {
-      if (this.options.stopPropagation) evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
-
       evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
+      if (this.options.stopPropagation) evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
     },
     _dispatchEvent: function _dispatchEvent(event, params) {
       var callback = this.options[event];
@@ -1460,13 +1399,14 @@
     },
     // -------------------------------- clear ----------------------------------
     _clearState: function _clearState() {
-      state = new State();
-      differ.destroy();
+      ghostEl && ghostEl.parentNode && ghostEl.parentNode.removeChild(ghostEl);
       dragEl = dropEl = ghostEl = fromGroup = activeGroup = Sortable.ghostEl = null;
-      lastPosition = {
+      distance = lastPosition = {
         x: 0,
         y: 0
       };
+      state = new State();
+      differ.destroy();
     },
     _unbindDragEvents: function _unbindDragEvents() {
       if (this.nativeDraggable) {

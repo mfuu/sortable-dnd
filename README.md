@@ -52,7 +52,7 @@ var DND = new Sortable(
     onMove: ({ from, ghostEl, event, originalEvent }) => {
       // code
     },
-    onDrop: ({ changed, event, originalEvent }) => {
+    onDrop: ({ from, to, changed, event, originalEvent }) => {
       // code
     },
     onAdd: ({ from, to, event, originalEvent }) => {
