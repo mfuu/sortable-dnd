@@ -500,23 +500,26 @@ Sortable.prototype = {
   // -------------------------------- on change ----------------------------------
   _onChange: debounce(function(target, e, evt) {
     if (!dragEl) return
-    if (!lastChild(this.el)) {
-      differ.to = { sortable: this, group: this.el, node: dragEl, rect: getRect(dragEl), offset: getOffset(dragEl) }
+    if (!lastChild(rootEl) || (target === rootEl && differ.from.group !== rootEl)) {
+      differ.from.sortable._captureAnimationState(dragEl, dragEl)
+
+      differ.to = { sortable: this, group: rootEl, node: dragEl, rect: getRect(dragEl), offset: getOffset(dragEl) }
       // onRemove callback
       differ.from.sortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
       // onAdd callback
       this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
 
-      this.el.appendChild(dragEl)
+      rootEl.appendChild(dragEl)
+      differ.from.sortable._rangeAnimate()
 
       differ.from.sortable = this
-      differ.from.group = this.el
+      differ.from.group = rootEl
     } else {
       const { el, rect, offset } = getElement(rootEl, target)
       if (!el || (el && el.animated) || el === dragEl) return
 
       dropEl = el
-      differ.to = { sortable: this, group: this.el, node: dropEl, rect, offset }
+      differ.to = { sortable: this, group: rootEl, node: dropEl, rect, offset }
 
       const { clientX, clientY } = e
       const { left, right, top, bottom } = rect
@@ -526,15 +529,14 @@ Sortable.prototype = {
         this._captureAnimationState(dragEl, dropEl)
 
         if (differ.from.group !== differ.to.group) {
+          differ.from.sortable._captureAnimationState(dragEl, dropEl)
           // onRemove callback
           differ.from.sortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
           // onAdd callback
           this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
 
-          this.el.insertBefore(dragEl, dropEl)
-
-          differ.from.sortable = this
-          differ.from.group = this.el
+          rootEl.insertBefore(dragEl, dropEl)
+          differ.from.sortable._rangeAnimate()
         } else {
           // onChange callback
           this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
@@ -542,15 +544,14 @@ Sortable.prototype = {
           // the top value is compared first, and the left is compared if the top value is the same
           const _offset = getOffset(dragEl)
           if (_offset.top < offset.top || _offset.left < offset.left) {
-            this.el.insertBefore(dragEl, dropEl.nextSibling)
+            rootEl.insertBefore(dragEl, dropEl.nextSibling)
           } else {
-            this.el.insertBefore(dragEl, dropEl)
+            rootEl.insertBefore(dragEl, dropEl)
           }
-
-          differ.from.sortable = this
-          differ.from.group = this.el
         }
 
+        differ.from.sortable = this
+        differ.from.group = rootEl
         this._rangeAnimate()
       }
     }

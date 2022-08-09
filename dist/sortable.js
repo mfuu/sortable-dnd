@@ -1283,10 +1283,12 @@
     _onChange: debounce(function (target, e, evt) {
       if (!dragEl) return;
 
-      if (!lastChild(this.el)) {
+      if (!lastChild(rootEl) || target === rootEl && differ.from.group !== rootEl) {
+        differ.from.sortable._captureAnimationState(dragEl, dragEl);
+
         differ.to = {
           sortable: this,
-          group: this.el,
+          group: rootEl,
           node: dragEl,
           rect: getRect(dragEl),
           offset: getOffset(dragEl)
@@ -1303,9 +1305,12 @@
           originalEvent: evt
         }));
 
-        this.el.appendChild(dragEl);
+        rootEl.appendChild(dragEl);
+
+        differ.from.sortable._rangeAnimate();
+
         differ.from.sortable = this;
-        differ.from.group = this.el;
+        differ.from.group = rootEl;
       } else {
         var _getElement2 = getElement(rootEl, target),
             el = _getElement2.el,
@@ -1316,7 +1321,7 @@
         dropEl = el;
         differ.to = {
           sortable: this,
-          group: this.el,
+          group: rootEl,
           node: dropEl,
           rect: rect,
           offset: offset
@@ -1332,7 +1337,9 @@
           this._captureAnimationState(dragEl, dropEl);
 
           if (differ.from.group !== differ.to.group) {
-            // onRemove callback
+            differ.from.sortable._captureAnimationState(dragEl, dropEl); // onRemove callback
+
+
             differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
               event: e,
               originalEvent: evt
@@ -1344,9 +1351,9 @@
               originalEvent: evt
             }));
 
-            this.el.insertBefore(dragEl, dropEl);
-            differ.from.sortable = this;
-            differ.from.group = this.el;
+            rootEl.insertBefore(dragEl, dropEl);
+
+            differ.from.sortable._rangeAnimate();
           } else {
             // onChange callback
             this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, differ), {}, {
@@ -1358,14 +1365,14 @@
             var _offset = getOffset(dragEl);
 
             if (_offset.top < offset.top || _offset.left < offset.left) {
-              this.el.insertBefore(dragEl, dropEl.nextSibling);
+              rootEl.insertBefore(dragEl, dropEl.nextSibling);
             } else {
-              this.el.insertBefore(dragEl, dropEl);
+              rootEl.insertBefore(dragEl, dropEl);
             }
-
-            differ.from.sortable = this;
-            differ.from.group = this.el;
           }
+
+          differ.from.sortable = this;
+          differ.from.group = rootEl;
 
           this._rangeAnimate();
         }
