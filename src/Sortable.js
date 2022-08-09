@@ -71,7 +71,7 @@ const _prepareGroup = function (options) {
   let originalGroup = options.group
 
   if (!originalGroup || typeof originalGroup != 'object') {
-    originalGroup = { name: originalGroup }
+    originalGroup = { name: originalGroup, pull: true, put: true }
   }
 
   group.name = originalGroup.name
@@ -91,7 +91,6 @@ const _nearestSortable = function(evt) {
     const nearest = _detectNearestSortable(clientX, clientY)
 
     if (nearest) {
-      if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'
       // Create imitation event
       let event = {}
       for (let i in evt) {
@@ -142,6 +141,13 @@ const _positionChanged = function(evt) {
   }
 
   return true
+}
+
+const _globalDragOver = function(evt) {
+  if (evt.dataTransfer) {
+    evt.dataTransfer.dropEffect = 'move'
+  }
+  evt.cancelable && evt.preventDefault()
 }
 
 /**
@@ -362,12 +368,10 @@ Sortable.prototype = {
 
   // -------------------------------- trigger ----------------------------------
   _triggerEvent(evt) {
-    if (activeGroup.name !== this.options.group.name) return
-
     rootEl = evt.rootEl
 
     if (this.nativeDraggable) {
-      on(this.el, 'dragover', this._onDragOver)
+      on(this.el, 'dragover', _globalDragOver)
       on(this.el, 'dragend', this._onDrop)
       this._onDragOver(evt)
     } else {
@@ -387,7 +391,7 @@ Sortable.prototype = {
       // onMove callback
       this._dispatchEvent('onMove', { ...differ, ghostEl, event: e, originalEvent: evt })
       // check if element will exchange
-      if (this.options.group.put || fromGroup === this.el) this._onChange(target, e, evt)
+      if (this._allowPut()) this._onChange(target, e, evt)
       // auto scroll
       clearTimeout(this.autoScrollTimer)
       if (this.options.autoScroll) {
@@ -400,7 +404,9 @@ Sortable.prototype = {
     if (!state.sortableDown || !dragEl) return
     this._preventEvent(evt)
 
-    if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'
+    const allowPut = this._allowPut()
+    if (evt.dataTransfer) evt.dataTransfer.dropEffect = allowPut ? 'move' : 'none'
+    
     // truly started
     this._onStarted(evt, evt)
 
@@ -408,7 +414,18 @@ Sortable.prototype = {
       // onMove callback
       this._dispatchEvent('onMove', { ...differ, ghostEl, event: evt, originalEvent: evt })
 
-      if (this.options.group.put || fromGroup === this.el) this._onChange(evt.target, evt, evt)
+      if (allowPut) this._onChange(evt.target, evt, evt)
+    }
+  },
+
+  _allowPut: function() {
+    if (fromGroup === this.el) {
+      return true
+    } else if (!this.options.group.put) {
+      return false
+    } else {
+      const { name } = this.options.group
+      return activeGroup.name && name && activeGroup.name === name
     }
   },
 
@@ -483,23 +500,26 @@ Sortable.prototype = {
   // -------------------------------- on change ----------------------------------
   _onChange: debounce(function(target, e, evt) {
     if (!dragEl) return
-    if (!lastChild(this.el)) {
-      differ.to = { sortable: this, group: this.el, node: dragEl, rect: getRect(dragEl), offset: getOffset(dragEl) }
+    if (!lastChild(rootEl) || (target === rootEl && differ.from.group !== rootEl)) {
+      differ.from.sortable._captureAnimationState(dragEl, dragEl)
+
+      differ.to = { sortable: this, group: rootEl, node: dragEl, rect: getRect(dragEl), offset: getOffset(dragEl) }
       // onRemove callback
       differ.from.sortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
       // onAdd callback
       this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
 
-      this.el.appendChild(dragEl)
+      rootEl.appendChild(dragEl)
+      differ.from.sortable._rangeAnimate()
 
       differ.from.sortable = this
-      differ.from.group = this.el
+      differ.from.group = rootEl
     } else {
       const { el, rect, offset } = getElement(rootEl, target)
       if (!el || (el && el.animated) || el === dragEl) return
 
       dropEl = el
-      differ.to = { sortable: this, group: this.el, node: dropEl, rect, offset }
+      differ.to = { sortable: this, group: rootEl, node: dropEl, rect, offset }
 
       const { clientX, clientY } = e
       const { left, right, top, bottom } = rect
@@ -509,15 +529,14 @@ Sortable.prototype = {
         this._captureAnimationState(dragEl, dropEl)
 
         if (differ.from.group !== differ.to.group) {
+          differ.from.sortable._captureAnimationState(dragEl, dropEl)
           // onRemove callback
           differ.from.sortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
           // onAdd callback
           this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
 
-          this.el.insertBefore(dragEl, dropEl)
-
-          differ.from.sortable = this
-          differ.from.group = this.el
+          rootEl.insertBefore(dragEl, dropEl)
+          differ.from.sortable._rangeAnimate()
         } else {
           // onChange callback
           this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
@@ -525,15 +544,14 @@ Sortable.prototype = {
           // the top value is compared first, and the left is compared if the top value is the same
           const _offset = getOffset(dragEl)
           if (_offset.top < offset.top || _offset.left < offset.left) {
-            this.el.insertBefore(dragEl, dropEl.nextSibling)
+            rootEl.insertBefore(dragEl, dropEl.nextSibling)
           } else {
-            this.el.insertBefore(dragEl, dropEl)
+            rootEl.insertBefore(dragEl, dropEl)
           }
-
-          differ.from.sortable = this
-          differ.from.group = this.el
         }
 
+        differ.from.sortable = this
+        differ.from.group = rootEl
         this._rangeAnimate()
       }
     }
@@ -601,7 +619,7 @@ Sortable.prototype = {
   _unbindDragEvents: function() {
     if (this.nativeDraggable) {
       off(this.el, 'dragstart', this._onDragStart)
-      off(this.el, 'dragover', this._onDragOver)
+      off(this.el, 'dragover', _globalDragOver)
       off(this.el, 'dragend', this._onDrop)
     }
   },

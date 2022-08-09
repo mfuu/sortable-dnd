@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.3.4
+ * sortable-dnd v0.3.5
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -662,6 +662,11 @@
 
         animationState.length = 0; // reset
 
+        if (start < 0) {
+          start = end;
+          end = Math.min(children.length - 1, 100);
+        }
+
         children.slice(start, end + 1).forEach(function (child) {
           animationState.push({
             target: child,
@@ -788,7 +793,9 @@
 
     if (!originalGroup || _typeof(originalGroup) != 'object') {
       originalGroup = {
-        name: originalGroup
+        name: originalGroup,
+        pull: true,
+        put: true
       };
     }
 
@@ -812,8 +819,7 @@
       var nearest = _detectNearestSortable(clientX, clientY);
 
       if (nearest) {
-        if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'; // Create imitation event
-
+        // Create imitation event
         var event = {};
 
         for (var i in evt) {
@@ -866,6 +872,14 @@
     }
 
     return true;
+  };
+
+  var _globalDragOver = function _globalDragOver(evt) {
+    if (evt.dataTransfer) {
+      evt.dataTransfer.dropEffect = 'move';
+    }
+
+    evt.cancelable && evt.preventDefault();
   };
   /**
    * @class  Sortable
@@ -1117,11 +1131,10 @@
     },
     // -------------------------------- trigger ----------------------------------
     _triggerEvent: function _triggerEvent(evt) {
-      if (activeGroup.name !== this.options.group.name) return;
       rootEl = evt.rootEl;
 
       if (this.nativeDraggable) {
-        on(this.el, 'dragover', this._onDragOver);
+        on(this.el, 'dragover', _globalDragOver);
         on(this.el, 'dragend', this._onDrop);
 
         this._onDragOver(evt);
@@ -1154,7 +1167,7 @@
         })); // check if element will exchange
 
 
-        if (this.options.group.put || fromGroup === this.el) this._onChange(target, e, evt); // auto scroll
+        if (this._allowPut()) this._onChange(target, e, evt); // auto scroll
 
         clearTimeout(this.autoScrollTimer);
 
@@ -1170,7 +1183,9 @@
 
       this._preventEvent(evt);
 
-      if (evt.dataTransfer) evt.dataTransfer.dropEffect = 'move'; // truly started
+      var allowPut = this._allowPut();
+
+      if (evt.dataTransfer) evt.dataTransfer.dropEffect = allowPut ? 'move' : 'none'; // truly started
 
       this._onStarted(evt, evt);
 
@@ -1182,7 +1197,17 @@
           originalEvent: evt
         }));
 
-        if (this.options.group.put || fromGroup === this.el) this._onChange(evt.target, evt, evt);
+        if (allowPut) this._onChange(evt.target, evt, evt);
+      }
+    },
+    _allowPut: function _allowPut() {
+      if (fromGroup === this.el) {
+        return true;
+      } else if (!this.options.group.put) {
+        return false;
+      } else {
+        var name = this.options.group.name;
+        return activeGroup.name && name && activeGroup.name === name;
       }
     },
     // -------------------------------- real started ----------------------------------
@@ -1258,10 +1283,12 @@
     _onChange: debounce(function (target, e, evt) {
       if (!dragEl) return;
 
-      if (!lastChild(this.el)) {
+      if (!lastChild(rootEl) || target === rootEl && differ.from.group !== rootEl) {
+        differ.from.sortable._captureAnimationState(dragEl, dragEl);
+
         differ.to = {
           sortable: this,
-          group: this.el,
+          group: rootEl,
           node: dragEl,
           rect: getRect(dragEl),
           offset: getOffset(dragEl)
@@ -1278,9 +1305,12 @@
           originalEvent: evt
         }));
 
-        this.el.appendChild(dragEl);
+        rootEl.appendChild(dragEl);
+
+        differ.from.sortable._rangeAnimate();
+
         differ.from.sortable = this;
-        differ.from.group = this.el;
+        differ.from.group = rootEl;
       } else {
         var _getElement2 = getElement(rootEl, target),
             el = _getElement2.el,
@@ -1291,7 +1321,7 @@
         dropEl = el;
         differ.to = {
           sortable: this,
-          group: this.el,
+          group: rootEl,
           node: dropEl,
           rect: rect,
           offset: offset
@@ -1307,7 +1337,9 @@
           this._captureAnimationState(dragEl, dropEl);
 
           if (differ.from.group !== differ.to.group) {
-            // onRemove callback
+            differ.from.sortable._captureAnimationState(dragEl, dropEl); // onRemove callback
+
+
             differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
               event: e,
               originalEvent: evt
@@ -1319,9 +1351,9 @@
               originalEvent: evt
             }));
 
-            this.el.insertBefore(dragEl, dropEl);
-            differ.from.sortable = this;
-            differ.from.group = this.el;
+            rootEl.insertBefore(dragEl, dropEl);
+
+            differ.from.sortable._rangeAnimate();
           } else {
             // onChange callback
             this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, differ), {}, {
@@ -1333,14 +1365,14 @@
             var _offset = getOffset(dragEl);
 
             if (_offset.top < offset.top || _offset.left < offset.left) {
-              this.el.insertBefore(dragEl, dropEl.nextSibling);
+              rootEl.insertBefore(dragEl, dropEl.nextSibling);
             } else {
-              this.el.insertBefore(dragEl, dropEl);
+              rootEl.insertBefore(dragEl, dropEl);
             }
-
-            differ.from.sortable = this;
-            differ.from.group = this.el;
           }
+
+          differ.from.sortable = this;
+          differ.from.group = rootEl;
 
           this._rangeAnimate();
         }
@@ -1411,7 +1443,7 @@
     _unbindDragEvents: function _unbindDragEvents() {
       if (this.nativeDraggable) {
         off(this.el, 'dragstart', this._onDragStart);
-        off(this.el, 'dragover', this._onDragOver);
+        off(this.el, 'dragover', _globalDragOver);
         off(this.el, 'dragend', this._onDrop);
       }
     },
