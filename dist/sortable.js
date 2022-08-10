@@ -715,7 +715,6 @@
 
       this.sortableDown = undefined;
       this.sortableMove = undefined;
-      this.animationEnd = undefined;
     }
 
     _createClass(State, [{
@@ -723,7 +722,6 @@
       value: function destroy() {
         this.sortableDown = undefined;
         this.sortableMove = undefined;
-        this.animationEnd = undefined;
       }
     }]);
 
@@ -1136,8 +1134,7 @@
         } else {
           window.getSelection().removeAllRanges();
         }
-      } catch (error) {//
-      }
+      } catch (error) {}
     },
     // -------------------------------- drag event ----------------------------------
     _onDragStart: function _onDragStart(evt) {
@@ -1181,7 +1178,7 @@
       this._onStarted(e, evt);
 
       if (evt.rootEl) {
-        // onMove callback
+        // on-move
         this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           ghostEl: ghostEl,
           event: e,
@@ -1212,7 +1209,7 @@
       this._onStarted(evt, evt);
 
       if (evt.rootEl && _positionChanged(evt)) {
-        // onMove callback
+        // on-move
         this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           ghostEl: ghostEl,
           event: evt,
@@ -1237,7 +1234,7 @@
     /** originalEvent */
     evt) {
       if (!state.sortableMove) {
-        // onDrag callback
+        // on-drag
         this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           event: e,
           originalEvent: evt
@@ -1314,12 +1311,12 @@
           node: dragEl,
           rect: getRect(dragEl),
           offset: getOffset(dragEl)
-        }; // onRemove callback
+        }; // on-remove
 
         differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           event: e,
           originalEvent: evt
-        })); // onAdd callback
+        })); // on-add
 
 
         this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
@@ -1356,13 +1353,13 @@
           this._captureAnimationState(dragEl, dropEl);
 
           if (differ.from.group !== differ.to.group) {
-            differ.from.sortable._captureAnimationState(dragEl, dropEl); // onRemove callback
+            differ.from.sortable._captureAnimationState(dragEl, dropEl); // on-remove
 
 
             differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
               event: e,
               originalEvent: evt
-            })); // onAdd callback
+            })); // on-add
 
 
             this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
@@ -1374,7 +1371,7 @@
 
             differ.from.sortable._rangeAnimate();
           } else {
-            // onChange callback
+            // on-change
             this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
               event: e,
               originalEvent: evt
@@ -1429,11 +1426,16 @@
           differ.from.sortable = fromSortable;
           var changed = offsetChanged(differ.from.offset, differ.to.offset);
 
-          this._dispatchEvent('onDrop', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
+          var params = _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
             changed: changed,
             event: evt,
             originalEvent: evt
-          }));
+          }); // on-drop
+
+
+          if (differ.to.group !== fromGroup) fromSortable._dispatchEvent('onDrop', params);
+
+          this._dispatchEvent('onDrop', params);
         }
       }
 

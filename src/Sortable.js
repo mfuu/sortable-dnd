@@ -30,12 +30,10 @@ class State {
   constructor() {
     this.sortableDown = undefined
     this.sortableMove = undefined
-    this.animationEnd = undefined
   }
   destroy() {
     this.sortableDown = undefined
     this.sortableMove = undefined
-    this.animationEnd = undefined
   }
 }
 
@@ -360,9 +358,7 @@ Sortable.prototype = {
       } else {
         window.getSelection().removeAllRanges()
       }
-    } catch (error) {
-      //
-    }
+    } catch (error) {}
   },
 
   // -------------------------------- drag event ----------------------------------
@@ -399,7 +395,7 @@ Sortable.prototype = {
     this._onStarted(e, evt)
 
     if (evt.rootEl) {
-      // onMove callback
+      // on-move
       this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: e, originalEvent: evt })
       // check if element will exchange
       if (this._allowPut()) this._onChange(target, e, evt)
@@ -422,7 +418,7 @@ Sortable.prototype = {
     this._onStarted(evt, evt)
 
     if (evt.rootEl && _positionChanged(evt)) {
-      // onMove callback
+      // on-move
       this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: evt, originalEvent: evt })
 
       if (allowPut) this._onChange(evt.target, evt, evt)
@@ -443,7 +439,7 @@ Sortable.prototype = {
   // -------------------------------- real started ----------------------------------
   _onStarted: function(e, /** originalEvent */evt) {
     if (!state.sortableMove) {
-      // onDrag callback
+      // on-drag
       this._dispatchEvent('onDrag', { ..._emitDiffer(), event: e, originalEvent: evt })
 
       // Init in the move event to prevent conflict with the click event
@@ -515,9 +511,9 @@ Sortable.prototype = {
       differ.from.sortable._captureAnimationState(dragEl, dragEl)
 
       differ.to = { sortable: this, group: rootEl, node: dragEl, rect: getRect(dragEl), offset: getOffset(dragEl) }
-      // onRemove callback
+      // on-remove
       differ.from.sortable._dispatchEvent('onRemove', { ..._emitDiffer(), event: e, originalEvent: evt })
-      // onAdd callback
+      // on-add
       this._dispatchEvent('onAdd', { ..._emitDiffer(), event: e, originalEvent: evt })
 
       rootEl.appendChild(dragEl)
@@ -538,15 +534,15 @@ Sortable.prototype = {
 
         if (differ.from.group !== differ.to.group) {
           differ.from.sortable._captureAnimationState(dragEl, dropEl)
-          // onRemove callback
+          // on-remove
           differ.from.sortable._dispatchEvent('onRemove', { ..._emitDiffer(), event: e, originalEvent: evt })
-          // onAdd callback
+          // on-add
           this._dispatchEvent('onAdd', { ..._emitDiffer(), event: e, originalEvent: evt })
 
           rootEl.insertBefore(dragEl, dropEl)
           differ.from.sortable._rangeAnimate()
         } else {
-          // onChange callback
+          // on-change
           this._dispatchEvent('onChange', { ..._emitDiffer(), event: e, originalEvent: evt })
 
           // the top value is compared first, and the left is compared if the top value is the same
@@ -569,9 +565,7 @@ Sortable.prototype = {
     this._unbindDragEvents()
     this._unbindMoveEvents()
     this._unbindDropEvents()
-
     this._preventEvent(evt)
-    
     this.dragStartTimer && clearTimeout(this.dragStartTimer)
 
     if (dragEl) {
@@ -591,7 +585,10 @@ Sortable.prototype = {
         differ.from.sortable = fromSortable
   
         const changed = offsetChanged(differ.from.offset, differ.to.offset)
-        this._dispatchEvent('onDrop', { ..._emitDiffer(), changed, event: evt, originalEvent: evt })
+        const params = { ..._emitDiffer(), changed, event: evt, originalEvent: evt }
+        // on-drop
+        if (differ.to.group !== fromGroup) fromSortable._dispatchEvent('onDrop', params)
+        this._dispatchEvent('onDrop', params)
       }
     }
 
@@ -604,7 +601,6 @@ Sortable.prototype = {
     evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault()
     if (this.options.stopPropagation) evt.stopPropagation && evt.stopPropagation() // prevent events from bubbling
   },
-
   _dispatchEvent: function(event, params) {
     const callback = this.options[event]
     if (typeof callback === 'function') callback(params)
@@ -625,7 +621,6 @@ Sortable.prototype = {
     state.destroy()
     differ.destroy()
   },
-
   _unbindDragEvents: function() {
     if (this.nativeDraggable) {
       off(this.el, 'dragstart', this._onDragStart)
@@ -633,7 +628,6 @@ Sortable.prototype = {
       off(this.el, 'dragend', this._onDrop)
     }
   },
-
   _unbindMoveEvents: function() {
     off(this.ownerDocument, 'pointermove', this._onMove)
     off(this.ownerDocument, 'touchmove', this._onMove)
@@ -643,7 +637,6 @@ Sortable.prototype = {
     off(this.ownerDocument, 'mousemove', _nearestSortable)
     off(this.ownerDocument, 'dragover', _nearestSortable)
   },
-
   _unbindDropEvents: function() {
     off(this.ownerDocument, 'pointerup', this._onDrop)
     off(this.ownerDocument, 'pointercancel', this._onDrop)
