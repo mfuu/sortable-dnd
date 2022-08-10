@@ -46,9 +46,9 @@ new Sortable(
     onMove: ({ from, ghostEl, event, originalEvent }) => {
       // code
     },
-    onDrop: ({ changed, event, originalEvent }) => {
+    onDrop: ({ from, to, changed, event, originalEvent }) => {
       // code
-      console.log(changed, 'drop')
+      console.log(from, to, changed, 'drop')
     },
     onAdd: ({ from, to, event, originalEvent }) => {
       // code
