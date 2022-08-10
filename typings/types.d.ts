@@ -5,6 +5,81 @@ type Group =
     pull: Boolean;
 };
 
+type Offset =
+{
+    height: Number;
+    width: Number;
+    top: Number;
+    left: Number;
+};
+
+type Rect =
+{
+    height: Number;
+    width: Number;
+    top: Number;
+    bottom: Number;
+    left: Number;
+    right: Number;
+};
+
+type FromTo =
+{
+    group: HTMLElement;
+    node: HTMLElement;
+    offset: Offset;
+    rect: Rect;
+};
+
+type Standard =
+{
+    from: FromTo;
+    to: FromTo;
+    event: Event;
+    originalEvent: Event;
+};
+
+type MoveParams =
+{
+    from: FromTo;
+    to: FromTo;
+    event: Event & DragEvent;
+    originalEvent: Event & DragEvent;
+    ghostEl: HTMLElement;
+};
+
+type DropParams =
+{
+    from: FromTo;
+    to: FromTo;
+    event: Event & DragEvent;
+    originalEvent: Event & DragEvent;
+    changed: Boolean;
+};
+
+type DragParams =
+{
+    from: FromTo;
+    to: FromTo;
+    event: Event & PointerEvent;
+    originalEvent: Event & PointerEvent;
+}
+
+type ChangeParams =
+{
+    from: FromTo;
+    to: FromTo;
+    event: Event & DragEvent;
+    originalEvent: Event & DragEvent;
+}
+
+type onDrag = (params: DragParams) => {};
+type onMove = (params: MoveParams) => {};
+type onDrop = (params: DropParams) => {};
+type onAdd = (params: Standard) => {};
+type onRemove = (params: Standard) => {};
+type onChange = (params: ChangeParams) => {};
+
 type options =
 {
     /**
@@ -37,37 +112,37 @@ type options =
      * The callback function when the drag is started.
      * @defaults `undefined`
      */
-    onDrag?: Function;
+    onDrag?: onDrag;
 
     /**
      * The callback function when the dragged element is moving.
      * @defaults `undefined`
      */
-    onMove?: Function;
+    onMove?: onMove;
 
     /**
      * The callback function when the drag is completed.
      * @defaults `undefined`
      */
-    onDrop?: Function;
+    onDrop?: onDrop;
 
     /**
      * The callback function when element is dropped into the list from another list.
      * @defaults `undefined`
      */
-    onAdd?: Function;
+    onAdd?: onAdd;
 
     /**
      * The callback function when element is removed from the list into another list.
      * @defaults `undefined`
      */
-    onRemove?: Function;
+    onRemove?: onRemove;
     
     /**
      * The callback function when the dragged element changes position in the list.
      * @defaults `undefined`
      */
-    onChange?: Function;
+    onChange?: onChange;
 
     /**
      * Disables the sortable if set to true.
