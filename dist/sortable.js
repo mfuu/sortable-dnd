@@ -709,13 +709,26 @@
    * Sortable states
    */
 
-  var State = /*#__PURE__*/_createClass(function State() {
-    _classCallCheck(this, State);
+  var State = /*#__PURE__*/function () {
+    function State() {
+      _classCallCheck(this, State);
 
-    this.sortableDown = undefined;
-    this.sortableMove = undefined;
-    this.animationEnd = undefined;
-  });
+      this.sortableDown = undefined;
+      this.sortableMove = undefined;
+      this.animationEnd = undefined;
+    }
+
+    _createClass(State, [{
+      key: "destroy",
+      value: function destroy() {
+        this.sortableDown = undefined;
+        this.sortableMove = undefined;
+        this.animationEnd = undefined;
+      }
+    }]);
+
+    return State;
+  }();
   /**
    * Difference before and after dragging
    */
@@ -773,6 +786,7 @@
       dropEl,
       ghostEl,
       fromGroup,
+      fromSortable,
       activeGroup,
       state = new State(),
       // Status record during drag and drop
@@ -880,6 +894,13 @@
     }
 
     evt.cancelable && evt.preventDefault();
+  };
+
+  var _emitDiffer = function _emitDiffer() {
+    return {
+      from: _objectSpread2({}, differ.from),
+      to: _objectSpread2({}, differ.to)
+    };
   };
   /**
    * @class  Sortable
@@ -1033,7 +1054,8 @@
       if (!dragEl || dragEl.animated) return true; // solve the problem that the mobile cannot be dragged
 
       if (touch) dragEl.style['touch-action'] = 'none';
-      fromGroup = this.el; // get the position of the dragged element in the list
+      fromGroup = this.el;
+      fromSortable = this; // get the position of the dragged element in the list
 
       var _getElement = getElement(this.el, dragEl),
           rect = _getElement.rect,
@@ -1160,7 +1182,7 @@
 
       if (evt.rootEl) {
         // onMove callback
-        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
+        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           ghostEl: ghostEl,
           event: e,
           originalEvent: evt
@@ -1191,7 +1213,7 @@
 
       if (evt.rootEl && _positionChanged(evt)) {
         // onMove callback
-        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, differ), {}, {
+        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           ghostEl: ghostEl,
           event: evt,
           originalEvent: evt
@@ -1216,7 +1238,7 @@
     evt) {
       if (!state.sortableMove) {
         // onDrag callback
-        this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, differ), {}, {
+        this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           event: e,
           originalEvent: evt
         })); // Init in the move event to prevent conflict with the click event
@@ -1294,13 +1316,13 @@
           offset: getOffset(dragEl)
         }; // onRemove callback
 
-        differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
+        differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           event: e,
           originalEvent: evt
         })); // onAdd callback
 
 
-        this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, differ), {}, {
+        this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
           event: e,
           originalEvent: evt
         }));
@@ -1308,9 +1330,6 @@
         rootEl.appendChild(dragEl);
 
         differ.from.sortable._rangeAnimate();
-
-        differ.from.sortable = this;
-        differ.from.group = rootEl;
       } else {
         var _getElement2 = getElement(rootEl, target),
             el = _getElement2.el,
@@ -1340,13 +1359,13 @@
             differ.from.sortable._captureAnimationState(dragEl, dropEl); // onRemove callback
 
 
-            differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, differ), {}, {
+            differ.from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
               event: e,
               originalEvent: evt
             })); // onAdd callback
 
 
-            this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, differ), {}, {
+            this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
               event: e,
               originalEvent: evt
             }));
@@ -1356,7 +1375,7 @@
             differ.from.sortable._rangeAnimate();
           } else {
             // onChange callback
-            this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, differ), {}, {
+            this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
               event: e,
               originalEvent: evt
             })); // the top value is compared first, and the left is compared if the top value is the same
@@ -1371,12 +1390,12 @@
             }
           }
 
-          differ.from.sortable = this;
-          differ.from.group = rootEl;
-
           this._rangeAnimate();
         }
       }
+
+      differ.from.sortable = this;
+      differ.from.group = rootEl;
     }, 3),
     // -------------------------------- on drop ----------------------------------
     _onDrop: function _onDrop(
@@ -1407,8 +1426,10 @@
           differ.to.offset = getOffset(dragEl);
           differ.to.rect = getRect(dragEl);
           var changed = offsetChanged(differ.from.offset, differ.to.offset);
+          differ.from.group = fromGroup;
+          differ.from.sortable = fromSortable;
 
-          this._dispatchEvent('onDrop', _objectSpread2(_objectSpread2({}, differ), {}, {
+          this._dispatchEvent('onDrop', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
             changed: changed,
             event: evt,
             originalEvent: evt
@@ -1432,12 +1453,12 @@
     // -------------------------------- clear ----------------------------------
     _clearState: function _clearState() {
       ghostEl && ghostEl.parentNode && ghostEl.parentNode.removeChild(ghostEl);
-      dragEl = dropEl = ghostEl = fromGroup = activeGroup = Sortable.ghostEl = null;
+      dragEl = dropEl = ghostEl = fromGroup = fromSortable = activeGroup = Sortable.ghostEl = null;
       distance = lastPosition = {
         x: 0,
         y: 0
       };
-      state = new State();
+      state.destroy();
       differ.destroy();
     },
     _unbindDragEvents: function _unbindDragEvents() {

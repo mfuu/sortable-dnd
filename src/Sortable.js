@@ -32,6 +32,11 @@ class State {
     this.sortableMove = undefined
     this.animationEnd = undefined
   }
+  destroy() {
+    this.sortableDown = undefined
+    this.sortableMove = undefined
+    this.animationEnd = undefined
+  }
 }
 
 /**
@@ -59,6 +64,7 @@ let rootEl,
     dropEl,
     ghostEl,
     fromGroup,
+    fromSortable,
     activeGroup,
     state = new State, // Status record during drag and drop
     differ = new Differ() // Record the difference before and after dragging
@@ -148,6 +154,10 @@ const _globalDragOver = function(evt) {
     evt.dataTransfer.dropEffect = 'move'
   }
   evt.cancelable && evt.preventDefault()
+}
+
+const _emitDiffer = function() {
+  return { from: { ...differ.from }, to: { ...differ.to } }
 }
 
 /**
@@ -286,6 +296,7 @@ Sortable.prototype = {
     if (touch) dragEl.style['touch-action'] = 'none'
     
     fromGroup = this.el
+    fromSortable = this
     // get the position of the dragged element in the list
     const { rect, offset } = getElement(this.el, dragEl)
     differ.from = { sortable: this, group: this.el, node: dragEl, rect, offset}
@@ -389,7 +400,7 @@ Sortable.prototype = {
 
     if (evt.rootEl) {
       // onMove callback
-      this._dispatchEvent('onMove', { ...differ, ghostEl, event: e, originalEvent: evt })
+      this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: e, originalEvent: evt })
       // check if element will exchange
       if (this._allowPut()) this._onChange(target, e, evt)
       // auto scroll
@@ -412,7 +423,7 @@ Sortable.prototype = {
 
     if (evt.rootEl && _positionChanged(evt)) {
       // onMove callback
-      this._dispatchEvent('onMove', { ...differ, ghostEl, event: evt, originalEvent: evt })
+      this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: evt, originalEvent: evt })
 
       if (allowPut) this._onChange(evt.target, evt, evt)
     }
@@ -433,7 +444,7 @@ Sortable.prototype = {
   _onStarted: function(e, /** originalEvent */evt) {
     if (!state.sortableMove) {
       // onDrag callback
-      this._dispatchEvent('onDrag', { ...differ, event: e, originalEvent: evt })
+      this._dispatchEvent('onDrag', { ..._emitDiffer(), event: e, originalEvent: evt })
 
       // Init in the move event to prevent conflict with the click event
       this._appendGhost()
@@ -505,15 +516,12 @@ Sortable.prototype = {
 
       differ.to = { sortable: this, group: rootEl, node: dragEl, rect: getRect(dragEl), offset: getOffset(dragEl) }
       // onRemove callback
-      differ.from.sortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
+      differ.from.sortable._dispatchEvent('onRemove', { ..._emitDiffer(), event: e, originalEvent: evt })
       // onAdd callback
-      this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
+      this._dispatchEvent('onAdd', { ..._emitDiffer(), event: e, originalEvent: evt })
 
       rootEl.appendChild(dragEl)
       differ.from.sortable._rangeAnimate()
-
-      differ.from.sortable = this
-      differ.from.group = rootEl
     } else {
       const { el, rect, offset } = getElement(rootEl, target)
       if (!el || (el && el.animated) || el === dragEl) return
@@ -531,15 +539,15 @@ Sortable.prototype = {
         if (differ.from.group !== differ.to.group) {
           differ.from.sortable._captureAnimationState(dragEl, dropEl)
           // onRemove callback
-          differ.from.sortable._dispatchEvent('onRemove', { ...differ, event: e, originalEvent: evt })
+          differ.from.sortable._dispatchEvent('onRemove', { ..._emitDiffer(), event: e, originalEvent: evt })
           // onAdd callback
-          this._dispatchEvent('onAdd', { ...differ, event: e, originalEvent: evt })
+          this._dispatchEvent('onAdd', { ..._emitDiffer(), event: e, originalEvent: evt })
 
           rootEl.insertBefore(dragEl, dropEl)
           differ.from.sortable._rangeAnimate()
         } else {
           // onChange callback
-          this._dispatchEvent('onChange', { ...differ, event: e, originalEvent: evt })
+          this._dispatchEvent('onChange', { ..._emitDiffer(), event: e, originalEvent: evt })
 
           // the top value is compared first, and the left is compared if the top value is the same
           const _offset = getOffset(dragEl)
@@ -549,13 +557,11 @@ Sortable.prototype = {
             rootEl.insertBefore(dragEl, dropEl)
           }
         }
-
-        differ.from.sortable = this
-        differ.from.group = rootEl
         this._rangeAnimate()
       }
     }
-    
+    differ.from.sortable = this
+    differ.from.group = rootEl
   }, 3),
 
   // -------------------------------- on drop ----------------------------------
@@ -582,7 +588,9 @@ Sortable.prototype = {
         differ.to.rect = getRect(dragEl)
   
         const changed = offsetChanged(differ.from.offset, differ.to.offset)
-        this._dispatchEvent('onDrop', { ...differ, changed, event: evt, originalEvent: evt })
+        differ.from.group = fromGroup
+        differ.from.sortable = fromSortable
+        this._dispatchEvent('onDrop', { ..._emitDiffer(), changed, event: evt, originalEvent: evt })
       }
     }
 
@@ -608,11 +616,12 @@ Sortable.prototype = {
     dropEl = 
     ghostEl = 
     fromGroup = 
+    fromSortable = 
     activeGroup = 
     Sortable.ghostEl = null
     distance =
     lastPosition = { x: 0, y: 0 }
-    state = new State
+    state.destroy()
     differ.destroy()
   },
 
