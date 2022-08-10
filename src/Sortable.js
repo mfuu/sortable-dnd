@@ -584,12 +584,13 @@ Sortable.prototype = {
 
       if (state.sortableDown && state.sortableMove) {
         // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
-        differ.to.offset = getOffset(dragEl)
         differ.to.rect = getRect(dragEl)
-  
-        const changed = offsetChanged(differ.from.offset, differ.to.offset)
+        differ.to.offset = getOffset(dragEl)
+
         differ.from.group = fromGroup
         differ.from.sortable = fromSortable
+  
+        const changed = offsetChanged(differ.from.offset, differ.to.offset)
         this._dispatchEvent('onDrop', { ..._emitDiffer(), changed, event: evt, originalEvent: evt })
       }
     }

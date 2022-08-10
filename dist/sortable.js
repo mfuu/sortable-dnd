@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.3.5
+ * sortable-dnd v0.3.6
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -1423,11 +1423,11 @@
 
         if (state.sortableDown && state.sortableMove) {
           // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
-          differ.to.offset = getOffset(dragEl);
           differ.to.rect = getRect(dragEl);
-          var changed = offsetChanged(differ.from.offset, differ.to.offset);
+          differ.to.offset = getOffset(dragEl);
           differ.from.group = fromGroup;
           differ.from.sortable = fromSortable;
+          var changed = offsetChanged(differ.from.offset, differ.to.offset);
 
           this._dispatchEvent('onDrop', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
             changed: changed,
