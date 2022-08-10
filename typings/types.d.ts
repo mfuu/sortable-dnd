@@ -31,12 +31,12 @@ type FromTo =
     rect: Rect;
 };
 
-type Standard =
+type DragParams =
 {
     from: FromTo;
     to: FromTo;
-    event: Event;
-    originalEvent: Event;
+    event: Event & PointerEvent;
+    originalEvent: Event & PointerEvent;
 };
 
 type MoveParams =
@@ -52,18 +52,18 @@ type DropParams =
 {
     from: FromTo;
     to: FromTo;
-    event: Event & DragEvent;
-    originalEvent: Event & DragEvent;
+    event: DragEvent;
+    originalEvent: DragEvent;
     changed: Boolean;
 };
 
-type DragParams =
+type Standard =
 {
     from: FromTo;
     to: FromTo;
-    event: Event & PointerEvent;
-    originalEvent: Event & PointerEvent;
-}
+    event: Event;
+    originalEvent: Event;
+};
 
 type ChangeParams =
 {
@@ -71,7 +71,7 @@ type ChangeParams =
     to: FromTo;
     event: Event & DragEvent;
     originalEvent: Event & DragEvent;
-}
+};
 
 type onDrag = (params: DragParams) => {};
 type onMove = (params: MoveParams) => {};
