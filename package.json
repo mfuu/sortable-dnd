@@ -5,10 +5,11 @@
   "main": "dist/sortable.js",
   "types": "typings/types.d.ts",
   "files": [
-    "dist"
+    "src",
+    "dist",
+    "typings"
   ],
   "scripts": {
-    "lint": "eslint --fix src --ext .js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup --config"
   },
@@ -32,12 +33,8 @@
   },
   "homepage": "https://github.com/mfuu/sortable-dnd#readme",
   "devDependencies": {
-    "@babel/core": "^7.8.7",
-    "@babel/preset-env": "^7.8.7",
-    "babel-core": "^7.0.0-bridge.0",
-    "babel-jest": "^25.5.1",
-    "cross-env": "^7.0.3",
-    "eslint": "^6.8.0",
+    "@babel/core": "^7.18.10",
+    "@babel/preset-env": "^7.18.10",
     "rollup": "^2.61.1",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
