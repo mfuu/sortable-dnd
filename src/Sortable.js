@@ -615,7 +615,7 @@ Sortable.prototype = {
     fromGroup = 
     fromSortable = 
     activeGroup = 
-    Sortable.ghostEl = null
+    Sortable.ghost = null
     distance =
     lastPosition = { x: 0, y: 0 }
     state.destroy()
