@@ -199,7 +199,7 @@ function Sortable(el, options) {
     ghostStyle: {}, // Ghost element style
     chosenClass: '', // Chosen element style
 
-    fallbackOnBody: false,
+    fallbackOnBody: false, // Appends the cloned DOM Element into the Document's Body
     forceFallback: false, // Ignore HTML5 drag and drop behavior, force callback to proceed
     stopPropagation: false, // Prevents further propagation of the current event in the capture and bubbling phases
 

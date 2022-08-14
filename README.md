@@ -105,6 +105,7 @@ var DND = new Sortable(
 | `scrollThreshold` | `Number`          | `15`        | Threshold to trigger autoscroll |
 | `delay`           | `Number`          | `0`         | time in milliseconds to define when the sorting should start |
 | `delayOnTouchOnly`| `Boolean`         | `false`     | only delay if user is using touch |
+| `fallbackOnBody`  | `Boolean`         | `false`     | Appends the cloned DOM Element into the Document's Body |
 | `forceFallback`   | `Boolean`         | `false`     | true: ignore the HTML5 DnD behaviour and force the fallback to kick in |
 | `stopPropagation` | `Boolean`         | `false`     | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
 

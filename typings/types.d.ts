@@ -199,6 +199,12 @@ type options =
     dealyOnTouchOnly?: Boolean;
 
     /**
+     * Appends the cloned DOM Element into the Document's Body
+     * @defaults `false`
+     */
+    fallbackOnBody?: Boolean;
+
+    /**
      * true: Ignore the HTML5 DnD behaviour and force the fallback to kick in.
      * @defaults `false`
      */

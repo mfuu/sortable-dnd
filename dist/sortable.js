@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.3.8
+ * sortable-dnd v0.3.9
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -955,6 +955,7 @@
       chosenClass: '',
       // Chosen element style
       fallbackOnBody: false,
+      // Appends the cloned DOM Element into the Document's Body
       forceFallback: false,
       // Ignore HTML5 drag and drop behavior, force callback to proceed
       stopPropagation: false,
