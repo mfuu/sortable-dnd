@@ -62,8 +62,10 @@ let rootEl,
     dropEl,
     ghostEl,
     fromGroup,
-    fromSortable,
     activeGroup,
+    fromSortable,
+    dragStartTimer, // timer for start to drag
+    autoScrollTimer,
     state = new State, // Status record during drag and drop
     differ = new Differ() // Record the difference before and after dragging
 
@@ -213,9 +215,6 @@ function Sortable(el, options) {
 
   this.nativeDraggable = this.options.forceFallback ? false : supportDraggable
 
-  this.dragStartTimer = null // setTimeout timer
-  this.autoScrollTimer = null
-
   _prepareGroup(options)
 
   // Bind all private methods
@@ -247,6 +246,7 @@ Sortable.prototype = {
    * Destroy
    */
   destroy: function() {
+    this._dispatchEvent('destroy', this)
     this.el[expando] = null
 
     off(this.el, 'pointerdown', this._onDrag)
@@ -258,6 +258,12 @@ Sortable.prototype = {
 		Array.prototype.forEach.call(this.el.querySelectorAll('[draggable]'), function (el) {
 			el.removeAttribute('draggable')
 		})
+
+    clearTimeout(dragStartTimer)
+
+    sortables.splice(sortables.indexOf(this.el), 1)
+
+    this.el = null
   },
 
   // -------------------------------- prepare start ----------------------------------
@@ -303,8 +309,9 @@ Sortable.prototype = {
     state.sortableDown = e // sortable state down is active
 
     // enable drag between groups
-    on(this.ownerDocument, 'dragover', _nearestSortable)
-    if (this.options.supportPointer) {
+    if (this.nativeDraggable) {
+      on(this.ownerDocument, 'dragover', _nearestSortable)
+    } else if (this.options.supportPointer) {
       on(this.ownerDocument, 'pointermove', _nearestSortable)
     } else if (touch) {
       on(this.ownerDocument, 'touchmove', _nearestSortable)
@@ -319,9 +326,9 @@ Sortable.prototype = {
 
     const { delay, delayOnTouchOnly } = this.options
     if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
-      clearTimeout(this.dragStartTimer)
+      clearTimeout(dragStartTimer)
       // delay to start
-      this.dragStartTimer = setTimeout(() => this._onStart(e, touch), delay)
+      dragStartTimer = setTimeout(() => this._onStart(e, touch), delay)
     } else {
       this._onStart(e, touch)
     }
@@ -363,6 +370,7 @@ Sortable.prototype = {
 
   // -------------------------------- drag event ----------------------------------
   _onDragStart: function(evt) {
+    this._appendGhost()
     let dataTransfer = evt.dataTransfer
     if (dataTransfer) {
       // elements can only be dragged after firefox sets setData
@@ -400,9 +408,9 @@ Sortable.prototype = {
       // check if element will exchange
       if (this._allowPut()) this._onChange(target, e, evt)
       // auto scroll
-      clearTimeout(this.autoScrollTimer)
+      clearTimeout(autoScrollTimer)
       if (this.options.autoScroll) {
-        this.autoScrollTimer = setTimeout(() => this._autoScroll(this, state), 0)
+        autoScrollTimer = setTimeout(() => this._autoScroll(this, state), 0)
       }
     }
   },
@@ -443,7 +451,7 @@ Sortable.prototype = {
       this._dispatchEvent('onDrag', { ..._emitDiffer(), event: e, originalEvent: evt })
 
       // Init in the move event to prevent conflict with the click event
-      this._appendGhost()
+      if (!this.nativeDraggable) this._appendGhost()
 
       // add class for drag element
       toggleClass(dragEl, this.options.chosenClass, true)
@@ -489,7 +497,10 @@ Sortable.prototype = {
     }
 
     // hide ghostEl when use drag event
-    if (this.nativeDraggable) css(ghostEl, 'top', '-999px')
+    if (this.nativeDraggable) {
+      css(ghostEl, 'top', '-999px')
+      css(ghostEl, 'zIndex', '-100000')
+    }
 
     setTransition(ghostEl, 'none')
     setTransform(ghostEl, 'translate3d(0px, 0px, 0px)')
@@ -505,7 +516,7 @@ Sortable.prototype = {
   },
 
   // -------------------------------- on change ----------------------------------
-  _onChange: debounce(function(target, e, evt) {
+  _onChange: function(target, e, evt) {
     if (!dragEl) return
     if (!lastChild(rootEl) || (target === rootEl && differ.from.group !== rootEl)) {
       differ.from.sortable._captureAnimationState(dragEl, dragEl)
@@ -558,7 +569,7 @@ Sortable.prototype = {
     }
     differ.from.sortable = this
     differ.from.group = rootEl
-  }, 3),
+  },
 
   // -------------------------------- on drop ----------------------------------
   _onDrop: function(/** Event|TouchEvent */evt) {
@@ -566,7 +577,8 @@ Sortable.prototype = {
     this._unbindMoveEvents()
     this._unbindDropEvents()
     this._preventEvent(evt)
-    this.dragStartTimer && clearTimeout(this.dragStartTimer)
+    clearTimeout(dragStartTimer)
+    clearTimeout(autoScrollTimer)
 
     if (dragEl) {
       const { touch } = getEvent(evt)
@@ -613,8 +625,10 @@ Sortable.prototype = {
     dropEl = 
     ghostEl = 
     fromGroup = 
-    fromSortable = 
     activeGroup = 
+    fromSortable = 
+    dragStartTimer = 
+    autoScrollTimer = 
     Sortable.ghost = null
     distance =
     lastPosition = { x: 0, y: 0 }

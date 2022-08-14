@@ -784,8 +784,11 @@
       dropEl,
       ghostEl,
       fromGroup,
-      fromSortable,
       activeGroup,
+      fromSortable,
+      dragStartTimer,
+      // timer for start to drag
+  autoScrollTimer,
       state = new State(),
       // Status record during drag and drop
   differ = new Differ(); // Record the difference before and after dragging
@@ -966,9 +969,6 @@
     }
 
     this.nativeDraggable = this.options.forceFallback ? false : supportDraggable;
-    this.dragStartTimer = null; // setTimeout timer
-
-    this.autoScrollTimer = null;
 
     _prepareGroup(options); // Bind all private methods
 
@@ -1003,6 +1003,8 @@
      * Destroy
      */
     destroy: function destroy() {
+      this._dispatchEvent('destroy', this);
+
       this.el[expando] = null;
       off(this.el, 'pointerdown', this._onDrag);
       off(this.el, 'touchstart', this._onDrag);
@@ -1014,6 +1016,9 @@
       Array.prototype.forEach.call(this.el.querySelectorAll('[draggable]'), function (el) {
         el.removeAttribute('draggable');
       });
+      clearTimeout(dragStartTimer);
+      sortables.splice(sortables.indexOf(this.el), 1);
+      this.el = null;
     },
     // -------------------------------- prepare start ----------------------------------
     _onDrag: function _onDrag(
@@ -1073,9 +1078,9 @@
       state.sortableDown = e; // sortable state down is active
       // enable drag between groups
 
-      on(this.ownerDocument, 'dragover', _nearestSortable);
-
-      if (this.options.supportPointer) {
+      if (this.nativeDraggable) {
+        on(this.ownerDocument, 'dragover', _nearestSortable);
+      } else if (this.options.supportPointer) {
         on(this.ownerDocument, 'pointermove', _nearestSortable);
       } else if (touch) {
         on(this.ownerDocument, 'touchmove', _nearestSortable);
@@ -1092,9 +1097,9 @@
           delayOnTouchOnly = _this$options2.delayOnTouchOnly;
 
       if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
-        clearTimeout(this.dragStartTimer); // delay to start
+        clearTimeout(dragStartTimer); // delay to start
 
-        this.dragStartTimer = setTimeout(function () {
+        dragStartTimer = setTimeout(function () {
           return _this._onStart(e, touch);
         }, delay);
       } else {
@@ -1138,6 +1143,8 @@
     },
     // -------------------------------- drag event ----------------------------------
     _onDragStart: function _onDragStart(evt) {
+      this._appendGhost();
+
       var dataTransfer = evt.dataTransfer;
 
       if (dataTransfer) {
@@ -1188,10 +1195,10 @@
 
         if (this._allowPut()) this._onChange(target, e, evt); // auto scroll
 
-        clearTimeout(this.autoScrollTimer);
+        clearTimeout(autoScrollTimer);
 
         if (this.options.autoScroll) {
-          this.autoScrollTimer = setTimeout(function () {
+          autoScrollTimer = setTimeout(function () {
             return _this2._autoScroll(_this2, state);
           }, 0);
         }
@@ -1241,8 +1248,7 @@
         })); // Init in the move event to prevent conflict with the click event
 
 
-        this._appendGhost(); // add class for drag element
-
+        if (!this.nativeDraggable) this._appendGhost(); // add class for drag element
 
         toggleClass(dragEl, this.options.chosenClass, true);
         dragEl.style['will-change'] = 'transform';
@@ -1288,7 +1294,11 @@
       } // hide ghostEl when use drag event
 
 
-      if (this.nativeDraggable) css(ghostEl, 'top', '-999px');
+      if (this.nativeDraggable) {
+        css(ghostEl, 'top', '-999px');
+        css(ghostEl, 'zIndex', '-100000');
+      }
+
       setTransition(ghostEl, 'none');
       setTransform(ghostEl, 'translate3d(0px, 0px, 0px)');
       container.appendChild(ghostEl);
@@ -1299,7 +1309,7 @@
       Sortable.ghost = ghostEl;
     },
     // -------------------------------- on change ----------------------------------
-    _onChange: debounce(function (target, e, evt) {
+    _onChange: function _onChange(target, e, evt) {
       if (!dragEl) return;
 
       if (!lastChild(rootEl) || target === rootEl && differ.from.group !== rootEl) {
@@ -1393,7 +1403,7 @@
 
       differ.from.sortable = this;
       differ.from.group = rootEl;
-    }, 3),
+    },
     // -------------------------------- on drop ----------------------------------
     _onDrop: function _onDrop(
     /** Event|TouchEvent */
@@ -1406,7 +1416,8 @@
 
       this._preventEvent(evt);
 
-      this.dragStartTimer && clearTimeout(this.dragStartTimer);
+      clearTimeout(dragStartTimer);
+      clearTimeout(autoScrollTimer);
 
       if (dragEl) {
         var _getEvent3 = getEvent(evt),
@@ -1455,7 +1466,7 @@
     // -------------------------------- clear ----------------------------------
     _clearState: function _clearState() {
       ghostEl && ghostEl.parentNode && ghostEl.parentNode.removeChild(ghostEl);
-      dragEl = dropEl = ghostEl = fromGroup = fromSortable = activeGroup = Sortable.ghostEl = null;
+      dragEl = dropEl = ghostEl = fromGroup = activeGroup = fromSortable = dragStartTimer = autoScrollTimer = Sortable.ghost = null;
       distance = lastPosition = {
         x: 0,
         y: 0
