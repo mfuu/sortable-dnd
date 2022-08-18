@@ -2,7 +2,7 @@ const gridGroup = document.getElementById('gridGroup');
 const gridChildren = [];
 for(let i = 0; i < 64; i++) {
   let li = document.createElement('li');
-  li.innerHTML = `<i class="drag">drag me</i><p>${i + 1}</p>`;
+  li.innerHTML = `<i class="drag"></i>  <span>item ${i + 1}</span>`;
   gridChildren.push(li);
 }
 gridGroup.append(...gridChildren);

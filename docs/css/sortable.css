@@ -2,6 +2,7 @@ html, body {
   width: 100%;
   margin: 0;
   padding: 0;
+  font-family: emoji;
   background: antiquewhite;
 }
 h1 {
@@ -32,8 +33,15 @@ li {
   cursor: grab;
 }
 
+.drag::before {
+  content: '\2723';
+  font-size: 16px;
+}
+
 .chosen {
-  background-color: #c8ebfb;
+  color: transparent;
+  border: 1px dashed #1984ff !important;
+  background-color: transparent !important;
 }
 
 .vertical-group {
@@ -107,6 +115,8 @@ li {
 }
 
 .grid-group li {
+  width: 100px;
+  height: 100px;
   padding: 5px;
   margin: 5px;
   border: 1px solid #aaa;
@@ -130,7 +140,6 @@ li {
   display: block;
   padding: 0.75rem 1.25rem;
   margin-bottom: -1px;
-  background-color: #fff;
   border: 1px solid rgba(0,0,0,.125);
 }
 
@@ -154,7 +163,6 @@ li {
   display: block;
   padding: 0.75rem 1.25rem;
   margin-bottom: -1px;
-  background-color: #fff;
   border: 1px solid rgba(0,0,0,.125);
 }
 
@@ -172,6 +180,10 @@ li {
 
 .nested-2 {
   background-color: #cccccc;
+}
+
+.nested-3 {
+  background-color: #b3b3b3;
 }
 
 .list-group-item:first-child {

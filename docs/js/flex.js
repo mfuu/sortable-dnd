@@ -2,7 +2,7 @@ const flexGroup = document.getElementById('flexGroup');
 const flexChildren = [];
 for(let i = 0; i < 64; i++) {
   let li = document.createElement('li');
-  li.innerHTML = `<i class="drag">drag me</i><p>${i + 1}</p>`;
+  li.innerHTML = `<p>item ${i + 1}</p>`;
   flexChildren.push(li);
 }
 flexGroup.append(...flexChildren);
@@ -11,9 +11,6 @@ new Sortable(
   {
     animation: 150,
     chosenClass: 'chosen',
-    draggable: (e) => {
-      return e.target.tagName === 'I' ? true : false
-    },
     onDrag: (e) => {
       console.log(e, 'ondrag')
     },
