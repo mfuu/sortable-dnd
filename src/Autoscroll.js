@@ -2,12 +2,12 @@ import { throttle, getRect } from './utils.js'
 
 export default function AutoScroll() {
   if (!window.requestAnimationFrame) {
-    window.requestAnimationFrame = function(callback) {
+    window.requestAnimationFrame = function (callback) {
       return setTimeout(callback, 17)
     }
   }
   return {
-    _autoScroll: throttle(function(Sortable, state) {
+    _autoScroll: throttle(function (Sortable, state) {
       if (!Sortable.scrollEl) return
       // check if is moving now
       if (!(state.sortableDown && state.sortableMove)) return
@@ -27,7 +27,7 @@ export default function AutoScroll() {
         const tobottom = (scrollTop + height) < scrollHeight && clientY <= bottom && clientY >= (bottom - scrollThreshold)
         // scroll position
         const position = { x: scrollLeft, y: scrollTop }
-  
+
         if (totop) {
           if (toleft) {
             // to top-left

@@ -1,7 +1,6 @@
 import { getRect, setTransition, setTransform } from './utils.js'
 
 export default function Animation() {
-  
   const animationState = []
 
   function getRange(children, drag, drop) {
@@ -11,7 +10,6 @@ export default function Animation() {
   }
 
   return {
-
     _captureAnimationState(dragEl, dropEl) {
       const children = [...Array.from(this.el.children)]
       let { start, end } = getRange(children, dragEl, dropEl)
@@ -23,16 +21,16 @@ export default function Animation() {
         end = Math.min(children.length - 1, 100)
       }
 
-      children.slice(start, end + 1).forEach(child => {
+      children.slice(start, end + 1).forEach((child) => {
         animationState.push({
           target: child,
-          rect: getRect(child)
+          rect: getRect(child),
         })
       })
     },
 
     _rangeAnimate() {
-      animationState.forEach(state => {
+      animationState.forEach((state) => {
         const { target, rect } = state
         this._animate(target, rect, this.options.animation)
       })
@@ -45,9 +43,9 @@ export default function Animation() {
 
       setTransition(el, 'none')
       setTransform(el, `translate3d(${left}px, ${top}px, 0)`)
-  
+
       el.offsetWidth // trigger repaint
-  
+
       setTransition(el, `${animation}ms`)
       setTransform(el, 'translate3d(0px, 0px, 0px)')
 
@@ -57,6 +55,6 @@ export default function Animation() {
         setTransform(el, '')
         el.animated = null
       }, animation)
-    }
+    },
   }
 }

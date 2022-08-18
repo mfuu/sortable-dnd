@@ -144,7 +144,7 @@
    */
 
   function isHTMLElement(obj) {
-    var d = document.createElement("div");
+    var d = document.createElement('div');
 
     try {
       d.appendChild(obj.cloneNode(true));
@@ -155,8 +155,8 @@
   }
   /**
    * set transition style
-   * @param {HTMLElement} el 
-   * @param {String | Function} transition 
+   * @param {HTMLElement} el
+   * @param {String | Function} transition
    */
 
   function setTransition(el, transition) {
@@ -172,8 +172,8 @@
   }
   /**
    * set transform style
-   * @param {HTMLElement} el 
-   * @param {String} transform 
+   * @param {HTMLElement} el
+   * @param {String} transform
    */
 
   function setTransform(el, transform) {
@@ -185,7 +185,7 @@
   }
   /**
    * get touch event and current event
-   * @param {Event} evt 
+   * @param {Event} evt
    */
 
   function getEvent(evt) {
@@ -215,12 +215,12 @@
     return supportPassive;
   }
   /**
-  * add specified event listener
-  * @param {HTMLElement} el 
-  * @param {String} event 
-  * @param {Function} fn 
-  * @param {Boolean} sp
-  */
+   * add specified event listener
+   * @param {HTMLElement} el
+   * @param {String} event
+   * @param {Function} fn
+   * @param {Boolean} sp
+   */
 
   function on(el, event, fn) {
     if (window.addEventListener) {
@@ -230,12 +230,12 @@
     }
   }
   /**
-  * remove specified event listener
-  * @param {HTMLElement} el 
-  * @param {String} event 
-  * @param {Function} fn 
-  * @param {Boolean} sp
-  */
+   * remove specified event listener
+   * @param {HTMLElement} el
+   * @param {String} event
+   * @param {Function} fn
+   * @param {Boolean} sp
+   */
 
   function off(el, event, fn) {
     if (window.removeEventListener) {
@@ -246,7 +246,7 @@
   }
   /**
    * get element's offetTop
-   * @param {HTMLElement} el 
+   * @param {HTMLElement} el
    */
 
   function getOffset(el) {
@@ -272,7 +272,7 @@
   }
   /**
    * get scroll element
-   * @param {HTMLElement} el 
+   * @param {HTMLElement} el
    * @param {Boolean} includeSelf whether to include the passed element
    * @returns {HTMLElement} scroll element
    */
@@ -367,8 +367,8 @@
   }
   /**
    * get target Element in group
-   * @param {HTMLElement} group 
-   * @param {HTMLElement} el 
+   * @param {HTMLElement} group
+   * @param {HTMLElement} el
    * @param {Boolean} onlyEl only get element
    */
 
@@ -404,8 +404,8 @@
   }
   /**
    * Check if child element is contained in parent element
-   * @param {HTMLElement} child 
-   * @param {HTMLElement} parent 
+   * @param {HTMLElement} child
+   * @param {HTMLElement} parent
    * @returns {Boolean} true | false
    */
 
@@ -458,9 +458,9 @@
   }
   /**
    * Check if a DOM element matches a given selector
-   * @param {HTMLElement} el 
-   * @param {String} selector 
-   * @returns 
+   * @param {HTMLElement} el
+   * @param {String} selector
+   * @returns
    */
 
   function matches(el, selector) {
@@ -882,7 +882,7 @@
     lastPosition.x = clientX;
     lastPosition.y = clientY;
 
-    if (clientX !== void 0 && Math.abs(distanceX) <= 0 && clientY !== void 0 && Math.abs(distanceY) <= 0) {
+    if (clientX !== void 0 && clientY !== void 0 && Math.abs(distanceX) <= 0 && Math.abs(distanceY) <= 0) {
       return false;
     }
 
@@ -1050,7 +1050,7 @@
         if (!matches(target, draggable)) return true;
       } else if (draggable) {
         throw new Error("draggable expected \"function\" or \"string\" but received \"".concat(_typeof(draggable), "\""));
-      } // Get the dragged element               
+      } // Get the dragged element
 
 
       if (!dragEl) dragEl = getElement(this.el, target, true); // No dragging is allowed when there is no dragging element
