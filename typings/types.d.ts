@@ -27,50 +27,6 @@ type FromTo = {
   rect: Rect;
 }
 
-type DragParams = {
-  from: FromTo;
-  to: FromTo;
-  event: Event & PointerEvent;
-  originalEvent: Event & PointerEvent;
-}
-
-type MoveParams = {
-  from: FromTo;
-  to: FromTo;
-  event: Event & DragEvent;
-  originalEvent: Event & DragEvent;
-  ghostEl: HTMLElement;
-}
-
-type DropParams = {
-  from: FromTo;
-  to: FromTo;
-  event: Event & DragEvent;
-  originalEvent: Event & DragEvent;
-  changed: Boolean;
-}
-
-type Standard = {
-  from: FromTo;
-  to: FromTo;
-  event: Event;
-  originalEvent: Event;
-}
-
-type ChangeParams = {
-  from: FromTo;
-  to: FromTo;
-  event: Event & DragEvent;
-  originalEvent: Event & DragEvent;
-}
-
-type onDrag = (params: DragParams) => {}
-type onMove = (params: MoveParams) => {}
-type onDrop = (params: DropParams) => {}
-type onAdd = (params: Standard) => {}
-type onRemove = (params: Standard) => {}
-type onChange = (params: ChangeParams) => {}
-
 type options = {
   /**
    * Specifies which items inside the element should be draggable
@@ -100,32 +56,64 @@ type options = {
   /**
    * The callback function when the drag is started.
    */
-  onDrag?: onDrag;
+  onDrag?: (
+    from: FromTo,
+    to: FromTo,
+    event: Event & PointerEvent,
+    originalEvent: Event & PointerEvent,
+  ) => void;
 
   /**
    * The callback function when the dragged element is moving.
    */
-  onMove?: onMove;
+  onMove?: (
+    from: FromTo,
+    to: FromTo,
+    ghostEl: HTMLElement,
+    event: Event & DragEvent,
+    originalEvent: Event & DragEvent,
+  ) => void;
 
   /**
    * The callback function when the drag is completed.
    */
-  onDrop?: onDrop;
+  onDrop?: (
+    from: FromTo,
+    to: FromTo,
+    event: Event & DragEvent,
+    originalEvent: Event & DragEvent,
+    changed: Boolean,
+  ) => void;
 
   /**
    * The callback function when element is dropped into the list from another list.
    */
-  onAdd?: onAdd;
+  onAdd?: (
+    from: FromTo,
+    to: FromTo,
+    event: Event,
+    originalEvent: Event,
+  ) => void;
 
   /**
    * The callback function when element is removed from the list into another list.
    */
-  onRemove?: onRemove;
+  onRemove?: (
+    from: FromTo,
+    to: FromTo,
+    event: Event,
+    originalEvent: Event,
+  ) => void;
 
   /**
    * The callback function when the dragged element changes position in the list.
    */
-  onChange?: onChange;
+  onChange?: (
+    from: FromTo,
+    to: FromTo,
+    event: Event & DragEvent,
+    originalEvent: Event & DragEvent,
+  ) => void;
 
   /**
    * Disables the sortable if set to true.
