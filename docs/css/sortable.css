@@ -44,6 +44,10 @@ li {
   background-color: transparent !important;
 }
 
+.selected {
+  background-color: skyblue;
+}
+
 .vertical-group {
   height: 500px;
   overflow: auto;
