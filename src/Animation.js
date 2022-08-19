@@ -22,6 +22,8 @@ export default function Animation() {
         end = Math.min(children.length - 1, 100)
       }
 
+      if (end < 0) end = Math.min(children.length - 1, 100)
+
       children.slice(start, end + 1).forEach((child) => {
         animationState.push({ target: child, rect: getRect(child) })
       })

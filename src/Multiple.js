@@ -56,16 +56,16 @@ export default function Multiple() {
       const ghost = document.createElement('div')
       selectedElements.forEach((node, index) => {
         let clone = node.cloneNode(true)
-        let pos = index * 5 + 5
+        let pos = index * 4 + 4
         let opacity = index === 0 ? 1 : 0.5
-        clone.style = `opacity: ${opacity};border: 1px solid #fff;position: absolute; z-index: ${index};bottom: -${pos}px;right: -${pos}px`
+        clone.style = `opacity: ${opacity};position: absolute;z-index: ${index};bottom: -${pos}px;right: -${pos}px;width: 100%;height: 100%;`
         ghost.appendChild(clone)
       })
       return ghost
     },
 
     _multiDragStart(dragEl, evt) {
-      this._captureMultiAnimationState(selectedElements)
+      this._captureAnimationState(dragEl)
 
       selectedElements.forEach((node) => {
         if (node === dragEl) return
@@ -77,24 +77,31 @@ export default function Multiple() {
       selectedElements.forEach((node) => {
         if (node === dragEl) return
         setRect(node, dragRect)
-        let timer = setTimeout(() => {
-          css(node, 'display', 'none')
-        }, this.options.animation)
-        multiStartTimers.push(timer)
+        css(node, 'display', 'none')
       })
 
-      this._multiAnimate()
+      this._animate()
+    },
+
+    _multiDragMove(rect, dragEl) {
+      selectedElements.forEach((node) => {
+        if (node === dragEl) return
+        css(node, 'top', rect.top)
+        css(node, 'left', rect.left)
+      })
     },
 
     _multiDragEnd(dragEl) {
-      multiStartTimers.forEach(timer => clearTimeout(timer))
-      
-      this._captureMultiAnimationState(selectedElements)
+      this._captureAnimationState(dragEl)
+
+      multiStartTimers.forEach((timer) => clearTimeout(timer))
 
       selectedElements.forEach((node) => {
         if (node === dragEl) return
         unsetRect(node)
       })
+
+      this._captureMultiAnimationState(selectedElements)
 
       let index = selectedElements.indexOf(dragEl)
       for (let i = 0; i < selectedElements.length; i++) {
@@ -106,6 +113,7 @@ export default function Multiple() {
         }
       }
 
+      this._animate()
       this._multiAnimate()
     },
   }

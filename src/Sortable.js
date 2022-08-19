@@ -462,7 +462,7 @@ Sortable.prototype = {
       this._dispatchEvent('onDrag', { ..._emitDiffer(), event: e, originalEvent: evt })
 
       // on-multi-drag
-      this._multiDragStart(dragEl, evt)
+      if (this._allowMultiDrag(dragEl)) this._multiDragStart(dragEl, evt)
 
       // Init in the move event to prevent conflict with the click event
       if (!this.nativeDraggable) this._appendGhost()
@@ -477,11 +477,13 @@ Sortable.prototype = {
 
     eventState.move = e // sortable state move is active
 
+    let top = e.clientY - eventState.down.clientY
+    let left = e.clientX - eventState.down.clientX
     if (!this.nativeDraggable) {
-      const { clientX, clientY } = eventState.down
       setTransition(ghostEl, 'none')
-      setTransform(ghostEl, `translate3d(${e.clientX - clientX}px, ${e.clientY - clientY}px, 0)`)
+      setTransform(ghostEl, `translate3d(${left}px, ${top}px, 0)`)
     }
+    this._multiDragMove(getRect(ghostEl, { relative: true }), dragEl)
   },
 
   // -------------------------------- ghost ----------------------------------
