@@ -1,4 +1,3 @@
-import { IE11OrLess } from './Brower.js'
 import Sortable from './Sortable.js'
 
 const captureMode = {
@@ -24,10 +23,24 @@ export const CSSTRANSFORMS = [
 ]
 export const SUPPORTPASSIVE = supportPassive()
 
+function userAgent(pattern) {
+  if (typeof window !== 'undefined' && window.navigator) {
+    return !!(/*@__PURE__*/ navigator.userAgent.match(pattern))
+  }
+}
+
+export const IE11OrLess = userAgent(/(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i)
+export const Edge = userAgent(/Edge/i)
+export const FireFox = userAgent(/firefox/i)
+export const Safari = userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i)
+export const IOS = userAgent(/iP(ad|od|hone)/i)
+export const ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i)
+
 /**
  * check if is HTMLElement
  */
 export function isHTMLElement(obj) {
+  if (!obj) return false
   let d = document.createElement('div')
   try {
     d.appendChild(obj.cloneNode(true))
@@ -204,35 +217,46 @@ export function getIndex(group, el) {
   return children.indexOf(el)
 }
 
+export function setRect(el, rect) {
+  css(el, 'position', 'absolute')
+  css(el, 'top', rect.top)
+  css(el, 'left', rect.left)
+}
+
+export function unsetRect(el) {
+  css(el, 'display', '')
+  css(el, 'position', '')
+  css(el, 'top', '')
+  css(el, 'left', '')
+}
+
 /**
  * Returns the "bounding client rect" of given element
- * @param {HTMLElement} el  The element whose boundingClientRect is wanted
- * @param {Boolean} checkParent check if parentNode.height < el.height
+ * @param  {HTMLElement} el                       The element whose boundingClientRect is wanted
+ * @param  {Object} check 
+ * @example - {
+ * -   parent: true | false, 'check if parentNode.height < el.height'
+ * -   block: true | false, 'Whether the rect should be relative to the containing block of (including) the container'
+ * -   relative: true | false, 'Whether the rect should be relative to the relative parent of (including) the contaienr'
+ * - }
+ * @param  {HTMLElement} container              The parent the element will be placed in
+ * @return {Object}                               The boundingClientRect of el, with specified adjustments
  */
-export function getRect(el, checkParent) {
+export function getRect(el, check = {}, container) {
   if (!el.getBoundingClientRect && el !== window) return
 
-  const rect = {
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-    height: 0,
-    width: 0,
-  }
-
-  let elRect
+  let elRect, top, left, bottom, right, height, width
 
   if (el !== window && el.parentNode && el !== getWindowScrollingElement()) {
     elRect = el.getBoundingClientRect()
-    rect.top = elRect.top
-    rect.left = elRect.left
-    rect.bottom = elRect.bottom
-    rect.right = elRect.right
-    rect.height = elRect.height
-    rect.width = elRect.width
+    top = elRect.top
+    left = elRect.left
+    bottom = elRect.bottom
+    right = elRect.right
+    height = elRect.height
+    width = elRect.width
 
-    if (checkParent && el.parentNode !== el.ownerDocument.body) {
+    if (check.parent && el.parentNode !== el.ownerDocument.body) {
       let parentRect,
         parentNode = el.parentNode
 
@@ -242,28 +266,70 @@ export function getRect(el, checkParent) {
         parentNode !== el.ownerDocument.body
       ) {
         parentRect = parentNode.getBoundingClientRect()
-        if (parentRect.height < rect.height) {
-          rect.top = parentRect.top
-          rect.left = parentRect.left
-          rect.bottom = parentRect.bottom
-          rect.right = parentRect.right
-          rect.height = parentRect.height
-          rect.width = parentRect.width
-          return rect
+        if (parentRect.height < height) {
+          top = parentRect.top
+          left = parentRect.left
+          bottom = parentRect.bottom
+          right = parentRect.right
+          height = parentRect.height
+          width = parentRect.width
+          return {
+            top: top,
+            left: left,
+            bottom: bottom,
+            right: right,
+            width: width,
+            height: height,
+          }
         }
         parentNode = parentNode.parentNode
       }
     }
   } else {
-    rect.top = 0
-    rect.left = 0
-    rect.bottom = window.innerHeight
-    rect.right = window.innerWidth
-    rect.height = window.innerHeight
-    rect.width = window.innerWidth
+    top = 0
+    left = 0
+    bottom = window.innerHeight
+    right = window.innerWidth
+    height = window.innerHeight
+    width = window.innerWidth
   }
 
-  return rect
+  if ((check.block || check.relative) && el !== window) {
+    // Adjust for translate()
+    container = container || el.parentNode
+
+    // Not needed on <= IE11
+    if (!IE11OrLess) {
+      do {
+        if (
+          container &&
+          container.getBoundingClientRect &&
+          (css(container, 'transform') !== 'none' ||
+            (check.relative && css(container, 'position') !== 'static'))
+        ) {
+          let containerRect = container.getBoundingClientRect()
+
+          // Set relative to edges of padding box of container
+          top -= containerRect.top + parseInt(css(container, 'border-top-width'))
+          left -= containerRect.left + parseInt(css(container, 'border-left-width'))
+          bottom = top + elRect.height
+          right = left + elRect.width
+
+          break
+        }
+        /* jshint boss:true */
+      } while ((container = container.parentNode))
+    }
+  }
+
+  return {
+    top: top,
+    left: left,
+    bottom: bottom,
+    right: right,
+    width: width,
+    height: height,
+  }
 }
 
 /**

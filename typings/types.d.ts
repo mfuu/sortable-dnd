@@ -48,6 +48,12 @@ type options = {
   group?: String | Group;
 
   /**
+   * Enable multi-drag
+   * @defaults `false`
+   */
+  multiple?: Boolean;
+
+  /**
    * Speed of the animation (in ms) while moving the items.
    * @defaults `150`
    */
@@ -126,6 +132,12 @@ type options = {
    * @defaults `{ }`
    */
   chosenClass?: String;
+
+  /**
+   * Class name for selected item
+   * @defaults `' '`
+   */
+  selectedClass?: String;
 
   /**
    * This styles will be applied to the mask of the dragging element.
