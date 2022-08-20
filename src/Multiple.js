@@ -7,11 +7,34 @@ import {
   getElement,
   toggleClass,
   isHTMLElement,
+  getOffset,
 } from './utils'
+import Sortable from './Sortable.js'
+
+const MultiFromTo = { sortable: null, group: null, nodes: [] }
+
+/**
+ * Difference before and after dragging
+ */
+class MultiDifference {
+  constructor() {
+    this.from = { ...MultiFromTo }
+    this.to = { ...MultiFromTo }
+  }
+  destroy() {
+    this.from = { ...MultiFromTo }
+    this.to = { ...MultiFromTo }
+  }
+}
+
+let multiDiffer = new MultiDifference()
+
+const _emitMultiDiffer = function () {
+  return { from: { ...multiDiffer.from }, to: { ...multiDiffer.to } }
+}
 
 export default function Multiple() {
   let selectedElements = []
-  let multiStartTimers = []
 
   return {
     _setMultiElements(evt) {
@@ -48,7 +71,8 @@ export default function Multiple() {
       selectedElements.sort((a, b) => a.sortableIndex - b.sortableIndex)
     },
 
-    _allowMultiDrag(dragEl) {
+    _allowMultiDrag() {
+      let dragEl = Sortable.dragEl
       return this.options.multiple && selectedElements.length && selectedElements.includes(dragEl)
     },
 
@@ -64,7 +88,20 @@ export default function Multiple() {
       return ghost
     },
 
-    _multiDragStart(dragEl, evt) {
+    _multiDragStart(e, evt) {
+      let dragEl = Sortable.dragEl
+
+      multiDiffer.from = {
+        sortable: this,
+        group: this.el,
+        nodes: selectedElements.map((node) => {
+          return { node, rect: getRect(node), offset: getOffset(node) }
+        })
+      }
+      // on-muti-drag-start
+      this._dispatchEvent('onDrag', { ..._emitMultiDiffer(), event: e, originalEvent: evt })
+
+      // capture animate
       this._captureAnimationState(dragEl)
 
       selectedElements.forEach((node) => {
@@ -83,7 +120,9 @@ export default function Multiple() {
       this._animate()
     },
 
-    _multiDragMove(rect, dragEl) {
+    _multiDragMove() {
+      let rect = getRect(Sortable.ghost, { relative: true })
+      let dragEl = Sortable.dragEl
       selectedElements.forEach((node) => {
         if (node === dragEl) return
         css(node, 'top', rect.top)
@@ -91,10 +130,13 @@ export default function Multiple() {
       })
     },
 
-    _multiDragEnd(dragEl) {
-      this._captureAnimationState(dragEl)
+    _multiDragChange() {
 
-      multiStartTimers.forEach((timer) => clearTimeout(timer))
+    },
+
+    _multiDragEnd(rootEl) {
+      let dragEl = Sortable.dragEl
+      this._captureAnimationState(dragEl)
 
       selectedElements.forEach((node) => {
         if (node === dragEl) return
@@ -106,11 +148,15 @@ export default function Multiple() {
       let index = selectedElements.indexOf(dragEl)
       for (let i = 0; i < selectedElements.length; i++) {
         if (i < index) {
-          this.el.insertBefore(selectedElements[i], dragEl)
+          rootEl.insertBefore(selectedElements[i], dragEl)
         } else {
           let dropEl = i > 0 ? selectedElements[i - 1] : dragEl
-          this.el.insertBefore(selectedElements[i], dropEl.nextSibling)
+          rootEl.insertBefore(selectedElements[i], dropEl.nextSibling)
         }
+      }
+
+      multiDiffer.to = {
+
       }
 
       this._animate()

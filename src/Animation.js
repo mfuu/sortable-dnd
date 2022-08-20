@@ -35,7 +35,6 @@ export default function Animation() {
       group.forEach((child) => {
         multiAnimationState.push({ target: child, rect: getRect(child) })
       })
-      console.log(multiAnimationState)
     },
 
     _animate() {
