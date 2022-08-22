@@ -2,7 +2,6 @@ import { getRect, setTransition, setTransform } from './utils.js'
 
 export default function Animation() {
   const animationState = []
-  const multiAnimationState = []
 
   function getRange(children, drag, drop) {
     const start = children.indexOf(drag)
@@ -29,23 +28,8 @@ export default function Animation() {
       })
     },
 
-    _captureMultiAnimationState(group) {
-      multiAnimationState.length = 0 // reset
-
-      group.forEach((child) => {
-        multiAnimationState.push({ target: child, rect: getRect(child) })
-      })
-    },
-
     _animate() {
       animationState.forEach((state) => {
-        const { target, rect } = state
-        this._excuteAnimation(target, rect, this.options.animation)
-      })
-    },
-
-    _multiAnimate() {
-      multiAnimationState.forEach((state) => {
         const { target, rect } = state
         this._excuteAnimation(target, rect, this.options.animation)
       })

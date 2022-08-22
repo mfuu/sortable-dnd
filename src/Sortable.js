@@ -65,6 +65,7 @@ let rootEl,
   dragEl,
   dropEl,
   ghostEl,
+  isMultiple,
   fromGroup,
   activeGroup,
   fromSortable,
@@ -167,6 +168,10 @@ const _globalDragOver = function (evt) {
 
 const _emitDiffer = function () {
   return { from: { ...differ.from }, to: { ...differ.to } }
+}
+
+const _params = function (args) {
+  return { ...args, rootEl, dragEl, ghostEl, fromSortable, fromGroup, activeGroup }
 }
 
 /**
@@ -313,7 +318,11 @@ Sortable.prototype = {
 
     fromGroup = this.el
     fromSortable = this
-    Sortable.dragEl = dragEl
+
+    isMultiple = this._allowMultiDrag(dragEl)
+    // multi-drag
+    if (isMultiple) this._onMultiDrag()
+
     // get the position of the dragged element in the list
     const { rect, offset } = getElement(this.el, dragEl)
     differ.from = { sortable: this, group: this.el, node: dragEl, rect, offset }
@@ -415,9 +424,9 @@ Sortable.prototype = {
     this._onStarted(e, evt)
 
     if (evt.rootEl) {
-      if (this._allowMultiDrag()) {
+      if (isMultiple) {
         // on-multi-move
-        this._multiDragMove(evt)
+        this._onMultiMove(_params({ e, evt }))
       } else {
         // on-move
         this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: e, originalEvent: evt })
@@ -443,9 +452,9 @@ Sortable.prototype = {
     this._onStarted(evt, evt)
 
     if (evt.rootEl && _positionChanged(evt)) {
-      if (this._allowMultiDrag()) {
+      if (isMultiple) {
         // on-multi-move
-        this._multiDragMove(evt)
+        this._onMultiMove(_params({ e: evt, evt }))
       } else {
         // on-move
         this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: evt, originalEvent: evt })
@@ -470,8 +479,8 @@ Sortable.prototype = {
   _onStarted: function (e, /** originalEvent */ evt) {
     if (!eventState.move) {
       // on-multi-drag
-      if (this._allowMultiDrag()) {
-        this._multiDragStart(e, evt)
+      if (isMultiple) {
+        this._onMultiStarted(_params({ e, evt }))
       } else {
         // on-drag
         this._dispatchEvent('onDrag', { ..._emitDiffer(), event: e, originalEvent: evt })
@@ -505,7 +514,7 @@ Sortable.prototype = {
     const container = fallbackOnBody ? document.body : this.el
     const rect = getRect(dragEl, { block: true }, container)
 
-    if (this._allowMultiDrag()) {
+    if (isMultiple) {
       ghostEl = this._getMultiGhostElement()
     } else {
       ghostEl = dragEl.cloneNode(true)
@@ -548,16 +557,17 @@ Sortable.prototype = {
 
   // -------------------------------- on change ----------------------------------
   _triggerChangeEvent: function (target, e, evt) {
+    if (!dragEl) return
     // on-multi-change
-    if (this._allowMultiDrag()) {
-      this._multiDragChange(rootEl, target, e, evt)
+    if (isMultiple) {
+      this._onMultiChange(_params({ target, e, evt }))
     } else {
       // on-change
       this._onChange(target, e, evt)
     }
   },
   _onChange: debounce(function (target, e, evt) {
-    if (!dragEl) return
+    if (!differ.from.group) return
     if (!lastChild(rootEl) || (target === rootEl && differ.from.group !== rootEl)) {
       differ.from.sortable._captureAnimationState(dragEl, dragEl)
 
@@ -630,12 +640,16 @@ Sortable.prototype = {
     }
     // drag and drop done
     if (dragEl && eventState.down && eventState.move) {
-      if (this._allowMultiDrag()) {
-        this._multiDragEnd(rootEl)
+      if (isMultiple) {
+        this._onMultiDrop(_params({ evt }))
       } else {
         // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
         differ.to.rect = getRect(dragEl)
         differ.to.offset = getOffset(dragEl)
+        if (!differ.to.group) {
+          differ.to.group = this.el
+          differ.to.sortable = this
+        }
 
         differ.from.group = fromGroup
         differ.from.sortable = fromSortable
@@ -672,13 +686,13 @@ Sortable.prototype = {
     dragEl =
     dropEl =
     ghostEl =
+    isMultiple =
     fromGroup =
     activeGroup =
     fromSortable =
     dragStartTimer =
     autoScrollTimer =
-    Sortable.ghost = 
-    Sortable.dragEl = null
+    Sortable.ghost = null
     distance = lastPosition = { x: 0, y: 0 }
     eventState.destroy()
     differ.destroy()
