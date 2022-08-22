@@ -27,6 +27,17 @@ type FromTo = {
   rect: Rect;
 }
 
+type MultiNode = {
+  node: HTMLElement;
+  offset: Offset;
+  rect: Rect;
+}
+
+type MultiFromTo = {
+  group: HTMLElement;
+  nodes: MultiNode[];
+}
+
 type options = {
   /**
    * Specifies which items inside the element should be draggable
@@ -63,8 +74,8 @@ type options = {
    * The callback function when the drag is started.
    */
   onDrag?: (
-    from: FromTo,
-    to: FromTo,
+    from: FromTo | MultiFromTo,
+    to: FromTo | MultiFromTo,
     event: Event & PointerEvent,
     originalEvent: Event & PointerEvent,
   ) => void;
@@ -73,8 +84,8 @@ type options = {
    * The callback function when the dragged element is moving.
    */
   onMove?: (
-    from: FromTo,
-    to: FromTo,
+    from: FromTo | MultiFromTo,
+    to: FromTo | MultiFromTo,
     ghostEl: HTMLElement,
     event: Event & DragEvent,
     originalEvent: Event & DragEvent,
@@ -84,8 +95,8 @@ type options = {
    * The callback function when the drag is completed.
    */
   onDrop?: (
-    from: FromTo,
-    to: FromTo,
+    from: FromTo | MultiFromTo,
+    to: FromTo | MultiFromTo,
     event: Event & DragEvent,
     originalEvent: Event & DragEvent,
     changed: Boolean,
@@ -95,8 +106,8 @@ type options = {
    * The callback function when element is dropped into the list from another list.
    */
   onAdd?: (
-    from: FromTo,
-    to: FromTo,
+    from: FromTo | MultiFromTo,
+    to: FromTo | MultiFromTo,
     event: Event,
     originalEvent: Event,
   ) => void;
@@ -105,8 +116,8 @@ type options = {
    * The callback function when element is removed from the list into another list.
    */
   onRemove?: (
-    from: FromTo,
-    to: FromTo,
+    from: FromTo | MultiFromTo,
+    to: FromTo | MultiFromTo,
     event: Event,
     originalEvent: Event,
   ) => void;
@@ -115,8 +126,8 @@ type options = {
    * The callback function when the dragged element changes position in the list.
    */
   onChange?: (
-    from: FromTo,
-    to: FromTo,
+    from: FromTo | MultiFromTo,
+    to: FromTo | MultiFromTo,
     event: Event & DragEvent,
     originalEvent: Event & DragEvent,
   ) => void;
