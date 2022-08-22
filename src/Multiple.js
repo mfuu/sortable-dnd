@@ -9,6 +9,7 @@ import {
   unsetRect,
   getElement,
   toggleClass,
+  getMouseRect,
   offsetChanged,
   isHTMLElement,
 } from './utils'
@@ -138,7 +139,7 @@ export default function Multiple() {
       // on-multi-move
       this._dispatchEvent('onMove', { ..._emitMultiDiffer(), ghostEl, event: e, originalEvent: evt })
 
-      let rect = getRect(ghostEl, { relative: true })
+      let rect = getMouseRect(e)
 
       // move selected elements
       selectedElements.forEach((node) => {

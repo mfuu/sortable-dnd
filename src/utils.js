@@ -230,6 +230,17 @@ export function unsetRect(el) {
   css(el, 'left', '')
 }
 
+export function getMouseRect(event) {
+  if (event.pageX || event.pageY) {
+    return { top: event.pageY, left: event.pageX }
+  } else if (event.clientX || event.clientY) {
+    return {
+      top: event.clientY + document.documentElement.scrollTop + document.body.scrollTop,
+      left: event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft
+    }
+  }
+}
+
 /**
  * Returns the "bounding client rect" of given element
  * @param  {HTMLElement} el                       The element whose boundingClientRect is wanted
