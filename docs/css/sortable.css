@@ -11,6 +11,7 @@ h1 {
 ul {
   padding: 0;
   margin: 0;
+  position: relative;
 }
 li {
   list-style: none;
@@ -42,6 +43,10 @@ li {
   color: transparent;
   border: 1px dashed #1984ff !important;
   background-color: transparent !important;
+}
+
+.selected {
+  background-color: skyblue;
 }
 
 .vertical-group {

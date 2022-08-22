@@ -21,22 +21,21 @@ export default function Animation() {
         end = Math.min(children.length - 1, 100)
       }
 
+      if (end < 0) end = Math.min(children.length - 1, 100)
+
       children.slice(start, end + 1).forEach((child) => {
-        animationState.push({
-          target: child,
-          rect: getRect(child),
-        })
+        animationState.push({ target: child, rect: getRect(child) })
       })
     },
 
-    _rangeAnimate() {
+    _animate() {
       animationState.forEach((state) => {
         const { target, rect } = state
-        this._animate(target, rect, this.options.animation)
+        this._excuteAnimation(target, rect, this.options.animation)
       })
     },
 
-    _animate(el, preRect, animation = 150) {
+    _excuteAnimation(el, preRect, animation = 150) {
       const curRect = getRect(el)
       const left = preRect.left - curRect.left
       const top = preRect.top - curRect.top

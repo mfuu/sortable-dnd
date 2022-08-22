@@ -13,7 +13,10 @@ new Sortable(
   {
     group: { name: 'g', put: true, pull: true },
     animation: 150,
-    chosenClass: 'chosen'
+    chosenClass: 'chosen',
+    selectedClass: 'selected',
+    fallbackOnBody: true,
+    multiple: true,
   }
 );
 
@@ -33,6 +36,9 @@ new Sortable(
     group: { name: 'g', put: true, pull: true },
     animation: 150,
     chosenClass: 'chosen',
+    selectedClass: 'selected',
+    fallbackOnBody: true,
+    multiple: true,
     onDrag: ({ from, event, originalEvent }) => {
       // code
       console.log(from, 'drag')

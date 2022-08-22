@@ -7,11 +7,11 @@ export default function AutoScroll() {
     }
   }
   return {
-    _autoScroll: throttle(function (Sortable, state) {
+    _autoScroll: throttle(function (Sortable, eventState) {
       if (!Sortable.scrollEl) return
       // check if is moving now
-      if (!(state.sortableDown && state.sortableMove)) return
-      const { clientX, clientY } = state.sortableMove
+      if (!(eventState.down && eventState.move)) return
+      const { clientX, clientY } = eventState.move
       if (clientX === void 0 || clientY === void 0) return
   
       if (Sortable.scrollEl === Sortable.ownerDocument) {
@@ -65,7 +65,7 @@ export default function AutoScroll() {
         if (totop || toleft || toright || tobottom) {
           requestAnimationFrame(() => {
             Sortable.scrollEl.scrollTo(position.x, position.y)
-            Sortable._autoScroll(Sortable, state)
+            Sortable._autoScroll(Sortable, eventState)
           })
         }
       }

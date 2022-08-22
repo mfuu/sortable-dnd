@@ -19,35 +19,38 @@ import {
   offsetChanged,
   getParentAutoScrollElement,
 } from './utils.js'
-import { IOS, Edge, Safari, IE11OrLess, ChromeForAndroid } from './Brower.js'
+import { IOS, Edge, Safari, IE11OrLess, ChromeForAndroid } from './utils.js'
 import AutoScroll from './Autoscroll.js'
 import Animation from './Animation.js'
+import Multiple from './Multiple.js'
 
 /**
  * Sortable states
  */
-class State {
+class EventState {
   constructor() {
-    this.sortableDown = undefined
-    this.sortableMove = undefined
+    this.down = undefined
+    this.move = undefined
   }
   destroy() {
-    this.sortableDown = undefined
-    this.sortableMove = undefined
+    this.down = undefined
+    this.move = undefined
   }
 }
+
+const FromTo = { sortable: null, group: null, node: null, rect: {}, offset: {} }
 
 /**
  * Difference before and after dragging
  */
-class Differ {
+class Difference {
   constructor() {
-    this.from = { sortable: null, group: null, node: null, rect: {}, offset: {} }
-    this.to = { sortable: null, group: null, node: null, rect: {}, offset: {} }
+    this.from = { ...FromTo }
+    this.to = { ...FromTo }
   }
   destroy() {
-    this.from = { sortable: null, group: null, node: null, rect: {}, offset: {} }
-    this.to = { sortable: null, group: null, node: null, rect: {}, offset: {} }
+    this.from = { ...FromTo }
+    this.to = { ...FromTo }
   }
 }
 
@@ -62,13 +65,14 @@ let rootEl,
   dragEl,
   dropEl,
   ghostEl,
+  isMultiple,
   fromGroup,
   activeGroup,
   fromSortable,
   dragStartTimer, // timer for start to drag
   autoScrollTimer,
-  state = new State(), // Status record during drag and drop
-  differ = new Differ() // Record the difference before and after dragging
+  differ = new Difference(), // Record the difference before and after
+  eventState = new EventState() // Status record during drag and move
 
 let distance = { x: 0, y: 0 }
 let lastPosition = { x: 0, y: 0 }
@@ -124,7 +128,7 @@ const _detectNearestSortable = function (x, y) {
     const threshold = sortable[expando].options.emptyInsertThreshold
     if (!threshold) return
 
-    const rect = getRect(sortable, true),
+    const rect = getRect(sortable, { parent: true }),
       insideHorizontally = x >= rect.left - threshold && x <= rect.right + threshold,
       insideVertically = y >= rect.top - threshold && y <= rect.bottom + threshold
 
@@ -166,6 +170,10 @@ const _emitDiffer = function () {
   return { from: { ...differ.from }, to: { ...differ.to } }
 }
 
+const _params = function (args) {
+  return { ...args, rootEl, dragEl, ghostEl, fromSortable, fromGroup, activeGroup }
+}
+
 /**
  * @class  Sortable
  * @param  {HTMLElement}  el group element
@@ -187,6 +195,8 @@ function Sortable(el, options) {
     group: '', // string: 'group' or object: { name: 'group', put: true | false, pull: true | false }
     animation: 150, // Define the timing of the sorting animation
 
+    multiple: false, // Enable multi-drag
+
     draggable: undefined, // String: css selector, Function: (e) => return true
     onDrag: undefined, // The callback function triggered when dragging starts: () => {}
     onMove: undefined, // The callback function during drag and drop: (from, to) => {}
@@ -204,6 +214,7 @@ function Sortable(el, options) {
     ghostClass: '', // Ghost element class name
     ghostStyle: {}, // Ghost element style
     chosenClass: '', // Chosen element style
+    selectedClass: '', // The style of the element when it is selected
 
     fallbackOnBody: false, // Appends the cloned DOM Element into the Document's Body
     forceFallback: false, // Ignore HTML5 drag and drop behavior, force callback to proceed
@@ -241,7 +252,7 @@ function Sortable(el, options) {
 
   sortables.push(el)
 
-  Object.assign(this, Animation(), AutoScroll())
+  Object.assign(this, Animation(), AutoScroll(), Multiple())
 }
 
 Sortable.prototype = {
@@ -286,9 +297,9 @@ Sortable.prototype = {
     const { draggable } = this.options
     if (typeof draggable === 'function') {
       // Function type must return a HTMLElement if used to specifies the drag el
-      const value = draggable(e)
-      if (!value) return true
-      if (isHTMLElement(value)) dragEl = value // set drag element
+      const element = draggable(e)
+      if (!element) return true
+      if (isHTMLElement(element)) dragEl = element // set drag element
     } else if (typeof draggable === 'string') {
       // String use as 'tag' or '.class' or '#id'
       if (!matches(target, draggable)) return true
@@ -307,12 +318,17 @@ Sortable.prototype = {
 
     fromGroup = this.el
     fromSortable = this
+
+    isMultiple = this._allowMultiDrag(dragEl)
+    // multi-drag
+    if (isMultiple) this._onMultiDrag()
+
     // get the position of the dragged element in the list
     const { rect, offset } = getElement(this.el, dragEl)
     differ.from = { sortable: this, group: this.el, node: dragEl, rect, offset }
 
     distance = { x: e.clientX - rect.left, y: e.clientY - rect.top }
-    state.sortableDown = e // sortable state down is active
+    eventState.down = e // sortable state down is active
 
     // enable drag between groups
     if (this.nativeDraggable) {
@@ -401,27 +417,32 @@ Sortable.prototype = {
 
   // -------------------------------- move ----------------------------------
   _onMove: function (/** Event|TouchEvent */ evt) {
-    if (!state.sortableDown || !dragEl) return
+    if (!eventState.down || !dragEl) return
     this._preventEvent(evt)
 
     const { e, target } = getEvent(evt)
     this._onStarted(e, evt)
 
     if (evt.rootEl) {
-      // on-move
-      this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: e, originalEvent: evt })
+      if (isMultiple) {
+        // on-multi-move
+        this._onMultiMove(_params({ e, evt }))
+      } else {
+        // on-move
+        this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: e, originalEvent: evt })
+      }
       // check if element will exchange
-      if (this._allowPut()) this._onChange(target, e, evt)
+      if (this._allowPut()) this._triggerChangeEvent(target, e, evt)
       // auto scroll
       clearTimeout(autoScrollTimer)
       if (this.options.autoScroll) {
-        autoScrollTimer = setTimeout(() => this._autoScroll(this, state), 0)
+        autoScrollTimer = setTimeout(() => this._autoScroll(this, eventState), 0)
       }
     }
   },
 
   _onDragOver: function (evt) {
-    if (!state.sortableDown || !dragEl) return
+    if (!eventState.down || !dragEl) return
     this._preventEvent(evt)
 
     const allowPut = this._allowPut()
@@ -431,10 +452,15 @@ Sortable.prototype = {
     this._onStarted(evt, evt)
 
     if (evt.rootEl && _positionChanged(evt)) {
-      // on-move
-      this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: evt, originalEvent: evt })
+      if (isMultiple) {
+        // on-multi-move
+        this._onMultiMove(_params({ e: evt, evt }))
+      } else {
+        // on-move
+        this._dispatchEvent('onMove', { ..._emitDiffer(), ghostEl, event: evt, originalEvent: evt })
+      }
 
-      if (allowPut) this._onChange(evt.target, evt, evt)
+      if (allowPut) this._triggerChangeEvent(evt.target, evt, evt)
     }
   },
 
@@ -451,9 +477,14 @@ Sortable.prototype = {
 
   // -------------------------------- real started ----------------------------------
   _onStarted: function (e, /** originalEvent */ evt) {
-    if (!state.sortableMove) {
-      // on-drag
-      this._dispatchEvent('onDrag', { ..._emitDiffer(), event: e, originalEvent: evt })
+    if (!eventState.move) {
+      // on-multi-drag
+      if (isMultiple) {
+        this._onMultiStarted(_params({ e, evt }))
+      } else {
+        // on-drag
+        this._dispatchEvent('onDrag', { ..._emitDiffer(), event: e, originalEvent: evt })
+      }
 
       // Init in the move event to prevent conflict with the click event
       if (!this.nativeDraggable) this._appendGhost()
@@ -466,10 +497,10 @@ Sortable.prototype = {
       if (Safari) css(document.body, 'user-select', 'none')
     }
 
-    state.sortableMove = e // sortable state move is active
+    eventState.move = e // sortable state move is active
 
+    const { clientX, clientY } = eventState.down
     if (!this.nativeDraggable) {
-      const { clientX, clientY } = state.sortableDown
       setTransition(ghostEl, 'none')
       setTransform(ghostEl, `translate3d(${e.clientX - clientX}px, ${e.clientY - clientY}px, 0)`)
     }
@@ -481,9 +512,13 @@ Sortable.prototype = {
 
     const { fallbackOnBody, ghostClass, ghostStyle = {} } = this.options
     const container = fallbackOnBody ? document.body : this.el
-    const rect = differ.from.rect
+    const rect = getRect(dragEl, { block: true }, container)
 
-    ghostEl = dragEl.cloneNode(true)
+    if (isMultiple) {
+      ghostEl = this._getMultiGhostElement()
+    } else {
+      ghostEl = dragEl.cloneNode(true)
+    }
 
     toggleClass(ghostEl, ghostClass, true)
     css(ghostEl, 'box-sizing', 'border-box')
@@ -521,8 +556,18 @@ Sortable.prototype = {
   },
 
   // -------------------------------- on change ----------------------------------
-  _onChange: function (target, e, evt) {
+  _triggerChangeEvent: function (target, e, evt) {
     if (!dragEl) return
+    // on-multi-change
+    if (isMultiple) {
+      this._onMultiChange(_params({ target, e, evt }))
+    } else {
+      // on-change
+      this._onChange(target, e, evt)
+    }
+  },
+  _onChange: debounce(function (target, e, evt) {
+    if (!differ.from.group) return
     if (!lastChild(rootEl) || (target === rootEl && differ.from.group !== rootEl)) {
       differ.from.sortable._captureAnimationState(dragEl, dragEl)
 
@@ -533,7 +578,7 @@ Sortable.prototype = {
       this._dispatchEvent('onAdd', { ..._emitDiffer(), event: e, originalEvent: evt })
 
       rootEl.appendChild(dragEl)
-      differ.from.sortable._rangeAnimate()
+      differ.from.sortable._animate()
     } else {
       const { el, rect, offset } = getElement(rootEl, target)
       if (!el || (el && el.animated) || el === dragEl) return
@@ -556,7 +601,7 @@ Sortable.prototype = {
           this._dispatchEvent('onAdd', { ..._emitDiffer(), event: e, originalEvent: evt })
 
           rootEl.insertBefore(dragEl, dropEl)
-          differ.from.sortable._rangeAnimate()
+          differ.from.sortable._animate()
         } else {
           // on-change
           this._dispatchEvent('onChange', { ..._emitDiffer(), event: e, originalEvent: evt })
@@ -569,12 +614,12 @@ Sortable.prototype = {
             rootEl.insertBefore(dragEl, dropEl)
           }
         }
-        this._rangeAnimate()
+        this._animate()
       }
     }
     differ.from.sortable = this
     differ.from.group = rootEl
-  },
+  }, 3),
 
   // -------------------------------- on drop ----------------------------------
   _onDrop: function (/** Event|TouchEvent */ evt) {
@@ -585,18 +630,26 @@ Sortable.prototype = {
     clearTimeout(dragStartTimer)
     clearTimeout(autoScrollTimer)
 
+    // clear style, attrs and class
     if (dragEl) {
       const { touch } = getEvent(evt)
-      // clear style, attrs and class
       toggleClass(dragEl, this.options.chosenClass, false)
       if (this.nativeDraggable) dragEl.draggable = false
       if (touch) dragEl.style['touch-action'] = ''
       dragEl.style['will-change'] = ''
-
-      if (state.sortableDown && state.sortableMove) {
+    }
+    // drag and drop done
+    if (dragEl && eventState.down && eventState.move) {
+      if (isMultiple) {
+        this._onMultiDrop(_params({ evt }))
+      } else {
         // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
         differ.to.rect = getRect(dragEl)
         differ.to.offset = getOffset(dragEl)
+        if (!differ.to.group) {
+          differ.to.group = this.el
+          differ.to.sortable = this
+        }
 
         differ.from.group = fromGroup
         differ.from.sortable = fromSortable
@@ -607,9 +660,13 @@ Sortable.prototype = {
         if (differ.to.group !== fromGroup) fromSortable._dispatchEvent('onDrop', params)
         this._dispatchEvent('onDrop', params)
       }
+
+      if (Safari) css(document.body, 'user-select', '')
+    } else {
+      // click event
+      this._setMultiElements(evt)
     }
 
-    if (Safari) css(document.body, 'user-select', '')
     this._clearState()
   },
 
@@ -629,6 +686,7 @@ Sortable.prototype = {
     dragEl =
     dropEl =
     ghostEl =
+    isMultiple =
     fromGroup =
     activeGroup =
     fromSortable =
@@ -636,7 +694,7 @@ Sortable.prototype = {
     autoScrollTimer =
     Sortable.ghost = null
     distance = lastPosition = { x: 0, y: 0 }
-    state.destroy()
+    eventState.destroy()
     differ.destroy()
   },
   _unbindDragEvents: function () {
