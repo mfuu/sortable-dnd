@@ -47,29 +47,30 @@ const _offsetChanged = function (ns1, ns2) {
 
 export default function Multiple() {
   return {
-    _setMultiElements: function (evt) {
+    _setMultiElements: function (event, group) {
       if (!this.options.multiple) return
 
       let target
 
       const { draggable } = this.options
       if (typeof draggable === 'function') {
-        const element = draggable(evt)
+        const element = draggable(event)
         if (!element) return
         if (isHTMLElement(element)) target = element
       }
-      if (!target) target = getElement(this.el, evt.target, true)
+      if (!target) target = getElement(this.el, event.target, true)
 
       if (!target) return
 
       toggleClass(target, this.options.selectedClass, !~selectedElements.indexOf(target))
 
+      let params = { sortable: this, group, target, event, originalEvent: event }
       if (!~selectedElements.indexOf(target)) {
         selectedElements.push(target)
-        this._dispatchEvent('onSelect', { sortable: this, target, evt })
+        this._dispatchEvent('onSelect', params)
       } else {
         selectedElements.splice(selectedElements.indexOf(target), 1)
-        this._dispatchEvent('onDeselect', { sortable: this, target, evt })
+        this._dispatchEvent('onDeselect', params)
       }
 
       // get each node's index in group

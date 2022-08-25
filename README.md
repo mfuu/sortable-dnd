@@ -63,6 +63,12 @@ var DND = new Sortable(
     },
     onChange: ({ from, to, event, originalEvent }) => {
       // code
+    },
+    onSelect: ({ group, target, event, originalEvent }) => {
+      // code
+    },
+    onDeselect: ({ group, target, event, originalEvent }) => {
+      // code
     }
   }
 )
@@ -89,8 +95,10 @@ var DND = new Sortable(
 | `onMove`          | `Function`        | `-`         | The callback function when the dragged element is moving |
 | `onDrop`          | `Function`        | `-`         | The callback function when the drag is completed |
 | `onAdd`           | `Function`        | `-`         | The callback function when element is dropped into the list from another list |
-| `onRemove`        | `Function`        | `-`         | The callback function when element is removed from the list into another list|
+| `onRemove`        | `Function`        | `-`         | The callback function when element is removed from the list into another list |
 | `onChange`        | `Function`        | `-`         | The callback function when the dragged element changes position in the list |
+| `onSelect`        | `Function`        | `-`         | The callback function when element is selected |
+| `onDeselect`      | `Function`        | `-`         | The callback function when element is unselected |
 
 
 **Others**

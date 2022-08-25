@@ -21,6 +21,7 @@ type Rect = {
 }
 
 type FromTo = {
+  sortable: Sortable;
   group: HTMLElement;
   node: HTMLElement;
   offset: Offset;
@@ -34,9 +35,13 @@ type MultiNode = {
 }
 
 type MultiFromTo = {
+  sortable: Sortable;
   group: HTMLElement;
   nodes: MultiNode[];
 }
+
+type EventType = Event & (DragEvent | PointerEvent | MouseEvent | TouchEvent);
+
 
 type options = {
   /**
@@ -73,64 +78,86 @@ type options = {
   /**
    * The callback function when the drag is started.
    */
-  onDrag?: (
-    from: FromTo | MultiFromTo,
-    to: FromTo | MultiFromTo,
-    event: Event & PointerEvent,
-    originalEvent: Event & PointerEvent,
-  ) => void;
+  onDrag?: (params: {
+    from: FromTo | MultiFromTo;
+    to: FromTo | MultiFromTo;
+    event: EventType;
+    originalEvent: EventType;
+  }) => void;
 
   /**
    * The callback function when the dragged element is moving.
    */
-  onMove?: (
-    from: FromTo | MultiFromTo,
-    to: FromTo | MultiFromTo,
-    ghostEl: HTMLElement,
-    event: Event & DragEvent,
-    originalEvent: Event & DragEvent,
-  ) => void;
+  onMove?: (params: {
+    from: FromTo | MultiFromTo;
+    to: FromTo | MultiFromTo;
+    event: EventType;
+    originalEvent: EventType;
+    ghostEl: HTMLElement;
+  }) => void;
 
   /**
    * The callback function when the drag is completed.
    */
-  onDrop?: (
-    from: FromTo | MultiFromTo,
-    to: FromTo | MultiFromTo,
-    event: Event & DragEvent,
-    originalEvent: Event & DragEvent,
-    changed: Boolean,
-  ) => void;
+  onDrop?: (params: {
+    from: FromTo | MultiFromTo;
+    to: FromTo | MultiFromTo;
+    event: EventType;
+    originalEvent: EventType;
+    changed: Boolean;
+  }) => void;
 
   /**
    * The callback function when element is dropped into the list from another list.
    */
-  onAdd?: (
-    from: FromTo | MultiFromTo,
-    to: FromTo | MultiFromTo,
-    event: Event,
-    originalEvent: Event,
-  ) => void;
+  onAdd?: (params: {
+    from: FromTo | MultiFromTo;
+    to: FromTo | MultiFromTo;
+    event: EventType;
+    originalEvent: EventType;
+  }) => void;
 
   /**
    * The callback function when element is removed from the list into another list.
    */
-  onRemove?: (
-    from: FromTo | MultiFromTo,
-    to: FromTo | MultiFromTo,
-    event: Event,
-    originalEvent: Event,
-  ) => void;
+  onRemove?: (params: {
+    from: FromTo | MultiFromTo;
+    to: FromTo | MultiFromTo;
+    event: EventType;
+    originalEvent: EventType;
+  }) => void;
 
   /**
    * The callback function when the dragged element changes position in the list.
    */
-  onChange?: (
-    from: FromTo | MultiFromTo,
-    to: FromTo | MultiFromTo,
-    event: Event & DragEvent,
-    originalEvent: Event & DragEvent,
-  ) => void;
+  onChange?: (params: {
+    from: FromTo | MultiFromTo;
+    to: FromTo | MultiFromTo;
+    event: EventType;
+    originalEvent: EventType;
+  }) => void;
+
+  /**
+   * The callback function when element is selected
+   */
+  onSelect?: (params: {
+    sortable: Sortable;
+    group: HTMLElement;
+    target: HTMLElement;
+    event: EventType;
+    originalEvent: EventType;
+  }) => void;
+
+  /**
+   * The callback function when element is unselected
+   */
+  onDeselect?: (params: {
+    sortable: Sortable;
+    group: HTMLElement;
+    target: HTMLElement;
+    event: EventType;
+    originalEvent: EventType;
+  }) => void;
 
   /**
    * Disables the sortable if set to true.
