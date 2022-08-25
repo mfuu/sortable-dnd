@@ -664,7 +664,7 @@ Sortable.prototype = {
       if (Safari) css(document.body, 'user-select', '')
     } else {
       // click event
-      this._setMultiElements(evt)
+      this._setMultiElements(evt, this.el)
     }
 
     this._clearState()
