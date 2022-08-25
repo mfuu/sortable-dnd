@@ -830,7 +830,7 @@
 
   function Multiple() {
     return {
-      _setMultiElements: function _setMultiElements(evt) {
+      _setMultiElements: function _setMultiElements(event, group) {
         var _this = this;
 
         if (!this.options.multiple) return;
@@ -838,31 +838,30 @@
         var draggable = this.options.draggable;
 
         if (typeof draggable === 'function') {
-          var element = draggable(evt);
+          var element = draggable(event);
           if (!element) return;
           if (isHTMLElement(element)) target = element;
         }
 
-        if (!target) target = getElement(this.el, evt.target, true);
+        if (!target) target = getElement(this.el, event.target, true);
         if (!target) return;
         toggleClass(target, this.options.selectedClass, !~selectedElements.indexOf(target));
+        var params = {
+          sortable: this,
+          group: group,
+          target: target,
+          event: event,
+          originalEvent: event
+        };
 
         if (!~selectedElements.indexOf(target)) {
           selectedElements.push(target);
 
-          this._dispatchEvent('onSelect', {
-            sortable: this,
-            target: target,
-            evt: evt
-          });
+          this._dispatchEvent('onSelect', params);
         } else {
           selectedElements.splice(selectedElements.indexOf(target), 1);
 
-          this._dispatchEvent('onDeselect', {
-            sortable: this,
-            target: target,
-            evt: evt
-          });
+          this._dispatchEvent('onDeselect', params);
         } // get each node's index in group
 
 
@@ -1921,7 +1920,7 @@
         if (Safari) css(document.body, 'user-select', '');
       } else {
         // click event
-        this._setMultiElements(evt);
+        this._setMultiElements(evt, this.el);
       }
 
       this._clearState();
