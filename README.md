@@ -1,9 +1,9 @@
 <p>
-  <a href="https://npm-stat.com/charts.html?package=sortable-dnd">
-    <img alt="Downloads" src="https://img.shields.io/npm/dt/sortable-dnd.svg">
-  </a>
   <a href="https://www.npmjs.com/package/sortable-dnd">
     <img alt="Version" src="https://img.shields.io/npm/v/sortable-dnd.svg"/>
+  </a>
+  <a href="https://npm-stat.com/charts.html?package=sortable-dnd">
+    <img alt="Downloads" src="https://img.shields.io/npm/dt/sortable-dnd.svg">
   </a>
 </p>
 
@@ -11,7 +11,7 @@
 
 A JS Library for Drag and Drop, supports Sortable and Draggable
 
-## [Demo](https://mfuu.github.io/sortable-dnd/)
+## [Live Demo](https://mfuu.github.io/sortable-dnd/)
 
 # Usage
 
@@ -45,7 +45,7 @@ var DND = new Sortable(
     // draggable: 'i' // use tagName 
     // draggable: '.drag' // use class
     // draggable: '#drag' // use id
-    // draggable: (e) => e.target.parentNode // use fundtion to set drag Element
+    // draggable: (e) => e.target.parentNode // use function to set drag Element
     onDrag: ({ from, event, originalEvent }) => {
       // code
     },
@@ -121,4 +121,4 @@ var DND = new Sortable(
 
 # LICENSE
 
-[MIT](https://github.com/mfuu/sortable-dnd/blob/main/LICENSE)
+[MIT License](https://github.com/mfuu/sortable-dnd/blob/main/LICENSE)
