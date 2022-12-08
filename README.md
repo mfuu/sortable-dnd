@@ -113,10 +113,10 @@ var DND = new Sortable(
 | `autoScroll`      | `Boolean`         | `true`      | Automatic scrolling when moving to the edge of the container, **for browsers that do not support HTML5 drag events** |
 | `scrollStep`      | `Number`          | `5`         | The distance to scroll each frame when autoscrolling |
 | `scrollThreshold` | `Number`          | `15`        | Threshold to trigger autoscroll |
-| `delay`           | `Number`          | `0`         | time in milliseconds to define when the sorting should start |
-| `delayOnTouchOnly`| `Boolean`         | `false`     | only delay if user is using touch |
+| `delay`           | `Number`          | `0`         | Time in milliseconds to define when the sorting should start |
+| `delayOnTouchOnly`| `Boolean`         | `false`     | Only delay if user is using touch |
 | `fallbackOnBody`  | `Boolean`         | `false`     | Appends the cloned DOM Element into the Document's Body |
-| `forceFallback`   | `Boolean`         | `false`     | true: ignore the HTML5 DnD behaviour and force the fallback to kick in |
+| `forceFallback`   | `Boolean`         | `false`     | Ignore the HTML5 DnD behaviour and force the fallback to kick in if set to true |
 | `stopPropagation` | `Boolean`         | `false`     | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
 
 # LICENSE
