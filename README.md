@@ -19,15 +19,15 @@ A JS Library for Drag and Drop, supports Sortable and Draggable
 ```html
 <ul id="group">
   <li>
-    <i class="drag">drag me</i>
+    <i id="drag" class="drag">drag me</i>
     <p>1</p>
   </li>
   <li>
-    <i class="drag">drag me</i>
+    <i id="drag" class="drag">drag me</i>
     <p>2</p>
   </li>
   <li>
-    <i class="drag">drag me</i>
+    <i id="drag" class="drag">drag me</i>
     <p>3</p>
   </li>
 </ul>
@@ -106,8 +106,8 @@ var DND = new Sortable(
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `disabled`        | `Boolean`         | `false`     | Disables the sortable if set to true |
-| `chosenClass`     | `String`          | `''`        | The class of the selected element when dragging |
-| `selectedClass`   | `String`          | `''`        | Class name for selected item |
+| `chosenClass`     | `String`          | `''`        | Class name for the dragging item |
+| `selectedClass`   | `String`          | `''`        | The class of the element when it is selected, it is usually used when multiple drag |
 | `ghostStyle`      | `Object`          | `{}`        | The style of the mask element when dragging |
 | `ghostClass`      | `String`          | `''`        | The class of the mask element when dragging |
 | `autoScroll`      | `Boolean`         | `true`      | Automatic scrolling when moving to the edge of the container, **for browsers that do not support HTML5 drag events** |
