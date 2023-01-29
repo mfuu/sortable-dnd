@@ -1,11 +1,4 @@
-<p>
-  <a href="https://www.npmjs.com/package/sortable-dnd">
-    <img alt="Version" src="https://img.shields.io/npm/v/sortable-dnd.svg"/>
-  </a>
-  <a href="https://npm-stat.com/charts.html?package=sortable-dnd">
-    <img alt="Downloads" src="https://img.shields.io/npm/dt/sortable-dnd.svg">
-  </a>
-</p>
+[![npm](https://img.shields.io/npm/v/sortable-dnd.svg)](https://www.npmjs.com/package/sortable-dnd)  [![npm](https://img.shields.io/npm/dt/sortable-dnd.svg)](https://npm-stat.com/charts.html?package=sortable-dnd)  [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
 
 
