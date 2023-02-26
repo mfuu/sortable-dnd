@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.1
+ * sortable-dnd v0.4.2
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -124,9 +124,9 @@
     passive: false
   };
   var R_SPACE = /\s+/g;
-  var CSSTRANSITIONS = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition'];
-  var CSSTRANSFORMS = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform'];
-  var SUPPORTPASSIVE = supportPassive();
+  var cssTransitions = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition'];
+  var cssTransforms = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform'];
+  var SUPPORT_PASSIVE = supportPassive();
 
   function userAgent(pattern) {
     if (typeof window !== 'undefined' && window.navigator) {
@@ -137,8 +137,6 @@
   var IE11OrLess = userAgent(/(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i);
   var Edge = userAgent(/Edge/i);
   var Safari = userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
-  var IOS = userAgent(/iP(ad|od|hone)/i);
-  var ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
   /**
    * check if is HTMLElement
    */
@@ -162,12 +160,12 @@
 
   function setTransition(el, transition) {
     if (transition) {
-      if (transition === 'none') CSSTRANSITIONS.forEach(function (ts) {
+      if (transition === 'none') cssTransitions.forEach(function (ts) {
         return css(el, ts, 'none');
-      });else CSSTRANSITIONS.forEach(function (ts) {
+      });else cssTransitions.forEach(function (ts) {
         return css(el, ts, "".concat(ts.split('transition')[0], "transform ").concat(transition));
       });
-    } else CSSTRANSITIONS.forEach(function (ts) {
+    } else cssTransitions.forEach(function (ts) {
       return css(el, ts, '');
     });
   }
@@ -178,11 +176,15 @@
    */
 
   function setTransform(el, transform) {
-    if (transform) CSSTRANSFORMS.forEach(function (tf) {
-      return css(el, tf, "".concat(tf.split('transform')[0]).concat(transform));
-    });else CSSTRANSFORMS.forEach(function (tf) {
-      return css(el, tf, '');
-    });
+    if (transform) {
+      cssTransforms.forEach(function (tf) {
+        return css(el, tf, "".concat(tf.split('transform')[0]).concat(transform));
+      });
+    } else {
+      cssTransforms.forEach(function (tf) {
+        return css(el, tf, '');
+      });
+    }
   }
   /**
    * get touch event and current event
@@ -225,7 +227,7 @@
 
   function on(el, event, fn) {
     if (window.addEventListener) {
-      el.addEventListener(event, fn, SUPPORTPASSIVE || !IE11OrLess ? captureMode : false);
+      el.addEventListener(event, fn, SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false);
     } else if (window.attachEvent) {
       el.attachEvent('on' + event, fn);
     }
@@ -240,7 +242,7 @@
 
   function off(el, event, fn) {
     if (window.removeEventListener) {
-      el.removeEventListener(event, fn, SUPPORTPASSIVE || !IE11OrLess ? captureMode : false);
+      el.removeEventListener(event, fn, SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false);
     } else if (window.detachEvent) {
       el.detachEvent('on' + event, fn);
     }
@@ -349,7 +351,7 @@
   /**
    * Returns the "bounding client rect" of given element
    * @param  {HTMLElement} el                       The element whose boundingClientRect is wanted
-   * @param  {Object} check 
+   * @param  {Object} check
    * @example - {
    * -   parent: true | false, 'check if parentNode.height < el.height'
    * -   block: true | false, 'Whether the rect should be relative to the containing block of (including) the container'
@@ -1163,8 +1165,6 @@
   }(); // -------------------------------- Sortable ----------------------------------
 
 
-  var documentExists = typeof document !== 'undefined';
-  var supportDraggable = documentExists && !ChromeForAndroid && !IOS && 'draggable' in document.createElement('div');
   var sortables = [];
   var rootEl,
       dragEl,
@@ -1230,11 +1230,12 @@
         }
 
         event.target = document.elementFromPoint(clientX, clientY);
-        event.rootEl = nearest;
+        rootEl = nearest;
         event.preventDefault = void 0;
         event.stopPropagation = void 0;
+        if (rootEl === fromGroup) return;
 
-        nearest[expando]._triggerEvent(event);
+        nearest[expando]._onMove(event);
       }
     }
   };
@@ -1277,14 +1278,6 @@
     }
 
     return true;
-  };
-
-  var _globalDragOver = function _globalDragOver(evt) {
-    if (evt.dataTransfer) {
-      evt.dataTransfer.dropEffect = 'move';
-    }
-
-    evt.cancelable && evt.preventDefault();
   };
 
   var _emitDiffer = function _emitDiffer() {
@@ -1339,8 +1332,6 @@
       // The callback function when the drag is completed: (from, to, changed) => {}
       onChange: undefined,
       // The callback function when dragging an element to change its position: (from, to) => {}
-      autoScroll: true,
-      // Auto scrolling when dragging to the edge of the container
       scrollStep: 5,
       // The distance to scroll each frame
       scrollThreshold: 15,
@@ -1361,11 +1352,9 @@
       // The style of the element when it is selected
       fallbackOnBody: false,
       // Appends the cloned DOM Element into the Document's Body
-      forceFallback: false,
-      // Ignore HTML5 drag and drop behavior, force callback to proceed
       stopPropagation: false,
       // Prevents further propagation of the current event in the capture and bubbling phases
-      supportPointer: 'PointerEvent' in window && !Safari,
+      supportPointer: 'onpointerdown' in window && !Safari,
       supportTouch: 'ontouchstart' in window,
       emptyInsertThreshold: 5
     }; // Set default options
@@ -1373,8 +1362,6 @@
     for (var name in defaults) {
       !(name in this.options) && (this.options[name] = defaults[name]);
     }
-
-    this.nativeDraggable = this.options.forceFallback ? false : supportDraggable;
 
     _prepareGroup(options); // Bind all private methods
 
@@ -1398,7 +1385,11 @@
     }
 
     sortables.push(el);
-    Object.assign(this, Animation(), AutoScroll(), Multiple());
+    Object.assign(this, Animation(), AutoScroll());
+
+    if (this.options.multiple) {
+      Object.assign(this, Multiple());
+    }
   }
 
   Sortable.prototype = {
@@ -1414,14 +1405,10 @@
       this.el[expando] = null;
       off(this.el, 'pointerdown', this._onDrag);
       off(this.el, 'touchstart', this._onDrag);
-      off(this.el, 'mousedown', this._onDrag);
+      off(this.el, 'mousedown', this._onDrag); // clear status
 
-      this._clearState(); // Remove draggable attributes
+      this._clearState();
 
-
-      Array.prototype.forEach.call(this.el.querySelectorAll('[draggable]'), function (el) {
-        el.removeAttribute('draggable');
-      });
       clearTimeout(dragStartTimer);
       sortables.splice(sortables.indexOf(this.el), 1);
       this.el = null;
@@ -1441,17 +1428,18 @@
           target = _getEvent.target; // Safari ignores further event handling after mousedown
 
 
-      if (!this.nativeDraggable && Safari && target && target.tagName.toUpperCase() === 'SELECT') return true;
+      if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return true;
       if (target === this.el) return true;
       var draggable = this.options.draggable;
 
       if (typeof draggable === 'function') {
         // Function type must return a HTMLElement if used to specifies the drag el
         var element = draggable(e);
-        if (!element) return true;
-        if (isHTMLElement(element)) dragEl = element; // set drag element
+        if (!element) return true; // set drag element
+
+        if (isHTMLElement(element)) dragEl = element;
       } else if (typeof draggable === 'string') {
-        // String use as 'tag' or '.class' or '#id'
+        // String use as 'TagName' or '.class' or '#id'
         if (!matches(target, draggable)) return true;
       } else if (draggable) {
         throw new Error("draggable expected \"function\" or \"string\" but received \"".concat(_typeof(draggable), "\""));
@@ -1465,7 +1453,7 @@
       if (touch) dragEl.style['touch-action'] = 'none';
       fromGroup = this.el;
       fromSortable = this;
-      isMultiple = this._allowMultiDrag(dragEl); // multi-drag
+      isMultiple = this.options.multiple && this._allowMultiDrag(dragEl); // multi-drag
 
       if (isMultiple) this._onMultiDrag(); // get the position of the dragged element in the list
 
@@ -1487,25 +1475,22 @@
       eventState.down = e; // sortable state down is active
       // enable drag between groups
 
-      if (this.nativeDraggable) {
-        on(this.ownerDocument, 'dragover', _nearestSortable);
-      } else if (this.options.supportPointer) {
+      if (this.options.supportPointer) {
         on(this.ownerDocument, 'pointermove', _nearestSortable);
+        on(this.ownerDocument, 'pointerup', this._onDrop);
       } else if (touch) {
         on(this.ownerDocument, 'touchmove', _nearestSortable);
+        on(this.ownerDocument, 'touchend', this._onDrop);
       } else {
         on(this.ownerDocument, 'mousemove', _nearestSortable);
-      } // Solve the problem that `dragend` does not take effect when the `dragover` event is not triggered
+        on(this.ownerDocument, 'mouseup', this._onDrop);
+      }
 
-
-      on(this.ownerDocument, 'pointerup', this._onDrop);
-      on(this.ownerDocument, 'touchend', this._onDrop);
-      on(this.ownerDocument, 'mouseup', this._onDrop);
       var _this$options2 = this.options,
           delay = _this$options2.delay,
           delayOnTouchOnly = _this$options2.delayOnTouchOnly;
 
-      if (delay && (!delayOnTouchOnly || touch) && (!this.nativeDraggable || !(Edge || IE11OrLess))) {
+      if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
         clearTimeout(dragStartTimer); // delay to start
 
         dragStartTimer = setTimeout(function () {
@@ -1521,21 +1506,14 @@
       rootEl = this.el;
       activeGroup = this.options.group;
 
-      if (!this.nativeDraggable || touch) {
-        if (this.options.supportPointer) {
-          on(this.ownerDocument, 'pointermove', this._onMove);
-        } else if (touch) {
-          on(this.ownerDocument, 'touchmove', this._onMove);
-        } else {
-          on(this.ownerDocument, 'mousemove', this._onMove);
-        }
-
+      if (this.options.supportPointer) {
+        on(this.ownerDocument, 'pointermove', this._onMove);
         on(this.ownerDocument, 'pointercancel', this._onDrop);
+      } else if (touch) {
+        on(this.ownerDocument, 'touchmove', this._onMove);
         on(this.ownerDocument, 'touchcancel', this._onDrop);
       } else {
-        // allow HTML5 drag event
-        dragEl.draggable = true;
-        on(this.el, 'dragstart', this._onDragStart);
+        on(this.ownerDocument, 'mousemove', this._onMove);
       } // clear selection
 
 
@@ -1550,106 +1528,51 @@
         }
       } catch (error) {}
     },
-    // -------------------------------- drag event ----------------------------------
-    _onDragStart: function _onDragStart(evt) {
-      this._appendGhost();
-
-      var dataTransfer = evt.dataTransfer;
-
-      if (dataTransfer) {
-        // elements can only be dragged after firefox sets setData
-        dataTransfer.setData('text', ''); // set ghost element
-
-        dataTransfer.setDragImage(ghostEl, distance.x, distance.y);
-        dataTransfer.effectAllowed = 'move';
-      }
-    },
-    // -------------------------------- trigger ----------------------------------
-    _triggerEvent: function _triggerEvent(evt) {
-      rootEl = evt.rootEl;
-
-      if (this.nativeDraggable) {
-        on(this.el, 'dragover', _globalDragOver);
-        on(this.el, 'dragend', this._onDrop);
-
-        this._onDragOver(evt);
-      } else {
-        this._onMove(evt);
-      }
-    },
     // -------------------------------- move ----------------------------------
     _onMove: function _onMove(
     /** Event|TouchEvent */
     evt) {
       var _this2 = this;
 
-      if (!eventState.down || !dragEl) return;
-
       this._preventEvent(evt);
+
+      if (!eventState.down || !dragEl) return;
+      if (!_positionChanged(evt)) return;
 
       var _getEvent2 = getEvent(evt),
           e = _getEvent2.e,
-          target = _getEvent2.target;
+          target = _getEvent2.target; // truly started
+
 
       this._onStarted(e, evt);
 
-      if (evt.rootEl) {
-        if (isMultiple) {
-          // on-multi-move
-          this._onMultiMove(_params({
-            e: e,
-            evt: evt
-          }));
-        } else {
-          // on-move
-          this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
-            ghostEl: ghostEl,
-            event: e,
-            originalEvent: evt
-          }));
-        } // check if element will exchange
+      var clientX = evt.clientX - eventState.down.clientX;
+      var clientY = evt.clientY - eventState.down.clientY;
+      setTransition(ghostEl, 'none');
+      setTransform(ghostEl, "translate3d(".concat(clientX, "px, ").concat(clientY, "px, 0)"));
+
+      if (isMultiple) {
+        // on-multi-move
+        this._onMultiMove(_params({
+          e: e,
+          evt: evt
+        }));
+      } else {
+        // on-move
+        this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
+          ghostEl: ghostEl,
+          event: e,
+          originalEvent: evt
+        }));
+      } // check if element will exchange
 
 
-        if (this._allowPut()) this._triggerChangeEvent(target, e, evt); // auto scroll
+      if (this._allowPut()) this._triggerChangeEvent(target, e, evt); // auto scroll
 
-        clearTimeout(autoScrollTimer);
-
-        if (this.options.autoScroll) {
-          autoScrollTimer = setTimeout(function () {
-            return _this2._autoScroll(_this2, eventState);
-          }, 0);
-        }
-      }
-    },
-    _onDragOver: function _onDragOver(evt) {
-      if (!eventState.down || !dragEl) return;
-
-      this._preventEvent(evt);
-
-      var allowPut = this._allowPut();
-
-      if (evt.dataTransfer) evt.dataTransfer.dropEffect = allowPut ? 'move' : 'none'; // truly started
-
-      this._onStarted(evt, evt);
-
-      if (evt.rootEl && _positionChanged(evt)) {
-        if (isMultiple) {
-          // on-multi-move
-          this._onMultiMove(_params({
-            e: evt,
-            evt: evt
-          }));
-        } else {
-          // on-move
-          this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
-            ghostEl: ghostEl,
-            event: evt,
-            originalEvent: evt
-          }));
-        }
-
-        if (allowPut) this._triggerChangeEvent(evt.target, evt, evt);
-      }
+      clearTimeout(autoScrollTimer);
+      autoScrollTimer = setTimeout(function () {
+        return _this2._autoScroll(_this2, eventState);
+      }, 0);
     },
     _allowPut: function _allowPut() {
       if (fromGroup === this.el) {
@@ -1681,24 +1604,16 @@
         } // Init in the move event to prevent conflict with the click event
 
 
-        if (!this.nativeDraggable) this._appendGhost(); // add class for drag element
+        this._appendGhost(); // add class for drag element
+
 
         toggleClass(dragEl, this.options.chosenClass, true);
         dragEl.style['will-change'] = 'transform';
-        if (this.nativeDraggable) this._unbindDropEvents();
         if (Safari) css(document.body, 'user-select', 'none');
+        css(this.ownerDocument.body, 'cursor', 'move');
       }
 
       eventState.move = e; // sortable state move is active
-
-      var _eventState$down = eventState.down,
-          clientX = _eventState$down.clientX,
-          clientY = _eventState$down.clientY;
-
-      if (!this.nativeDraggable) {
-        setTransition(ghostEl, 'none');
-        setTransform(ghostEl, "translate3d(".concat(e.clientX - clientX, "px, ").concat(e.clientY - clientY, "px, 0)"));
-      }
     },
     // -------------------------------- ghost ----------------------------------
     _appendGhost: function _appendGhost() {
@@ -1720,6 +1635,7 @@
       }
 
       toggleClass(ghostEl, ghostClass, true);
+      css(ghostEl, 'cursor', 'move');
       css(ghostEl, 'box-sizing', 'border-box');
       css(ghostEl, 'margin', 0);
       css(ghostEl, 'top', rect.top);
@@ -1733,12 +1649,6 @@
 
       for (var key in ghostStyle) {
         css(ghostEl, key, ghostStyle[key]);
-      } // hide ghostEl when use drag event
-
-
-      if (this.nativeDraggable) {
-        css(ghostEl, 'top', '-999px');
-        css(ghostEl, 'zIndex', '-100000');
       }
 
       setTransition(ghostEl, 'none');
@@ -1765,7 +1675,7 @@
         this._onChange(target, e, evt);
       }
     },
-    _onChange: debounce(function (target, e, evt) {
+    _onChange: function _onChange(target, e, evt) {
       if (!differ.from.group) return;
 
       if (!lastChild(rootEl) || target === rootEl && differ.from.group !== rootEl) {
@@ -1859,13 +1769,11 @@
 
       differ.from.sortable = this;
       differ.from.group = rootEl;
-    }, 3),
+    },
     // -------------------------------- on drop ----------------------------------
     _onDrop: function _onDrop(
     /** Event|TouchEvent */
     evt) {
-      this._unbindDragEvents();
-
       this._unbindMoveEvents();
 
       this._unbindDropEvents();
@@ -1880,7 +1788,6 @@
             touch = _getEvent3.touch;
 
         toggleClass(dragEl, this.options.chosenClass, false);
-        if (this.nativeDraggable) dragEl.draggable = false;
         if (touch) dragEl.style['touch-action'] = '';
         dragEl.style['will-change'] = '';
       } // drag and drop done
@@ -1918,7 +1825,8 @@
         }
 
         if (Safari) css(document.body, 'user-select', '');
-      } else {
+        css(this.ownerDocument.body, 'cursor', '');
+      } else if (this.options.multiple) {
         // click event
         this._setMultiElements(evt, this.el);
       }
@@ -1945,13 +1853,6 @@
       eventState.destroy();
       differ.destroy();
     },
-    _unbindDragEvents: function _unbindDragEvents() {
-      if (this.nativeDraggable) {
-        off(this.el, 'dragstart', this._onDragStart);
-        off(this.el, 'dragover', _globalDragOver);
-        off(this.el, 'dragend', this._onDrop);
-      }
-    },
     _unbindMoveEvents: function _unbindMoveEvents() {
       off(this.ownerDocument, 'pointermove', this._onMove);
       off(this.ownerDocument, 'touchmove', this._onMove);
@@ -1959,7 +1860,6 @@
       off(this.ownerDocument, 'pointermove', _nearestSortable);
       off(this.ownerDocument, 'touchmove', _nearestSortable);
       off(this.ownerDocument, 'mousemove', _nearestSortable);
-      off(this.ownerDocument, 'dragover', _nearestSortable);
     },
     _unbindDropEvents: function _unbindDropEvents() {
       off(this.ownerDocument, 'pointerup', this._onDrop);
