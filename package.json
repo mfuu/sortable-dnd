@@ -1,13 +1,12 @@
 {
   "name": "sortable-dnd",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "JS library for drag-and-drop lists, supports sortable and draggable",
   "main": "dist/sortable.js",
-  "types": "typings/types.d.ts",
+  "types": "types/index.d.ts",
   "files": [
-    "src",
     "dist",
-    "typings"
+    "types"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -35,6 +34,11 @@
   "devDependencies": {
     "@babel/core": "^7.18.10",
     "@babel/preset-env": "^7.18.10",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^6.7.2",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-prettier": "^3.3.1",
+    "prettier": "^2.2.1",
     "rollup": "^2.61.1",
     "rollup-plugin-babel": "^4.4.0",
     "rollup-plugin-commonjs": "^10.1.0",
