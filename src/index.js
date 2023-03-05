@@ -208,7 +208,6 @@ function Sortable(el, options) {
     onDrop: undefined, // The callback function when the drag is completed: (from, to, changed) => {}
     onChange: undefined, // The callback function when dragging an element to change its position: (from, to) => {}
 
-    scrollStep: 5, // The distance to scroll each frame
     scrollThreshold: 25, // Autoscroll threshold
 
     delay: 0, // Defines the delay time after which the mouse-selected list cell can start dragging

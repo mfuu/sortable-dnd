@@ -46,20 +46,16 @@ export default class AutoScroll {
 
     // check direction
     const totop =
-      scrollTop > 0 &&
-      clientY >= top - scrollThreshold &&
-      clientY <= top + scrollThreshold;
+      scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
     const toleft =
-      scrollLeft > 0 &&
-      clientX >= left - scrollThreshold &&
-      clientX <= left + scrollThreshold;
+      scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
     const toright =
       scrollLeft + width < scrollWidth &&
-      clientX <= right + scrollThreshold &&
+      clientX <= right &&
       clientX >= right - scrollThreshold;
     const tobottom =
       scrollTop + height < scrollHeight &&
-      clientY <= bottom + scrollThreshold &&
+      clientY <= bottom &&
       clientY >= bottom - scrollThreshold;
 
     let scrollx = 0,

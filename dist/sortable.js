@@ -652,10 +652,10 @@
             width = rect.width;
         var scrollThreshold = Sortable.options.scrollThreshold; // check direction
 
-        var totop = scrollTop > 0 && clientY >= top - scrollThreshold && clientY <= top + scrollThreshold;
-        var toleft = scrollLeft > 0 && clientX >= left - scrollThreshold && clientX <= left + scrollThreshold;
-        var toright = scrollLeft + width < scrollWidth && clientX <= right + scrollThreshold && clientX >= right - scrollThreshold;
-        var tobottom = scrollTop + height < scrollHeight && clientY <= bottom + scrollThreshold && clientY >= bottom - scrollThreshold;
+        var totop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
+        var toleft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
+        var toright = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
+        var tobottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold;
         var scrollx = 0,
             scrolly = 0;
 
@@ -1327,8 +1327,6 @@
       // The callback function when the drag is completed: (from, to, changed) => {}
       onChange: undefined,
       // The callback function when dragging an element to change its position: (from, to) => {}
-      scrollStep: 5,
-      // The distance to scroll each frame
       scrollThreshold: 25,
       // Autoscroll threshold
       delay: 0,
