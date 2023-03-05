@@ -54,6 +54,6 @@ export default function Animation() {
         setTransform(el, '');
         el.animated = null;
       }, animation);
-    }
+    },
   };
 }

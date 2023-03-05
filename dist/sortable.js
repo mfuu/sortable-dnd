@@ -124,8 +124,6 @@
     passive: false
   };
   var R_SPACE = /\s+/g;
-  var cssTransitions = ['-webkit-transition', '-moz-transition', '-ms-transition', '-o-transition', 'transition'];
-  var cssTransforms = ['-webkit-transform', '-moz-transform', '-ms-transform', '-o-transform', 'transform'];
   var SUPPORT_PASSIVE = supportPassive();
 
   function userAgent(pattern) {
@@ -137,6 +135,25 @@
   var IE11OrLess = userAgent(/(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i);
   var Edge = userAgent(/Edge/i);
   var Safari = userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
+  var vendorPrefix = function () {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      // Server environment
+      return '';
+    } // window.getComputedStyle() returns null inside an iframe with display: none
+    // in this case return an array with a fake mozilla style in it.
+
+
+    var styles = window.getComputedStyle(document.documentElement, '') || ['-moz-hidden-iframe'];
+    var pre = (Array.prototype.slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || styles.OLink === '' && ['', 'o'])[1];
+
+    switch (pre) {
+      case 'ms':
+        return 'ms';
+
+      default:
+        return pre && pre.length ? pre[0].toUpperCase() + pre.substr(1) : '';
+    }
+  }();
   /**
    * check if is HTMLElement
    */
@@ -159,15 +176,7 @@
    */
 
   function setTransition(el, transition) {
-    if (transition) {
-      if (transition === 'none') cssTransitions.forEach(function (ts) {
-        return css(el, ts, 'none');
-      });else cssTransitions.forEach(function (ts) {
-        return css(el, ts, "".concat(ts.split('transition')[0], "transform ").concat(transition));
-      });
-    } else cssTransitions.forEach(function (ts) {
-      return css(el, ts, '');
-    });
+    el.style["".concat(vendorPrefix, "Transition")] = transition ? transition === 'none' ? 'none' : "".concat(transition) : '';
   }
   /**
    * set transform style
@@ -176,15 +185,7 @@
    */
 
   function setTransform(el, transform) {
-    if (transform) {
-      cssTransforms.forEach(function (tf) {
-        return css(el, tf, "".concat(tf.split('transform')[0]).concat(transform));
-      });
-    } else {
-      cssTransforms.forEach(function (tf) {
-        return css(el, tf, '');
-      });
-    }
+    el.style["".concat(vendorPrefix, "Transform")] = transform ? "".concat(transform) : '';
   }
   /**
    * get touch event and current event
@@ -588,46 +589,45 @@
       }
     }
   }
-  function debounce(fn, delay, immediate) {
-    var timer = null;
-    return function () {
-      var context = this,
-          args = arguments;
-      timer && clearTimeout(timer);
-      immediate && !timer && fn.apply(context, args);
-      timer = setTimeout(function () {
-        fn.apply(context, args);
-      }, delay);
-    };
-  }
-  function throttle(fn, delay) {
-    var timer = null;
-    return function () {
-      var context = this,
-          args = arguments;
-
-      if (!timer) {
-        timer = setTimeout(function () {
-          timer = null;
-          fn.apply(context, args);
-        }, delay);
-      }
-    };
-  }
   function _nextTick(fn) {
     return setTimeout(fn, 0);
   }
   var expando = 'Sortable' + Date.now();
 
-  function AutoScroll() {
-    if (!window.requestAnimationFrame) {
-      window.requestAnimationFrame = function (callback) {
-        return setTimeout(callback, 17);
-      };
+  var AutoScroll = /*#__PURE__*/function () {
+    function AutoScroll() {
+      _classCallCheck(this, AutoScroll);
+
+      if (!window.requestAnimationFrame) {
+        window.requestAnimationFrame = function (callback) {
+          return setTimeout(callback, 17);
+        };
+      }
+
+      if (!window.cancelAnimationFrame) {
+        window.cancelAnimationFrame = function (id) {
+          clearTimeout(id);
+        };
+      }
+
+      this.timer = null;
     }
 
-    return {
-      _autoScroll: throttle(function (Sortable, eventState) {
+    _createClass(AutoScroll, [{
+      key: "clear",
+      value: function clear() {
+        if (this.timer == null) {
+          return;
+        }
+
+        clearTimeout(this.timer);
+        this.timer = null;
+      }
+    }, {
+      key: "update",
+      value: function update(Sortable, eventState) {
+        var _this = this;
+
         if (!Sortable.scrollEl) return; // check if is moving now
 
         if (!(eventState.down && eventState.move)) return;
@@ -635,84 +635,79 @@
             clientX = _eventState$move.clientX,
             clientY = _eventState$move.clientY;
         if (clientX === void 0 || clientY === void 0) return;
+        var rect = getRect(Sortable.scrollEl);
+        if (!rect) return;
+        var _Sortable$scrollEl = Sortable.scrollEl,
+            scrollTop = _Sortable$scrollEl.scrollTop,
+            scrollLeft = _Sortable$scrollEl.scrollLeft,
+            scrollHeight = _Sortable$scrollEl.scrollHeight,
+            scrollWidth = _Sortable$scrollEl.scrollWidth;
+            _Sortable$scrollEl.clientHeight;
+            _Sortable$scrollEl.clientWidth;
+        var top = rect.top,
+            right = rect.right,
+            bottom = rect.bottom,
+            left = rect.left,
+            height = rect.height,
+            width = rect.width;
+        var scrollThreshold = Sortable.options.scrollThreshold; // check direction
 
-        if (Sortable.scrollEl === Sortable.ownerDocument) ; else {
-          var _Sortable$scrollEl = Sortable.scrollEl,
-              scrollTop = _Sortable$scrollEl.scrollTop,
-              scrollLeft = _Sortable$scrollEl.scrollLeft,
-              scrollHeight = _Sortable$scrollEl.scrollHeight,
-              scrollWidth = _Sortable$scrollEl.scrollWidth;
+        var totop = scrollTop > 0 && clientY >= top - scrollThreshold && clientY <= top + scrollThreshold;
+        var toleft = scrollLeft > 0 && clientX >= left - scrollThreshold && clientX <= left + scrollThreshold;
+        var toright = scrollLeft + width < scrollWidth && clientX <= right + scrollThreshold && clientX >= right - scrollThreshold;
+        var tobottom = scrollTop + height < scrollHeight && clientY <= bottom + scrollThreshold && clientY >= bottom - scrollThreshold;
+        var scrollx = 0,
+            scrolly = 0;
 
-          var _getRect = getRect(Sortable.scrollEl),
-              top = _getRect.top,
-              right = _getRect.right,
-              bottom = _getRect.bottom,
-              left = _getRect.left,
-              height = _getRect.height,
-              width = _getRect.width;
-
-          var _Sortable$options = Sortable.options,
-              scrollStep = _Sortable$options.scrollStep,
-              scrollThreshold = _Sortable$options.scrollThreshold; // check direction
-
-          var totop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
-          var toleft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
-          var toright = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
-          var tobottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold; // scroll position
-
-          var position = {
-            x: scrollLeft,
-            y: scrollTop
-          };
-
-          if (totop) {
-            if (toleft) {
-              // to top-left
-              position.x = scrollLeft - scrollStep;
-            } else if (toright) {
-              // to top-right
-              position.x = scrollLeft + scrollStep;
-            } else {
-              // to top
-              position.x = scrollLeft;
-            }
-
-            position.y = scrollTop - scrollStep;
-          } else if (tobottom) {
-            if (toleft) {
-              // to bottom-left
-              position.x = scrollLeft - scrollStep;
-            } else if (toright) {
-              // to bottom-right
-              position.x = scrollLeft + scrollStep;
-            } else {
-              // to bottom
-              position.x = scrollLeft;
-            }
-
-            position.y = scrollTop + scrollStep;
-          } else if (toleft) {
-            // to left
-            position.x = scrollLeft - scrollStep;
-            position.y = scrollTop;
-          } else if (toright) {
-            // to right
-            position.x = scrollLeft + scrollStep;
-            position.y = scrollTop;
-          } // if need to scroll
-
-
-          if (totop || toleft || toright || tobottom) {
-            requestAnimationFrame(function () {
-              Sortable.scrollEl.scrollTo(position.x, position.y);
-
-              Sortable._autoScroll(Sortable, eventState);
-            });
-          }
+        if (toleft) {
+          scrollx = Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * 10);
+        } else if (toright) {
+          scrollx = Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * 10);
+        } else {
+          scrollx = 0;
         }
-      }, 10)
-    };
-  }
+
+        if (totop) {
+          scrolly = Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * 10);
+        } else if (tobottom) {
+          scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * 10);
+        } else {
+          scrolly = 0;
+        }
+
+        clearTimeout(this.timer);
+        this.timer = setTimeout(function () {
+          if (scrolly) {
+            _this.scrollY(Sortable.scrollEl, scrolly);
+          }
+
+          if (scrollx) {
+            _this.scrollX(Sortable.scrollEl, scrollx);
+          }
+        });
+      }
+    }, {
+      key: "scrollX",
+      value: function scrollX(el, amount) {
+        if (el === window) {
+          window.scrollTo(el.pageXOffset + amount, el.pageYOffset);
+        } else {
+          el.scrollLeft += amount;
+        }
+      }
+    }, {
+      key: "scrollY",
+      value: function scrollY(el, amount) {
+        if (el === window) {
+          window.scrollTo(el.pageXOffset, el.pageYOffset + amount);
+        } else {
+          el.scrollTop += amount;
+        }
+      }
+    }]);
+
+    return AutoScroll;
+  }();
 
   function Animation() {
     var animationState = [];
@@ -956,7 +951,7 @@
           css(node, 'left', rect.left);
         });
       },
-      _onMultiChange: debounce(function (_ref3) {
+      _onMultiChange: function _onMultiChange(_ref3) {
         var dragEl = _ref3.dragEl,
             rootEl = _ref3.rootEl,
             target = _ref3.target,
@@ -1052,7 +1047,7 @@
 
         multiDiffer.from.sortable = this;
         multiDiffer.from.group = rootEl;
-      }, 3),
+      },
       _onMultiDrop: function _onMultiDrop(_ref4) {
         var fromGroup = _ref4.fromGroup,
             fromSortable = _ref4.fromSortable,
@@ -1176,7 +1171,7 @@
       fromSortable,
       dragStartTimer,
       // timer for start to drag
-  autoScrollTimer,
+  autoScrollAnimationFrame,
       differ = new Difference(),
       // Record the difference before and after
   eventState = new EventState(); // Status record during drag and move
@@ -1334,7 +1329,7 @@
       // The callback function when dragging an element to change its position: (from, to) => {}
       scrollStep: 5,
       // The distance to scroll each frame
-      scrollThreshold: 15,
+      scrollThreshold: 25,
       // Autoscroll threshold
       delay: 0,
       // Defines the delay time after which the mouse-selected list cell can start dragging
@@ -1385,7 +1380,8 @@
     }
 
     sortables.push(el);
-    Object.assign(this, Animation(), AutoScroll());
+    Object.assign(this, Animation());
+    this.autoScroll = new AutoScroll();
 
     if (this.options.multiple) {
       Object.assign(this, Multiple());
@@ -1532,8 +1528,6 @@
     _onMove: function _onMove(
     /** Event|TouchEvent */
     evt) {
-      var _this2 = this;
-
       this._preventEvent(evt);
 
       if (!eventState.down || !dragEl) return;
@@ -1569,10 +1563,13 @@
 
       if (this._allowPut()) this._triggerChangeEvent(target, e, evt); // auto scroll
 
-      clearTimeout(autoScrollTimer);
-      autoScrollTimer = setTimeout(function () {
-        return _this2._autoScroll(_this2, eventState);
-      }, 0);
+      cancelAnimationFrame(autoScrollAnimationFrame);
+      autoScrollAnimationFrame = requestAnimationFrame(this._autoScroll);
+    },
+    _autoScroll: function _autoScroll() {
+      this.autoScroll.update(this, eventState);
+      cancelAnimationFrame(autoScrollAnimationFrame);
+      autoScrollAnimationFrame = requestAnimationFrame(this._autoScroll);
     },
     _allowPut: function _allowPut() {
       if (fromGroup === this.el) {
@@ -1781,7 +1778,7 @@
       this._preventEvent(evt);
 
       clearTimeout(dragStartTimer);
-      clearTimeout(autoScrollTimer); // clear style, attrs and class
+      cancelAnimationFrame(autoScrollAnimationFrame); // clear style, attrs and class
 
       if (dragEl) {
         var _getEvent3 = getEvent(evt),
@@ -1845,7 +1842,7 @@
     // -------------------------------- clear ----------------------------------
     _clearState: function _clearState() {
       ghostEl && ghostEl.parentNode && ghostEl.parentNode.removeChild(ghostEl);
-      dragEl = dropEl = ghostEl = isMultiple = fromGroup = activeGroup = fromSortable = dragStartTimer = autoScrollTimer = Sortable.ghost = null;
+      dragEl = dropEl = ghostEl = isMultiple = fromGroup = activeGroup = fromSortable = dragStartTimer = autoScrollAnimationFrame = Sortable.ghost = null;
       distance = lastPosition = {
         x: 0,
         y: 0
@@ -1871,9 +1868,7 @@
   };
   Sortable.prototype.utils = {
     getRect: getRect,
-    getOffset: getOffset,
-    debounce: debounce,
-    throttle: throttle
+    getOffset: getOffset
   };
 
   return Sortable;

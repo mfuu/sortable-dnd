@@ -1,80 +1,118 @@
-import { throttle, getRect } from '../utils.js';
+import { getRect } from '../utils.js';
 
-export default function AutoScroll() {
-  if (!window.requestAnimationFrame) {
-    window.requestAnimationFrame = function (callback) {
-      return setTimeout(callback, 17);
-    };
+export default class AutoScroll {
+  constructor() {
+    if (!window.requestAnimationFrame) {
+      window.requestAnimationFrame = function (callback) {
+        return setTimeout(callback, 17);
+      };
+    }
+    if (!window.cancelAnimationFrame) {
+      window.cancelAnimationFrame = function (id) {
+        clearTimeout(id);
+      };
+    }
+    this.timer = null;
   }
-  return {
-    _autoScroll: throttle(function (Sortable, eventState) {
-      if (!Sortable.scrollEl) return;
-      // check if is moving now
-      if (!(eventState.down && eventState.move)) return;
-      const { clientX, clientY } = eventState.move;
-      if (clientX === void 0 || clientY === void 0) return;
 
-      if (Sortable.scrollEl === Sortable.ownerDocument) {
-        // does not support now
-      } else {
-        const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = Sortable.scrollEl;
-        const { top, right, bottom, left, height, width } = getRect(Sortable.scrollEl);
-        const { scrollStep, scrollThreshold } = Sortable.options;
-        // check direction
-        const totop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
-        const toleft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
-        const toright =
-          scrollLeft + width < scrollWidth &&
-          clientX <= right &&
-          clientX >= right - scrollThreshold;
-        const tobottom =
-          scrollTop + height < scrollHeight &&
-          clientY <= bottom &&
-          clientY >= bottom - scrollThreshold;
-        // scroll position
-        const position = { x: scrollLeft, y: scrollTop };
+  clear() {
+    if (this.timer == null) {
+      return;
+    }
+    clearTimeout(this.timer);
+    this.timer = null;
+  }
 
-        if (totop) {
-          if (toleft) {
-            // to top-left
-            position.x = scrollLeft - scrollStep;
-          } else if (toright) {
-            // to top-right
-            position.x = scrollLeft + scrollStep;
-          } else {
-            // to top
-            position.x = scrollLeft;
-          }
-          position.y = scrollTop - scrollStep;
-        } else if (tobottom) {
-          if (toleft) {
-            // to bottom-left
-            position.x = scrollLeft - scrollStep;
-          } else if (toright) {
-            // to bottom-right
-            position.x = scrollLeft + scrollStep;
-          } else {
-            // to bottom
-            position.x = scrollLeft;
-          }
-          position.y = scrollTop + scrollStep;
-        } else if (toleft) {
-          // to left
-          position.x = scrollLeft - scrollStep;
-          position.y = scrollTop;
-        } else if (toright) {
-          // to right
-          position.x = scrollLeft + scrollStep;
-          position.y = scrollTop;
-        }
-        // if need to scroll
-        if (totop || toleft || toright || tobottom) {
-          requestAnimationFrame(() => {
-            Sortable.scrollEl.scrollTo(position.x, position.y);
-            Sortable._autoScroll(Sortable, eventState);
-          });
-        }
+  update(Sortable, eventState) {
+    if (!Sortable.scrollEl) return;
+    // check if is moving now
+    if (!(eventState.down && eventState.move)) return;
+    const { clientX, clientY } = eventState.move;
+    if (clientX === void 0 || clientY === void 0) return;
+
+    const rect = getRect(Sortable.scrollEl);
+    if (!rect) return;
+
+    const {
+      scrollTop,
+      scrollLeft,
+      scrollHeight,
+      scrollWidth,
+      clientHeight,
+      clientWidth,
+    } = Sortable.scrollEl;
+    const { top, right, bottom, left, height, width } = rect;
+    const { scrollThreshold } = Sortable.options;
+
+    // check direction
+    const totop =
+      scrollTop > 0 &&
+      clientY >= top - scrollThreshold &&
+      clientY <= top + scrollThreshold;
+    const toleft =
+      scrollLeft > 0 &&
+      clientX >= left - scrollThreshold &&
+      clientX <= left + scrollThreshold;
+    const toright =
+      scrollLeft + width < scrollWidth &&
+      clientX <= right + scrollThreshold &&
+      clientX >= right - scrollThreshold;
+    const tobottom =
+      scrollTop + height < scrollHeight &&
+      clientY <= bottom + scrollThreshold &&
+      clientY >= bottom - scrollThreshold;
+
+    let scrollx = 0,
+      scrolly = 0;
+
+    if (toleft) {
+      scrollx = Math.floor(
+        Math.max(-1, (clientX - left) / scrollThreshold - 1) * 10,
+      );
+    } else if (toright) {
+      scrollx = Math.ceil(
+        Math.min(1, (clientX - right) / scrollThreshold + 1) * 10,
+      );
+    } else {
+      scrollx = 0;
+    }
+
+    if (totop) {
+      scrolly = Math.floor(
+        Math.max(-1, (clientY - top) / scrollThreshold - 1) * 10,
+      );
+    } else if (tobottom) {
+      scrolly = Math.ceil(
+        Math.min(1, (clientY - bottom) / scrollThreshold + 1) * 10,
+      );
+    } else {
+      scrolly = 0;
+    }
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      if (scrolly) {
+        this.scrollY(Sortable.scrollEl, scrolly);
       }
-    }, 10)
-  };
+
+      if (scrollx) {
+        this.scrollX(Sortable.scrollEl, scrollx);
+      }
+    });
+  }
+
+  scrollX(el, amount) {
+    if (el === window) {
+      window.scrollTo(el.pageXOffset + amount, el.pageYOffset);
+    } else {
+      el.scrollLeft += amount;
+    }
+  }
+
+  scrollY(el, amount) {
+    if (el === window) {
+      window.scrollTo(el.pageXOffset, el.pageYOffset + amount);
+    } else {
+      el.scrollTop += amount;
+    }
+  }
 }
