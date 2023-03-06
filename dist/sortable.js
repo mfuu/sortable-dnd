@@ -594,97 +594,105 @@
   }
   var expando = 'Sortable' + Date.now();
 
+  if (!window.requestAnimationFrame) {
+    window.requestAnimationFrame = function (callback) {
+      return setTimeout(callback, 17);
+    };
+  }
+
+  if (!window.cancelAnimationFrame) {
+    window.cancelAnimationFrame = function (id) {
+      clearTimeout(id);
+    };
+  }
+
   var AutoScroll = /*#__PURE__*/function () {
     function AutoScroll() {
       _classCallCheck(this, AutoScroll);
 
-      if (!window.requestAnimationFrame) {
-        window.requestAnimationFrame = function (callback) {
-          return setTimeout(callback, 17);
-        };
-      }
-
-      if (!window.cancelAnimationFrame) {
-        window.cancelAnimationFrame = function (id) {
-          clearTimeout(id);
-        };
-      }
-
-      this.timer = null;
+      this.autoScrollAnimationFrame = null;
+      this.speed = {
+        x: 10,
+        y: 10
+      };
     }
 
     _createClass(AutoScroll, [{
       key: "clear",
       value: function clear() {
-        if (this.timer == null) {
+        if (this.autoScrollAnimationFrame == null) {
           return;
         }
 
-        clearTimeout(this.timer);
-        this.timer = null;
+        cancelAnimationFrame(this.autoScrollAnimationFrame);
+        this.autoScrollAnimationFrame = null;
       }
     }, {
       key: "update",
-      value: function update(Sortable, eventState) {
+      value: function update(parentNode, scrollThreshold, eventState) {
         var _this = this;
 
-        if (!Sortable.scrollEl) return; // check if is moving now
+        if (eventState.move && eventState.down) {
+          this.autoScroll(parentNode, scrollThreshold, eventState.move);
+        }
 
-        if (!(eventState.down && eventState.move)) return;
-        var _eventState$move = eventState.move,
-            clientX = _eventState$move.clientX,
-            clientY = _eventState$move.clientY;
+        cancelAnimationFrame(this.autoScrollAnimationFrame);
+        this.autoScrollAnimationFrame = requestAnimationFrame(function () {
+          return _this.update(parentNode, scrollThreshold, eventState);
+        });
+      }
+    }, {
+      key: "autoScroll",
+      value: function autoScroll(parentNode, scrollThreshold, evt) {
+        if (!parentNode) return;
+        var clientX = evt.clientX,
+            clientY = evt.clientY;
         if (clientX === void 0 || clientY === void 0) return;
-        var rect = getRect(Sortable.scrollEl);
+        var rect = getRect(parentNode);
         if (!rect) return;
-        var _Sortable$scrollEl = Sortable.scrollEl,
-            scrollTop = _Sortable$scrollEl.scrollTop,
-            scrollLeft = _Sortable$scrollEl.scrollLeft,
-            scrollHeight = _Sortable$scrollEl.scrollHeight,
-            scrollWidth = _Sortable$scrollEl.scrollWidth;
-            _Sortable$scrollEl.clientHeight;
-            _Sortable$scrollEl.clientWidth;
+        var scrollTop = parentNode.scrollTop,
+            scrollLeft = parentNode.scrollLeft,
+            scrollHeight = parentNode.scrollHeight,
+            scrollWidth = parentNode.scrollWidth;
+            parentNode.clientHeight;
+            parentNode.clientWidth;
         var top = rect.top,
             right = rect.right,
             bottom = rect.bottom,
             left = rect.left,
             height = rect.height,
-            width = rect.width;
-        var scrollThreshold = Sortable.options.scrollThreshold; // check direction
+            width = rect.width; // check direction
 
-        var totop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
-        var toleft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
-        var toright = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
-        var tobottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold;
+        var toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
+        var toLeft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
+        var toRight = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
+        var toBottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold;
         var scrollx = 0,
             scrolly = 0;
 
-        if (toleft) {
-          scrollx = Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * 10);
-        } else if (toright) {
-          scrollx = Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * 10);
+        if (toLeft) {
+          scrollx = Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * this.speed.x);
+        } else if (toRight) {
+          scrollx = Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * this.speed.x);
         } else {
           scrollx = 0;
         }
 
-        if (totop) {
-          scrolly = Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * 10);
-        } else if (tobottom) {
-          scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * 10);
+        if (toTop) {
+          scrolly = Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * this.speed.y);
+        } else if (toBottom) {
+          scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * this.speed.y);
         } else {
           scrolly = 0;
         }
 
-        clearTimeout(this.timer);
-        this.timer = setTimeout(function () {
-          if (scrolly) {
-            _this.scrollY(Sortable.scrollEl, scrolly);
-          }
+        if (scrolly) {
+          this.scrollY(parentNode, scrolly);
+        }
 
-          if (scrollx) {
-            _this.scrollX(Sortable.scrollEl, scrollx);
-          }
-        });
+        if (scrollx) {
+          this.scrollX(parentNode, scrollx);
+        }
       }
     }, {
       key: "scrollX",
@@ -1171,8 +1179,7 @@
       fromSortable,
       dragStartTimer,
       // timer for start to drag
-  autoScrollAnimationFrame,
-      differ = new Difference(),
+  differ = new Difference(),
       // Record the difference before and after
   eventState = new EventState(); // Status record during drag and move
 
@@ -1327,6 +1334,7 @@
       // The callback function when the drag is completed: (from, to, changed) => {}
       onChange: undefined,
       // The callback function when dragging an element to change its position: (from, to) => {}
+      autoScroll: true,
       scrollThreshold: 25,
       // Autoscroll threshold
       delay: 0,
@@ -1379,7 +1387,7 @@
 
     sortables.push(el);
     Object.assign(this, Animation());
-    this.autoScroll = new AutoScroll();
+    this._autoScroll = new AutoScroll();
 
     if (this.options.multiple) {
       Object.assign(this, Multiple());
@@ -1561,13 +1569,13 @@
 
       if (this._allowPut()) this._triggerChangeEvent(target, e, evt); // auto scroll
 
-      cancelAnimationFrame(autoScrollAnimationFrame);
-      autoScrollAnimationFrame = requestAnimationFrame(this._autoScroll);
-    },
-    _autoScroll: function _autoScroll() {
-      this.autoScroll.update(this, eventState);
-      cancelAnimationFrame(autoScrollAnimationFrame);
-      autoScrollAnimationFrame = requestAnimationFrame(this._autoScroll);
+      var _this$options3 = this.options,
+          autoScroll = _this$options3.autoScroll,
+          scrollThreshold = _this$options3.scrollThreshold;
+
+      if (autoScroll) {
+        this._autoScroll.update(this.scrollEl, scrollThreshold, eventState);
+      }
     },
     _allowPut: function _allowPut() {
       if (fromGroup === this.el) {
@@ -1605,7 +1613,6 @@
         toggleClass(dragEl, this.options.chosenClass, true);
         dragEl.style['will-change'] = 'transform';
         if (Safari) css(document.body, 'user-select', 'none');
-        css(this.ownerDocument.body, 'cursor', 'move');
       }
 
       eventState.move = e; // sortable state move is active
@@ -1613,11 +1620,11 @@
     // -------------------------------- ghost ----------------------------------
     _appendGhost: function _appendGhost() {
       if (ghostEl) return;
-      var _this$options3 = this.options,
-          fallbackOnBody = _this$options3.fallbackOnBody,
-          ghostClass = _this$options3.ghostClass,
-          _this$options3$ghostS = _this$options3.ghostStyle,
-          ghostStyle = _this$options3$ghostS === void 0 ? {} : _this$options3$ghostS;
+      var _this$options4 = this.options,
+          fallbackOnBody = _this$options4.fallbackOnBody,
+          ghostClass = _this$options4.ghostClass,
+          _this$options4$ghostS = _this$options4.ghostStyle,
+          ghostStyle = _this$options4$ghostS === void 0 ? {} : _this$options4$ghostS;
       var container = fallbackOnBody ? document.body : this.el;
       var rect = getRect(dragEl, {
         block: true
@@ -1630,7 +1637,6 @@
       }
 
       toggleClass(ghostEl, ghostClass, true);
-      css(ghostEl, 'cursor', 'move');
       css(ghostEl, 'box-sizing', 'border-box');
       css(ghostEl, 'margin', 0);
       css(ghostEl, 'top', rect.top);
@@ -1775,8 +1781,9 @@
 
       this._preventEvent(evt);
 
-      clearTimeout(dragStartTimer);
-      cancelAnimationFrame(autoScrollAnimationFrame); // clear style, attrs and class
+      this._autoScroll.clear();
+
+      clearTimeout(dragStartTimer); // clear style, attrs and class
 
       if (dragEl) {
         var _getEvent3 = getEvent(evt),
@@ -1820,7 +1827,6 @@
         }
 
         if (Safari) css(document.body, 'user-select', '');
-        css(this.ownerDocument.body, 'cursor', '');
       } else if (this.options.multiple) {
         // click event
         this._setMultiElements(evt, this.el);
@@ -1840,7 +1846,7 @@
     // -------------------------------- clear ----------------------------------
     _clearState: function _clearState() {
       ghostEl && ghostEl.parentNode && ghostEl.parentNode.removeChild(ghostEl);
-      dragEl = dropEl = ghostEl = isMultiple = fromGroup = activeGroup = fromSortable = dragStartTimer = autoScrollAnimationFrame = Sortable.ghost = null;
+      dragEl = dropEl = ghostEl = isMultiple = fromGroup = activeGroup = fromSortable = dragStartTimer = Sortable.ghost = null;
       distance = lastPosition = {
         x: 0,
         y: 0
