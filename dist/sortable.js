@@ -1613,7 +1613,6 @@
         toggleClass(dragEl, this.options.chosenClass, true);
         dragEl.style['will-change'] = 'transform';
         if (Safari) css(document.body, 'user-select', 'none');
-        css(this.ownerDocument.body, 'cursor', 'move');
       }
 
       eventState.move = e; // sortable state move is active
@@ -1638,7 +1637,6 @@
       }
 
       toggleClass(ghostEl, ghostClass, true);
-      css(ghostEl, 'cursor', 'move');
       css(ghostEl, 'box-sizing', 'border-box');
       css(ghostEl, 'margin', 0);
       css(ghostEl, 'top', rect.top);
@@ -1829,7 +1827,6 @@
         }
 
         if (Safari) css(document.body, 'user-select', '');
-        css(this.ownerDocument.body, 'cursor', '');
       } else if (this.options.multiple) {
         // click event
         this._setMultiElements(evt, this.el);
