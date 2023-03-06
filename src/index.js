@@ -70,7 +70,6 @@ let rootEl,
   activeGroup,
   fromSortable,
   dragStartTimer, // timer for start to drag
-  autoScrollAnimationFrame,
   differ = new Difference(), // Record the difference before and after
   eventState = new EventState(); // Status record during drag and move
 
@@ -208,6 +207,7 @@ function Sortable(el, options) {
     onDrop: undefined, // The callback function when the drag is completed: (from, to, changed) => {}
     onChange: undefined, // The callback function when dragging an element to change its position: (from, to) => {}
 
+    autoScroll: true,
     scrollThreshold: 25, // Autoscroll threshold
 
     delay: 0, // Defines the delay time after which the mouse-selected list cell can start dragging
@@ -254,7 +254,7 @@ function Sortable(el, options) {
 
   Object.assign(this, Animation());
 
-  this.autoScroll = new AutoScroll();
+  this._autoScroll = new AutoScroll();
 
   if (this.options.multiple) {
     Object.assign(this, Multiple());
@@ -421,14 +421,10 @@ Sortable.prototype = {
     // check if element will exchange
     if (this._allowPut()) this._triggerChangeEvent(target, e, evt);
     // auto scroll
-    cancelAnimationFrame(autoScrollAnimationFrame);
-    autoScrollAnimationFrame = requestAnimationFrame(this._autoScroll);
-  },
-
-  _autoScroll: function () {
-    this.autoScroll.update(this, eventState);
-    cancelAnimationFrame(autoScrollAnimationFrame);
-    autoScrollAnimationFrame = requestAnimationFrame(this._autoScroll);
+    const { autoScroll, scrollThreshold } = this.options;
+    if (autoScroll) {
+      this._autoScroll.update(this.scrollEl, scrollThreshold, eventState);
+    }
   },
 
   _allowPut: function () {
@@ -620,8 +616,8 @@ Sortable.prototype = {
     this._unbindMoveEvents();
     this._unbindDropEvents();
     this._preventEvent(evt);
+    this._autoScroll.clear();
     clearTimeout(dragStartTimer);
-    cancelAnimationFrame(autoScrollAnimationFrame);
 
     // clear style, attrs and class
     if (dragEl) {
@@ -691,7 +687,6 @@ Sortable.prototype = {
       activeGroup =
       fromSortable =
       dragStartTimer =
-      autoScrollAnimationFrame =
       Sortable.ghost =
         null;
     distance = lastPosition = { x: 0, y: 0 };

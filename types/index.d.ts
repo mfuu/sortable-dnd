@@ -196,12 +196,6 @@ type options = {
   autoScroll?: Boolean;
 
   /**
-   * The distance to scroll each frame when autoscrolling.
-   * @defaults `5`
-   */
-  scrollStep?: Number;
-
-  /**
    * Threshold to trigger autoscroll.
    * @defaults `15`
    */

@@ -1,36 +1,46 @@
 import { getRect } from '../utils.js';
 
+if (!window.requestAnimationFrame) {
+  window.requestAnimationFrame = function (callback) {
+    return setTimeout(callback, 17);
+  };
+}
+if (!window.cancelAnimationFrame) {
+  window.cancelAnimationFrame = function (id) {
+    clearTimeout(id);
+  };
+}
+
 export default class AutoScroll {
   constructor() {
-    if (!window.requestAnimationFrame) {
-      window.requestAnimationFrame = function (callback) {
-        return setTimeout(callback, 17);
-      };
-    }
-    if (!window.cancelAnimationFrame) {
-      window.cancelAnimationFrame = function (id) {
-        clearTimeout(id);
-      };
-    }
-    this.timer = null;
+    this.autoScrollAnimationFrame = null;
+    this.speed = { x: 10, y: 10 };
   }
 
   clear() {
-    if (this.timer == null) {
+    if (this.autoScrollAnimationFrame == null) {
       return;
     }
-    clearTimeout(this.timer);
-    this.timer = null;
+    cancelAnimationFrame(this.autoScrollAnimationFrame);
+    this.autoScrollAnimationFrame = null;
   }
 
-  update(Sortable, eventState) {
-    if (!Sortable.scrollEl) return;
-    // check if is moving now
-    if (!(eventState.down && eventState.move)) return;
-    const { clientX, clientY } = eventState.move;
+  update(parentNode, scrollThreshold, eventState) {
+    if (eventState.move && eventState.down) {
+      this.autoScroll(parentNode, scrollThreshold, eventState.move);
+    }
+    cancelAnimationFrame(this.autoScrollAnimationFrame);
+    this.autoScrollAnimationFrame = requestAnimationFrame(() =>
+      this.update(parentNode, scrollThreshold, eventState),
+    );
+  }
+
+  autoScroll(parentNode, scrollThreshold, evt) {
+    if (!parentNode) return;
+    const { clientX, clientY } = evt;
     if (clientX === void 0 || clientY === void 0) return;
 
-    const rect = getRect(Sortable.scrollEl);
+    const rect = getRect(parentNode);
     if (!rect) return;
 
     const {
@@ -40,20 +50,19 @@ export default class AutoScroll {
       scrollWidth,
       clientHeight,
       clientWidth,
-    } = Sortable.scrollEl;
+    } = parentNode;
     const { top, right, bottom, left, height, width } = rect;
-    const { scrollThreshold } = Sortable.options;
 
     // check direction
-    const totop =
+    const toTop =
       scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
-    const toleft =
+    const toLeft =
       scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
-    const toright =
+    const toRight =
       scrollLeft + width < scrollWidth &&
       clientX <= right &&
       clientX >= right - scrollThreshold;
-    const tobottom =
+    const toBottom =
       scrollTop + height < scrollHeight &&
       clientY <= bottom &&
       clientY >= bottom - scrollThreshold;
@@ -61,39 +70,36 @@ export default class AutoScroll {
     let scrollx = 0,
       scrolly = 0;
 
-    if (toleft) {
+    if (toLeft) {
       scrollx = Math.floor(
-        Math.max(-1, (clientX - left) / scrollThreshold - 1) * 10,
+        Math.max(-1, (clientX - left) / scrollThreshold - 1) * this.speed.x,
       );
-    } else if (toright) {
+    } else if (toRight) {
       scrollx = Math.ceil(
-        Math.min(1, (clientX - right) / scrollThreshold + 1) * 10,
+        Math.min(1, (clientX - right) / scrollThreshold + 1) * this.speed.x,
       );
     } else {
       scrollx = 0;
     }
 
-    if (totop) {
+    if (toTop) {
       scrolly = Math.floor(
-        Math.max(-1, (clientY - top) / scrollThreshold - 1) * 10,
+        Math.max(-1, (clientY - top) / scrollThreshold - 1) * this.speed.y,
       );
-    } else if (tobottom) {
+    } else if (toBottom) {
       scrolly = Math.ceil(
-        Math.min(1, (clientY - bottom) / scrollThreshold + 1) * 10,
+        Math.min(1, (clientY - bottom) / scrollThreshold + 1) * this.speed.y,
       );
     } else {
       scrolly = 0;
     }
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => {
-      if (scrolly) {
-        this.scrollY(Sortable.scrollEl, scrolly);
-      }
+    if (scrolly) {
+      this.scrollY(parentNode, scrolly);
+    }
 
-      if (scrollx) {
-        this.scrollX(Sortable.scrollEl, scrollx);
-      }
-    });
+    if (scrollx) {
+      this.scrollX(parentNode, scrollx);
+    }
   }
 
   scrollX(el, amount) {
