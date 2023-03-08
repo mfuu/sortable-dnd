@@ -2,6 +2,7 @@ import {
   on,
   off,
   css,
+  events,
   expando,
   matches,
   getRect,
@@ -21,20 +22,6 @@ import { Edge, Safari, IE11OrLess } from './utils.js';
 import AutoScroll from './Plugins/AutoScroll.js';
 import Animation from './Plugins/Animation.js';
 import Multiple from './Plugins/Multiple.js';
-
-/**
- * Sortable states
- */
-class EventState {
-  constructor() {
-    this.down = undefined;
-    this.move = undefined;
-  }
-  destroy() {
-    this.down = undefined;
-    this.move = undefined;
-  }
-}
 
 const FromTo = {
   sortable: null,
@@ -65,13 +52,14 @@ let rootEl,
   dragEl,
   dropEl,
   ghostEl,
+  downEvent,
+  moveEvent,
   isMultiple,
   fromGroup,
   activeGroup,
   fromSortable,
   dragStartTimer, // timer for start to drag
-  differ = new Difference(), // Record the difference before and after
-  eventState = new EventState(); // Status record during drag and move
+  differ = new Difference(); // Record the difference before and after
 
 let distance = { x: 0, y: 0 };
 let lastPosition = { x: 0, y: 0 };
@@ -201,11 +189,11 @@ function Sortable(el, options) {
 
     multiple: false, // Enable multi-drag
 
-    draggable: undefined, // String: css selector, Function: (e) => return true
-    onDrag: undefined, // The callback function triggered when dragging starts: () => {}
-    onMove: undefined, // The callback function during drag and drop: (from, to) => {}
-    onDrop: undefined, // The callback function when the drag is completed: (from, to, changed) => {}
-    onChange: undefined, // The callback function when dragging an element to change its position: (from, to) => {}
+    draggable: undefined, // String: css selector, Function: (e) => return (true || HTMLElement)
+    onDrag: undefined, // The callback function triggered when dragging starts
+    onMove: undefined, // The callback function during drag and drop
+    onDrop: undefined, // The callback function when the drag is completed
+    onChange: undefined, // The callback function when dragging an element to change its position
 
     autoScroll: true,
     scrollThreshold: 25, // Autoscroll threshold
@@ -272,9 +260,9 @@ Sortable.prototype = {
     this._dispatchEvent('destroy', this);
     this.el[expando] = null;
 
-    off(this.el, 'pointerdown', this._onDrag);
-    off(this.el, 'touchstart', this._onDrag);
-    off(this.el, 'mousedown', this._onDrag);
+    for (let i = 0; i < events.start.length; i++) {
+      off(this.el, events.start[i], this._onDrag);
+    }
 
     // clear status
     this._clearState();
@@ -286,8 +274,7 @@ Sortable.prototype = {
 
   // -------------------------------- prepare start ----------------------------------
   _onDrag: function (/** Event|TouchEvent */ evt) {
-    if (dragEl || this.options.disabled || this.options.group.pull === false)
-      return;
+    if (dragEl || this.options.disabled || !this.options.group.pull) return;
     if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return true; // only left button and enabled
 
     const { touch, e, target } = getEvent(evt);
@@ -340,18 +327,15 @@ Sortable.prototype = {
     };
 
     distance = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    eventState.down = e; // sortable state down is active
+    downEvent = e; // sortable state down is active
 
     // enable drag between groups
     if (this.options.supportPointer) {
       on(this.ownerDocument, 'pointermove', _nearestSortable);
-      on(this.ownerDocument, 'pointerup', this._onDrop);
     } else if (touch) {
       on(this.ownerDocument, 'touchmove', _nearestSortable);
-      on(this.ownerDocument, 'touchend', this._onDrop);
     } else {
       on(this.ownerDocument, 'mousemove', _nearestSortable);
-      on(this.ownerDocument, 'mouseup', this._onDrop);
     }
 
     const { delay, delayOnTouchOnly } = this.options;
@@ -370,12 +354,15 @@ Sortable.prototype = {
 
     if (this.options.supportPointer) {
       on(this.ownerDocument, 'pointermove', this._onMove);
+      on(this.ownerDocument, 'pointerup', this._onDrop);
       on(this.ownerDocument, 'pointercancel', this._onDrop);
     } else if (touch) {
       on(this.ownerDocument, 'touchmove', this._onMove);
+      on(this.ownerDocument, 'touchend', this._onDrop);
       on(this.ownerDocument, 'touchcancel', this._onDrop);
     } else {
       on(this.ownerDocument, 'mousemove', this._onMove);
+      on(this.ownerDocument, 'mouseup', this._onDrop);
     }
 
     // clear selection
@@ -391,56 +378,9 @@ Sortable.prototype = {
     } catch (error) {}
   },
 
-  // -------------------------------- move ----------------------------------
-  _onMove: function (/** Event|TouchEvent */ evt) {
-    this._preventEvent(evt);
-    if (!eventState.down || !dragEl) return;
-    if (!_positionChanged(evt)) return;
-
-    const { e, target } = getEvent(evt);
-    // truly started
-    this._onStarted(e, evt);
-
-    const clientX = evt.clientX - eventState.down.clientX;
-    const clientY = evt.clientY - eventState.down.clientY;
-    setTransition(ghostEl, 'none');
-    setTransform(ghostEl, `translate3d(${clientX}px, ${clientY}px, 0)`);
-
-    if (isMultiple) {
-      // on-multi-move
-      this._onMultiMove(_params({ e, evt }));
-    } else {
-      // on-move
-      this._dispatchEvent('onMove', {
-        ..._emitDiffer(),
-        ghostEl,
-        event: e,
-        originalEvent: evt,
-      });
-    }
-    // check if element will exchange
-    if (this._allowPut()) this._triggerChangeEvent(target, e, evt);
-    // auto scroll
-    const { autoScroll, scrollThreshold } = this.options;
-    if (autoScroll) {
-      this._autoScroll.update(this.scrollEl, scrollThreshold, eventState);
-    }
-  },
-
-  _allowPut: function () {
-    if (fromGroup === this.el) {
-      return true;
-    } else if (!this.options.group.put) {
-      return false;
-    } else {
-      const { name } = this.options.group;
-      return activeGroup.name && name && activeGroup.name === name;
-    }
-  },
-
   // -------------------------------- real started ----------------------------------
-  _onStarted: function (e, /** originalEvent */ evt) {
-    if (!eventState.move) {
+  _onTrulyStarted: function (e, /** originalEvent */ evt) {
+    if (!moveEvent) {
       // on-multi-drag
       if (isMultiple) {
         this._onMultiStarted(_params({ e, evt }));
@@ -463,7 +403,54 @@ Sortable.prototype = {
       if (Safari) css(document.body, 'user-select', 'none');
     }
 
-    eventState.move = e; // sortable state move is active
+    moveEvent = e; // sortable state move is active
+  },
+
+  // -------------------------------- move ----------------------------------
+  _onMove: function (/** Event|TouchEvent */ evt) {
+    this._preventEvent(evt);
+    if (!downEvent || !dragEl) return;
+    if (!_positionChanged(evt)) return;
+
+    const { e, target } = getEvent(evt);
+    // truly started
+    this._onTrulyStarted(e, evt);
+
+    const x = evt.clientX - downEvent.clientX;
+    const y = evt.clientY - downEvent.clientY;
+    setTransition(ghostEl, 'none');
+    setTransform(ghostEl, `translate3d(${x}px, ${y}px, 0)`);
+
+    if (isMultiple) {
+      // on-multi-move
+      this._onMultiMove(_params({ e, evt }));
+    } else {
+      // on-move
+      this._dispatchEvent('onMove', {
+        ..._emitDiffer(),
+        ghostEl,
+        event: e,
+        originalEvent: evt,
+      });
+    }
+    // check if element will exchange
+    if (this._allowPut()) this._triggerChangeEvent(target, e, evt);
+    // auto scroll
+    const { autoScroll, scrollThreshold } = this.options;
+    if (autoScroll) {
+      this._autoScroll.update(this.el, scrollThreshold, downEvent, moveEvent);
+    }
+  },
+
+  _allowPut: function () {
+    if (fromGroup === this.el) {
+      return true;
+    } else if (!this.options.group.put) {
+      return false;
+    } else {
+      const { name } = this.options.group;
+      return activeGroup.name && name && activeGroup.name === name;
+    }
   },
 
   // -------------------------------- ghost ----------------------------------
@@ -625,7 +612,7 @@ Sortable.prototype = {
       dragEl.style['will-change'] = '';
     }
     // drag and drop done
-    if (dragEl && eventState.down && eventState.move) {
+    if (dragEl && downEvent && moveEvent) {
       if (isMultiple) {
         this._onMultiDrop(_params({ evt }));
       } else {
@@ -679,6 +666,8 @@ Sortable.prototype = {
     dragEl =
       dropEl =
       ghostEl =
+      downEvent =
+      moveEvent =
       isMultiple =
       fromGroup =
       activeGroup =
@@ -687,23 +676,18 @@ Sortable.prototype = {
       Sortable.ghost =
         null;
     distance = lastPosition = { x: 0, y: 0 };
-    eventState.destroy();
     differ.destroy();
   },
   _unbindMoveEvents: function () {
-    off(this.ownerDocument, 'pointermove', this._onMove);
-    off(this.ownerDocument, 'touchmove', this._onMove);
-    off(this.ownerDocument, 'mousemove', this._onMove);
-    off(this.ownerDocument, 'pointermove', _nearestSortable);
-    off(this.ownerDocument, 'touchmove', _nearestSortable);
-    off(this.ownerDocument, 'mousemove', _nearestSortable);
+    for (let i = 0; i < events.move.length; i++) {
+      off(this.ownerDocument, events.move[i], this._onMove);
+      off(this.ownerDocument, events.move[i], _nearestSortable);
+    }
   },
   _unbindDropEvents: function () {
-    off(this.ownerDocument, 'pointerup', this._onDrop);
-    off(this.ownerDocument, 'pointercancel', this._onDrop);
-    off(this.ownerDocument, 'touchend', this._onDrop);
-    off(this.ownerDocument, 'touchcancel', this._onDrop);
-    off(this.ownerDocument, 'mouseup', this._onDrop);
+    for (let i = 0; i < events.end.length; i++) {
+      off(this.ownerDocument, events.end[i], this._onDrop);
+    }
   },
 };
 

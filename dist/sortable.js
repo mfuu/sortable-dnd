@@ -124,6 +124,11 @@
     passive: false
   };
   var R_SPACE = /\s+/g;
+  var events = {
+    start: ['pointerdown', 'touchstart', 'mousedown'],
+    move: ['pointermove', 'touchmove', 'mousemove'],
+    end: ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup']
+  };
   var SUPPORT_PASSIVE = supportPassive();
 
   function userAgent(pattern) {
@@ -629,16 +634,16 @@
       }
     }, {
       key: "update",
-      value: function update(parentNode, scrollThreshold, eventState) {
+      value: function update(parentNode, scrollThreshold, downEvent, moveEvent) {
         var _this = this;
 
-        if (eventState.move && eventState.down) {
-          this.autoScroll(parentNode, scrollThreshold, eventState.move);
+        if (downEvent && moveEvent) {
+          this.autoScroll(parentNode, scrollThreshold, moveEvent);
         }
 
         cancelAnimationFrame(this.autoScrollAnimationFrame);
         this.autoScrollAnimationFrame = requestAnimationFrame(function () {
-          return _this.update(parentNode, scrollThreshold, eventState);
+          return _this.update(parentNode, scrollThreshold, downEvent, moveEvent);
         });
       }
     }, {
@@ -1096,29 +1101,6 @@
     };
   }
 
-  /**
-   * Sortable states
-   */
-
-  var EventState = /*#__PURE__*/function () {
-    function EventState() {
-      _classCallCheck(this, EventState);
-
-      this.down = undefined;
-      this.move = undefined;
-    }
-
-    _createClass(EventState, [{
-      key: "destroy",
-      value: function destroy() {
-        this.down = undefined;
-        this.move = undefined;
-      }
-    }]);
-
-    return EventState;
-  }();
-
   var FromTo = {
     sortable: null,
     group: null,
@@ -1155,15 +1137,15 @@
       dragEl,
       dropEl,
       ghostEl,
+      downEvent,
+      moveEvent,
       isMultiple,
       fromGroup,
       activeGroup,
       fromSortable,
       dragStartTimer,
       // timer for start to drag
-  differ = new Difference(),
-      // Record the difference before and after
-  eventState = new EventState(); // Status record during drag and move
+  differ = new Difference(); // Record the difference before and after
 
   var distance = {
     x: 0,
@@ -1307,15 +1289,15 @@
       multiple: false,
       // Enable multi-drag
       draggable: undefined,
-      // String: css selector, Function: (e) => return true
+      // String: css selector, Function: (e) => return (true || HTMLElement)
       onDrag: undefined,
-      // The callback function triggered when dragging starts: () => {}
+      // The callback function triggered when dragging starts
       onMove: undefined,
-      // The callback function during drag and drop: (from, to) => {}
+      // The callback function during drag and drop
       onDrop: undefined,
-      // The callback function when the drag is completed: (from, to, changed) => {}
+      // The callback function when the drag is completed
       onChange: undefined,
-      // The callback function when dragging an element to change its position: (from, to) => {}
+      // The callback function when dragging an element to change its position
       autoScroll: true,
       scrollThreshold: 25,
       // Autoscroll threshold
@@ -1387,9 +1369,11 @@
       this._dispatchEvent('destroy', this);
 
       this.el[expando] = null;
-      off(this.el, 'pointerdown', this._onDrag);
-      off(this.el, 'touchstart', this._onDrag);
-      off(this.el, 'mousedown', this._onDrag); // clear status
+
+      for (var i = 0; i < events.start.length; i++) {
+        off(this.el, events.start[i], this._onDrag);
+      } // clear status
+
 
       this._clearState();
 
@@ -1403,7 +1387,7 @@
     evt) {
       var _this = this;
 
-      if (dragEl || this.options.disabled || this.options.group.pull === false) return;
+      if (dragEl || this.options.disabled || !this.options.group.pull) return;
       if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return true; // only left button and enabled
 
       var _getEvent = getEvent(evt),
@@ -1456,18 +1440,15 @@
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
       };
-      eventState.down = e; // sortable state down is active
+      downEvent = e; // sortable state down is active
       // enable drag between groups
 
       if (this.options.supportPointer) {
         on(this.ownerDocument, 'pointermove', _nearestSortable);
-        on(this.ownerDocument, 'pointerup', this._onDrop);
       } else if (touch) {
         on(this.ownerDocument, 'touchmove', _nearestSortable);
-        on(this.ownerDocument, 'touchend', this._onDrop);
       } else {
         on(this.ownerDocument, 'mousemove', _nearestSortable);
-        on(this.ownerDocument, 'mouseup', this._onDrop);
       }
 
       var _this$options2 = this.options,
@@ -1492,12 +1473,15 @@
 
       if (this.options.supportPointer) {
         on(this.ownerDocument, 'pointermove', this._onMove);
+        on(this.ownerDocument, 'pointerup', this._onDrop);
         on(this.ownerDocument, 'pointercancel', this._onDrop);
       } else if (touch) {
         on(this.ownerDocument, 'touchmove', this._onMove);
+        on(this.ownerDocument, 'touchend', this._onDrop);
         on(this.ownerDocument, 'touchcancel', this._onDrop);
       } else {
         on(this.ownerDocument, 'mousemove', this._onMove);
+        on(this.ownerDocument, 'mouseup', this._onDrop);
       } // clear selection
 
 
@@ -1512,13 +1496,43 @@
         }
       } catch (error) {}
     },
+    // -------------------------------- real started ----------------------------------
+    _onTrulyStarted: function _onTrulyStarted(e,
+    /** originalEvent */
+    evt) {
+      if (!moveEvent) {
+        // on-multi-drag
+        if (isMultiple) {
+          this._onMultiStarted(_params({
+            e: e,
+            evt: evt
+          }));
+        } else {
+          // on-drag
+          this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
+            event: e,
+            originalEvent: evt
+          }));
+        } // Init in the move event to prevent conflict with the click event
+
+
+        this._appendGhost(); // add class for drag element
+
+
+        toggleClass(dragEl, this.options.chosenClass, true);
+        dragEl.style['will-change'] = 'transform';
+        if (Safari) css(document.body, 'user-select', 'none');
+      }
+
+      moveEvent = e; // sortable state move is active
+    },
     // -------------------------------- move ----------------------------------
     _onMove: function _onMove(
     /** Event|TouchEvent */
     evt) {
       this._preventEvent(evt);
 
-      if (!eventState.down || !dragEl) return;
+      if (!downEvent || !dragEl) return;
       if (!_positionChanged(evt)) return;
 
       var _getEvent2 = getEvent(evt),
@@ -1526,12 +1540,12 @@
           target = _getEvent2.target; // truly started
 
 
-      this._onStarted(e, evt);
+      this._onTrulyStarted(e, evt);
 
-      var clientX = evt.clientX - eventState.down.clientX;
-      var clientY = evt.clientY - eventState.down.clientY;
+      var x = evt.clientX - downEvent.clientX;
+      var y = evt.clientY - downEvent.clientY;
       setTransition(ghostEl, 'none');
-      setTransform(ghostEl, "translate3d(".concat(clientX, "px, ").concat(clientY, "px, 0)"));
+      setTransform(ghostEl, "translate3d(".concat(x, "px, ").concat(y, "px, 0)"));
 
       if (isMultiple) {
         // on-multi-move
@@ -1556,7 +1570,7 @@
           scrollThreshold = _this$options3.scrollThreshold;
 
       if (autoScroll) {
-        this._autoScroll.update(this.scrollEl, scrollThreshold, eventState);
+        this._autoScroll.update(this.el, scrollThreshold, downEvent, moveEvent);
       }
     },
     _allowPut: function _allowPut() {
@@ -1568,36 +1582,6 @@
         var name = this.options.group.name;
         return activeGroup.name && name && activeGroup.name === name;
       }
-    },
-    // -------------------------------- real started ----------------------------------
-    _onStarted: function _onStarted(e,
-    /** originalEvent */
-    evt) {
-      if (!eventState.move) {
-        // on-multi-drag
-        if (isMultiple) {
-          this._onMultiStarted(_params({
-            e: e,
-            evt: evt
-          }));
-        } else {
-          // on-drag
-          this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
-            event: e,
-            originalEvent: evt
-          }));
-        } // Init in the move event to prevent conflict with the click event
-
-
-        this._appendGhost(); // add class for drag element
-
-
-        toggleClass(dragEl, this.options.chosenClass, true);
-        dragEl.style['will-change'] = 'transform';
-        if (Safari) css(document.body, 'user-select', 'none');
-      }
-
-      eventState.move = e; // sortable state move is active
     },
     // -------------------------------- ghost ----------------------------------
     _appendGhost: function _appendGhost() {
@@ -1777,7 +1761,7 @@
       } // drag and drop done
 
 
-      if (dragEl && eventState.down && eventState.move) {
+      if (dragEl && downEvent && moveEvent) {
         if (isMultiple) {
           this._onMultiDrop(_params({
             evt: evt
@@ -1828,28 +1812,23 @@
     // -------------------------------- clear ----------------------------------
     _clearState: function _clearState() {
       ghostEl && ghostEl.parentNode && ghostEl.parentNode.removeChild(ghostEl);
-      dragEl = dropEl = ghostEl = isMultiple = fromGroup = activeGroup = fromSortable = dragStartTimer = Sortable.ghost = null;
+      dragEl = dropEl = ghostEl = downEvent = moveEvent = isMultiple = fromGroup = activeGroup = fromSortable = dragStartTimer = Sortable.ghost = null;
       distance = lastPosition = {
         x: 0,
         y: 0
       };
-      eventState.destroy();
       differ.destroy();
     },
     _unbindMoveEvents: function _unbindMoveEvents() {
-      off(this.ownerDocument, 'pointermove', this._onMove);
-      off(this.ownerDocument, 'touchmove', this._onMove);
-      off(this.ownerDocument, 'mousemove', this._onMove);
-      off(this.ownerDocument, 'pointermove', _nearestSortable);
-      off(this.ownerDocument, 'touchmove', _nearestSortable);
-      off(this.ownerDocument, 'mousemove', _nearestSortable);
+      for (var i = 0; i < events.move.length; i++) {
+        off(this.ownerDocument, events.move[i], this._onMove);
+        off(this.ownerDocument, events.move[i], _nearestSortable);
+      }
     },
     _unbindDropEvents: function _unbindDropEvents() {
-      off(this.ownerDocument, 'pointerup', this._onDrop);
-      off(this.ownerDocument, 'pointercancel', this._onDrop);
-      off(this.ownerDocument, 'touchend', this._onDrop);
-      off(this.ownerDocument, 'touchcancel', this._onDrop);
-      off(this.ownerDocument, 'mouseup', this._onDrop);
+      for (var i = 0; i < events.end.length; i++) {
+        off(this.ownerDocument, events.end[i], this._onDrop);
+      }
     }
   };
   Sortable.prototype.utils = {
