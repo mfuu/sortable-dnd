@@ -93,28 +93,13 @@ export default class AutoScroll {
     } else {
       scrolly = 0;
     }
+
     if (scrolly) {
-      this.scrollY(parentNode, scrolly);
+      parentNode.scrollTop += scrolly;
     }
 
     if (scrollx) {
-      this.scrollX(parentNode, scrollx);
-    }
-  }
-
-  scrollX(el, amount) {
-    if (el === window) {
-      window.scrollTo(el.pageXOffset + amount, el.pageYOffset);
-    } else {
-      el.scrollLeft += amount;
-    }
-  }
-
-  scrollY(el, amount) {
-    if (el === window) {
-      window.scrollTo(el.pageXOffset, el.pageYOffset + amount);
-    } else {
-      el.scrollTop += amount;
+      parentNode.scrollLeft += scrollx;
     }
   }
 }

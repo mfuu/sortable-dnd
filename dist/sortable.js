@@ -687,29 +687,11 @@
         }
 
         if (scrolly) {
-          this.scrollY(parentNode, scrolly);
+          parentNode.scrollTop += scrolly;
         }
 
         if (scrollx) {
-          this.scrollX(parentNode, scrollx);
-        }
-      }
-    }, {
-      key: "scrollX",
-      value: function scrollX(el, amount) {
-        if (el === window) {
-          window.scrollTo(el.pageXOffset + amount, el.pageYOffset);
-        } else {
-          el.scrollLeft += amount;
-        }
-      }
-    }, {
-      key: "scrollY",
-      value: function scrollY(el, amount) {
-        if (el === window) {
-          window.scrollTo(el.pageXOffset, el.pageYOffset + amount);
-        } else {
-          el.scrollTop += amount;
+          parentNode.scrollLeft += scrollx;
         }
       }
     }]);
