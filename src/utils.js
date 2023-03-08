@@ -7,6 +7,12 @@ const captureMode = {
 
 const R_SPACE = /\s+/g;
 
+export const events = {
+  start: ['pointerdown', 'touchstart', 'mousedown'],
+  move: ['pointermove', 'touchmove', 'mousemove'],
+  end: ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup'],
+};
+
 export const SUPPORT_PASSIVE = supportPassive();
 
 function userAgent(pattern) {

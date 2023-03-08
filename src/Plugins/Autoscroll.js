@@ -25,13 +25,13 @@ export default class AutoScroll {
     this.autoScrollAnimationFrame = null;
   }
 
-  update(parentNode, scrollThreshold, eventState) {
-    if (eventState.move && eventState.down) {
-      this.autoScroll(parentNode, scrollThreshold, eventState.move);
+  update(parentNode, scrollThreshold, downEvent, moveEvent) {
+    if (downEvent && moveEvent) {
+      this.autoScroll(parentNode, scrollThreshold, moveEvent);
     }
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = requestAnimationFrame(() =>
-      this.update(parentNode, scrollThreshold, eventState),
+      this.update(parentNode, scrollThreshold, downEvent, moveEvent),
     );
   }
 
