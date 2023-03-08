@@ -197,7 +197,7 @@ type options = {
 
   /**
    * Threshold to trigger autoscroll.
-   * @defaults `15`
+   * @defaults `25`
    */
   scrollThreshold?: Number;
 
@@ -218,12 +218,6 @@ type options = {
    * @defaults `false`
    */
   fallbackOnBody?: Boolean;
-
-  /**
-   * true: Ignore the HTML5 DnD behaviour and force the fallback to kick in.
-   * @defaults `false`
-   */
-  forceFallback?: Boolean;
 
   /**
    * The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases.
