@@ -6,8 +6,6 @@ import {
   matches,
   getRect,
   getEvent,
-  throttle,
-  debounce,
   lastChild,
   getOffset,
   _nextTick,
@@ -17,10 +15,10 @@ import {
   setTransition,
   isHTMLElement,
   offsetChanged,
-  getParentAutoScrollElement
+  getParentAutoScrollElement,
 } from './utils.js';
 import { Edge, Safari, IE11OrLess } from './utils.js';
-import AutoScroll from './Plugins/Autoscroll.js';
+import AutoScroll from './Plugins/AutoScroll.js';
 import Animation from './Plugins/Animation.js';
 import Multiple from './Plugins/Multiple.js';
 
@@ -38,7 +36,13 @@ class EventState {
   }
 }
 
-const FromTo = { sortable: null, group: null, node: null, rect: {}, offset: {} };
+const FromTo = {
+  sortable: null,
+  group: null,
+  node: null,
+  rect: {},
+  offset: {},
+};
 
 /**
  * Difference before and after dragging
@@ -66,7 +70,6 @@ let rootEl,
   activeGroup,
   fromSortable,
   dragStartTimer, // timer for start to drag
-  autoScrollTimer,
   differ = new Difference(), // Record the difference before and after
   eventState = new EventState(); // Status record during drag and move
 
@@ -125,8 +128,10 @@ const _detectNearestSortable = function (x, y) {
     if (!threshold) return;
 
     const rect = getRect(sortable, { parent: true }),
-      insideHorizontally = x >= rect.left - threshold && x <= rect.right + threshold,
-      insideVertically = y >= rect.top - threshold && y <= rect.bottom + threshold;
+      insideHorizontally =
+        x >= rect.left - threshold && x <= rect.right + threshold,
+      insideVertically =
+        y >= rect.top - threshold && y <= rect.bottom + threshold;
 
     if (insideHorizontally && insideVertically) {
       return (result = sortable);
@@ -167,7 +172,7 @@ const _params = function (args) {
     ghostEl,
     fromSortable,
     fromGroup,
-    activeGroup
+    activeGroup,
   };
 };
 
@@ -178,7 +183,9 @@ const _params = function (args) {
  */
 function Sortable(el, options) {
   if (!(el && el.nodeType && el.nodeType === 1)) {
-    throw `Sortable: \`el\` must be an HTMLElement, not ${{}.toString.call(el)}`;
+    throw `Sortable: \`el\` must be an HTMLElement, not ${{}.toString.call(
+      el,
+    )}`;
   }
 
   el[expando] = this;
@@ -200,8 +207,8 @@ function Sortable(el, options) {
     onDrop: undefined, // The callback function when the drag is completed: (from, to, changed) => {}
     onChange: undefined, // The callback function when dragging an element to change its position: (from, to) => {}
 
-    scrollStep: 5, // The distance to scroll each frame
-    scrollThreshold: 15, // Autoscroll threshold
+    autoScroll: true,
+    scrollThreshold: 25, // Autoscroll threshold
 
     delay: 0, // Defines the delay time after which the mouse-selected list cell can start dragging
     delayOnTouchOnly: false, // only delay if user is using touch
@@ -217,7 +224,7 @@ function Sortable(el, options) {
 
     supportPointer: 'onpointerdown' in window && !Safari,
     supportTouch: 'ontouchstart' in window,
-    emptyInsertThreshold: 5
+    emptyInsertThreshold: 5,
   };
 
   // Set default options
@@ -245,7 +252,9 @@ function Sortable(el, options) {
 
   sortables.push(el);
 
-  Object.assign(this, Animation(), AutoScroll());
+  Object.assign(this, Animation());
+
+  this._autoScroll = new AutoScroll();
 
   if (this.options.multiple) {
     Object.assign(this, Multiple());
@@ -277,13 +286,15 @@ Sortable.prototype = {
 
   // -------------------------------- prepare start ----------------------------------
   _onDrag: function (/** Event|TouchEvent */ evt) {
-    if (dragEl || this.options.disabled || this.options.group.pull === false) return;
+    if (dragEl || this.options.disabled || this.options.group.pull === false)
+      return;
     if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return true; // only left button and enabled
 
     const { touch, e, target } = getEvent(evt);
 
     // Safari ignores further event handling after mousedown
-    if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return true;
+    if (Safari && target && target.tagName.toUpperCase() === 'SELECT')
+      return true;
     if (target === this.el) return true;
 
     const { draggable } = this.options;
@@ -298,7 +309,7 @@ Sortable.prototype = {
       if (!matches(target, draggable)) return true;
     } else if (draggable) {
       throw new Error(
-        `draggable expected "function" or "string" but received "${typeof draggable}"`
+        `draggable expected "function" or "string" but received "${typeof draggable}"`,
       );
     }
 
@@ -320,7 +331,13 @@ Sortable.prototype = {
 
     // get the position of the dragged element in the list
     const { rect, offset } = getElement(this.el, dragEl);
-    differ.from = { sortable: this, group: this.el, node: dragEl, rect, offset };
+    differ.from = {
+      sortable: this,
+      group: this.el,
+      node: dragEl,
+      rect,
+      offset,
+    };
 
     distance = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     eventState.down = e; // sortable state down is active
@@ -398,14 +415,16 @@ Sortable.prototype = {
         ..._emitDiffer(),
         ghostEl,
         event: e,
-        originalEvent: evt
+        originalEvent: evt,
       });
     }
     // check if element will exchange
     if (this._allowPut()) this._triggerChangeEvent(target, e, evt);
     // auto scroll
-    clearTimeout(autoScrollTimer);
-    autoScrollTimer = setTimeout(() => this._autoScroll(this, eventState), 0);
+    const { autoScroll, scrollThreshold } = this.options;
+    if (autoScroll) {
+      this._autoScroll.update(this.scrollEl, scrollThreshold, eventState);
+    }
   },
 
   _allowPut: function () {
@@ -430,7 +449,7 @@ Sortable.prototype = {
         this._dispatchEvent('onDrag', {
           ..._emitDiffer(),
           event: e,
-          originalEvent: evt
+          originalEvent: evt,
         });
       }
 
@@ -442,7 +461,6 @@ Sortable.prototype = {
       dragEl.style['will-change'] = 'transform';
 
       if (Safari) css(document.body, 'user-select', 'none');
-      css(this.ownerDocument.body, 'cursor', 'move');
     }
 
     eventState.move = e; // sortable state move is active
@@ -463,7 +481,6 @@ Sortable.prototype = {
     }
 
     toggleClass(ghostEl, ghostClass, true);
-    css(ghostEl, 'cursor', 'move');
     css(ghostEl, 'box-sizing', 'border-box');
     css(ghostEl, 'margin', 0);
     css(ghostEl, 'top', rect.top);
@@ -505,7 +522,10 @@ Sortable.prototype = {
   },
   _onChange: function (target, e, evt) {
     if (!differ.from.group) return;
-    if (!lastChild(rootEl) || (target === rootEl && differ.from.group !== rootEl)) {
+    if (
+      !lastChild(rootEl) ||
+      (target === rootEl && differ.from.group !== rootEl)
+    ) {
       differ.from.sortable._captureAnimationState(dragEl, dragEl);
 
       differ.to = {
@@ -513,19 +533,19 @@ Sortable.prototype = {
         group: rootEl,
         node: dragEl,
         rect: getRect(dragEl),
-        offset: getOffset(dragEl)
+        offset: getOffset(dragEl),
       };
       // on-remove
       differ.from.sortable._dispatchEvent('onRemove', {
         ..._emitDiffer(),
         event: e,
-        originalEvent: evt
+        originalEvent: evt,
       });
       // on-add
       this._dispatchEvent('onAdd', {
         ..._emitDiffer(),
         event: e,
-        originalEvent: evt
+        originalEvent: evt,
       });
 
       rootEl.appendChild(dragEl);
@@ -541,7 +561,12 @@ Sortable.prototype = {
       const { left, right, top, bottom } = rect;
 
       // swap when the elements before and after the drag are inconsistent
-      if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
+      if (
+        clientX > left &&
+        clientX < right &&
+        clientY > top &&
+        clientY < bottom
+      ) {
         this._captureAnimationState(dragEl, dropEl);
 
         if (differ.from.group !== differ.to.group) {
@@ -550,13 +575,13 @@ Sortable.prototype = {
           differ.from.sortable._dispatchEvent('onRemove', {
             ..._emitDiffer(),
             event: e,
-            originalEvent: evt
+            originalEvent: evt,
           });
           // on-add
           this._dispatchEvent('onAdd', {
             ..._emitDiffer(),
             event: e,
-            originalEvent: evt
+            originalEvent: evt,
           });
 
           rootEl.insertBefore(dragEl, dropEl);
@@ -566,7 +591,7 @@ Sortable.prototype = {
           this._dispatchEvent('onChange', {
             ..._emitDiffer(),
             event: e,
-            originalEvent: evt
+            originalEvent: evt,
           });
 
           // the top value is compared first, and the left is compared if the top value is the same
@@ -589,8 +614,8 @@ Sortable.prototype = {
     this._unbindMoveEvents();
     this._unbindDropEvents();
     this._preventEvent(evt);
+    this._autoScroll.clear();
     clearTimeout(dragStartTimer);
-    clearTimeout(autoScrollTimer);
 
     // clear style, attrs and class
     if (dragEl) {
@@ -620,15 +645,15 @@ Sortable.prototype = {
           ..._emitDiffer(),
           changed,
           event: evt,
-          originalEvent: evt
+          originalEvent: evt,
         };
         // on-drop
-        if (differ.to.group !== fromGroup) fromSortable._dispatchEvent('onDrop', params);
+        if (differ.to.group !== fromGroup)
+          fromSortable._dispatchEvent('onDrop', params);
         this._dispatchEvent('onDrop', params);
       }
 
       if (Safari) css(document.body, 'user-select', '');
-      css(this.ownerDocument.body, 'cursor', '');
     } else if (this.options.multiple) {
       // click event
       this._setMultiElements(evt, this.el);
@@ -640,7 +665,8 @@ Sortable.prototype = {
   // -------------------------------- event ----------------------------------
   _preventEvent: function (evt) {
     evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
-    if (this.options.stopPropagation) evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
+    if (this.options.stopPropagation)
+      evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
   },
   _dispatchEvent: function (event, params) {
     const callback = this.options[event];
@@ -658,7 +684,6 @@ Sortable.prototype = {
       activeGroup =
       fromSortable =
       dragStartTimer =
-      autoScrollTimer =
       Sortable.ghost =
         null;
     distance = lastPosition = { x: 0, y: 0 };
@@ -679,14 +704,12 @@ Sortable.prototype = {
     off(this.ownerDocument, 'touchend', this._onDrop);
     off(this.ownerDocument, 'touchcancel', this._onDrop);
     off(this.ownerDocument, 'mouseup', this._onDrop);
-  }
+  },
 };
 
 Sortable.prototype.utils = {
   getRect,
   getOffset,
-  debounce,
-  throttle
 };
 
 export default Sortable;

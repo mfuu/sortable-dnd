@@ -11,7 +11,7 @@ import {
   toggleClass,
   getMouseRect,
   offsetChanged,
-  isHTMLElement
+  isHTMLElement,
 } from '../utils';
 
 const MultiFromTo = { sortable: null, group: null, nodes: [] };
@@ -62,14 +62,18 @@ export default function Multiple() {
 
       if (!target) return;
 
-      toggleClass(target, this.options.selectedClass, !~selectedElements.indexOf(target));
+      toggleClass(
+        target,
+        this.options.selectedClass,
+        !~selectedElements.indexOf(target),
+      );
 
       let params = {
         sortable: this,
         group,
         target,
         event,
-        originalEvent: event
+        originalEvent: event,
       };
       if (!~selectedElements.indexOf(target)) {
         selectedElements.push(target);
@@ -89,7 +93,11 @@ export default function Multiple() {
     },
 
     _allowMultiDrag: function (dragEl) {
-      return this.options.multiple && selectedElements.length && selectedElements.includes(dragEl);
+      return (
+        this.options.multiple &&
+        selectedElements.length &&
+        selectedElements.includes(dragEl)
+      );
     },
 
     _getMultiGhostElement: function () {
@@ -110,7 +118,7 @@ export default function Multiple() {
         group: this.el,
         nodes: selectedElements.map((node) => {
           return { node, rect: getRect(node), offset: getOffset(node) };
-        })
+        }),
       };
     },
 
@@ -123,7 +131,7 @@ export default function Multiple() {
       this._dispatchEvent('onDrag', {
         ..._emitMultiDiffer(),
         event: e,
-        originalEvent: evt
+        originalEvent: evt,
       });
 
       // capture animate
@@ -152,7 +160,7 @@ export default function Multiple() {
         ..._emitMultiDiffer(),
         ghostEl,
         event: e,
-        originalEvent: evt
+        originalEvent: evt,
       });
 
       let rect = getMouseRect(e);
@@ -165,9 +173,12 @@ export default function Multiple() {
       });
     },
 
-    _onMultiChange: debounce(function ({ dragEl, rootEl, target, e, evt }) {
+    _onMultiChange: function ({ dragEl, rootEl, target, e, evt }) {
       if (!multiDiffer.from.group) return;
-      if (!lastChild(rootEl) || (target === rootEl && multiDiffer.from.group !== rootEl)) {
+      if (
+        !lastChild(rootEl) ||
+        (target === rootEl && multiDiffer.from.group !== rootEl)
+      ) {
         multiDiffer.from.sortable._captureAnimationState(dragEl, dragEl);
 
         selectedElements.forEach((node) => {
@@ -180,13 +191,13 @@ export default function Multiple() {
         multiDiffer.from.sortable._dispatchEvent('onRemove', {
           ..._emitMultiDiffer(),
           event: e,
-          originalEvent: evt
+          originalEvent: evt,
         });
         // on-add
         this._dispatchEvent('onAdd', {
           ..._emitMultiDiffer(),
           event: e,
-          originalEvent: evt
+          originalEvent: evt,
         });
 
         multiDiffer.from.sortable._animate();
@@ -200,7 +211,12 @@ export default function Multiple() {
         const { left, right, top, bottom } = rect;
 
         // swap when the elements before and after the drag are inconsistent
-        if (clientX > left && clientX < right && clientY > top && clientY < bottom) {
+        if (
+          clientX > left &&
+          clientX < right &&
+          clientY > top &&
+          clientY < bottom
+        ) {
           this._captureAnimationState(dragEl, el);
 
           if (multiDiffer.from.group !== multiDiffer.to.group) {
@@ -214,13 +230,13 @@ export default function Multiple() {
             multiDiffer.from.sortable._dispatchEvent('onRemove', {
               ..._emitMultiDiffer(),
               event: e,
-              originalEvent: evt
+              originalEvent: evt,
             });
             // on-add
             this._dispatchEvent('onAdd', {
               ..._emitMultiDiffer(),
               event: e,
-              originalEvent: evt
+              originalEvent: evt,
             });
 
             multiDiffer.from.sortable._animate();
@@ -241,7 +257,7 @@ export default function Multiple() {
             this._dispatchEvent('onChange', {
               ..._emitMultiDiffer(),
               event: e,
-              originalEvent: evt
+              originalEvent: evt,
             });
           }
           this._animate();
@@ -249,7 +265,7 @@ export default function Multiple() {
       }
       multiDiffer.from.sortable = this;
       multiDiffer.from.group = rootEl;
-    }, 3),
+    },
 
     _onMultiDrop: function ({ fromGroup, fromSortable, dragEl, rootEl, evt }) {
       this._captureAnimationState(dragEl);
@@ -280,19 +296,23 @@ export default function Multiple() {
       multiDiffer.from.group = fromGroup;
       multiDiffer.from.sortable = fromSortable;
 
-      const changed = _offsetChanged(multiDiffer.from.nodes, multiDiffer.to.nodes);
+      const changed = _offsetChanged(
+        multiDiffer.from.nodes,
+        multiDiffer.to.nodes,
+      );
       const params = {
         ..._emitMultiDiffer(),
         changed,
         event: evt,
-        originalEvent: evt
+        originalEvent: evt,
       };
 
       // on-drop
-      if (multiDiffer.to.group !== fromGroup) fromSortable._dispatchEvent('onDrop', params);
+      if (multiDiffer.to.group !== fromGroup)
+        fromSortable._dispatchEvent('onDrop', params);
       this._dispatchEvent('onDrop', params);
 
       this._animate();
-    }
+    },
   };
 }

@@ -2,26 +2,10 @@ import Sortable from './index.js';
 
 const captureMode = {
   capture: false,
-  passive: false
+  passive: false,
 };
 
 const R_SPACE = /\s+/g;
-
-export const cssTransitions = [
-  '-webkit-transition',
-  '-moz-transition',
-  '-ms-transition',
-  '-o-transition',
-  'transition'
-];
-
-export const cssTransforms = [
-  '-webkit-transform',
-  '-moz-transform',
-  '-ms-transform',
-  '-o-transform',
-  'transform'
-];
 
 export const SUPPORT_PASSIVE = supportPassive();
 
@@ -31,12 +15,40 @@ function userAgent(pattern) {
   }
 }
 
-export const IE11OrLess = userAgent(/(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i);
+export const IE11OrLess = userAgent(
+  /(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i,
+);
 export const Edge = userAgent(/Edge/i);
 export const FireFox = userAgent(/firefox/i);
-export const Safari = userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
+export const Safari =
+  userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
 export const IOS = userAgent(/iP(ad|od|hone)/i);
 export const ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
+
+export const vendorPrefix = (function () {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    // Server environment
+    return '';
+  }
+
+  // window.getComputedStyle() returns null inside an iframe with display: none
+  // in this case return an array with a fake mozilla style in it.
+  const styles = window.getComputedStyle(document.documentElement, '') || [
+    '-moz-hidden-iframe',
+  ];
+  const pre = (Array.prototype.slice
+    .call(styles)
+    .join('')
+    .match(/-(moz|webkit|ms)-/) ||
+    (styles.OLink === '' && ['', 'o']))[1];
+
+  switch (pre) {
+    case 'ms':
+      return 'ms';
+    default:
+      return pre && pre.length ? pre[0].toUpperCase() + pre.substr(1) : '';
+  }
+})();
 
 /**
  * check if is HTMLElement
@@ -58,13 +70,11 @@ export function isHTMLElement(obj) {
  * @param {String | Function} transition
  */
 export function setTransition(el, transition) {
-  if (transition) {
-    if (transition === 'none') cssTransitions.forEach((ts) => css(el, ts, 'none'));
-    else
-      cssTransitions.forEach((ts) =>
-        css(el, ts, `${ts.split('transition')[0]}transform ${transition}`)
-      );
-  } else cssTransitions.forEach((ts) => css(el, ts, ''));
+  el.style[`${vendorPrefix}Transition`] = transition
+    ? transition === 'none'
+      ? 'none'
+      : `${transition}`
+    : '';
 }
 
 /**
@@ -73,11 +83,7 @@ export function setTransition(el, transition) {
  * @param {String} transform
  */
 export function setTransform(el, transform) {
-  if (transform) {
-    cssTransforms.forEach((tf) => css(el, tf, `${tf.split('transform')[0]}${transform}`));
-  } else {
-    cssTransforms.forEach((tf) => css(el, tf, ''));
-  }
+  el.style[`${vendorPrefix}Transform`] = transform ? `${transform}` : '';
 }
 
 /**
@@ -86,9 +92,12 @@ export function setTransform(el, transform) {
  */
 export function getEvent(evt) {
   const touch =
-    (evt.touches && evt.touches[0]) || (evt.pointerType && evt.pointerType === 'touch' && evt);
+    (evt.touches && evt.touches[0]) ||
+    (evt.pointerType && evt.pointerType === 'touch' && evt);
   const e = touch || evt;
-  const target = touch ? document.elementFromPoint(e.clientX, e.clientY) : e.target;
+  const target = touch
+    ? document.elementFromPoint(e.clientX, e.clientY)
+    : e.target;
   return { touch, e, target };
 }
 
@@ -102,7 +111,7 @@ export function supportPassive() {
     get passive() {
       supportPassive = true;
       return true;
-    }
+    },
   });
   return supportPassive;
 }
@@ -116,7 +125,11 @@ export function supportPassive() {
  */
 export function on(el, event, fn) {
   if (window.addEventListener) {
-    el.addEventListener(event, fn, SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false);
+    el.addEventListener(
+      event,
+      fn,
+      SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false,
+    );
   } else if (window.attachEvent) {
     el.attachEvent('on' + event, fn);
   }
@@ -131,7 +144,11 @@ export function on(el, event, fn) {
  */
 export function off(el, event, fn) {
   if (window.removeEventListener) {
-    el.removeEventListener(event, fn, SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false);
+    el.removeEventListener(
+      event,
+      fn,
+      SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false,
+    );
   } else if (window.detachEvent) {
     el.detachEvent('on' + event, fn);
   }
@@ -146,7 +163,7 @@ export function getOffset(el) {
     top: 0,
     left: 0,
     height: 0,
-    width: 0
+    width: 0,
   };
   result.height = el.offsetHeight;
   result.width = el.offsetWidth;
@@ -178,7 +195,10 @@ export function getParentAutoScrollElement(el, includeSelf) {
   let gotSelf = false;
   do {
     // we don't need to get elem css if it isn't even overflowing in the first place (performance)
-    if (elem.clientWidth < elem.scrollWidth || elem.clientHeight < elem.scrollHeight) {
+    if (
+      elem.clientWidth < elem.scrollWidth ||
+      elem.clientHeight < elem.scrollHeight
+    ) {
       let elemCSS = css(elem);
       if (
         (elem.clientWidth < elem.scrollWidth &&
@@ -202,7 +222,9 @@ export function getWindowScrollingElement() {
   let scrollingElement = document.scrollingElement;
 
   if (scrollingElement) {
-    return scrollingElement.contains(document.body) ? document : scrollingElement;
+    return scrollingElement.contains(document.body)
+      ? document
+      : scrollingElement;
   } else {
     return document;
   }
@@ -239,8 +261,14 @@ export function getMouseRect(event) {
     return { top: event.pageY, left: event.pageX };
   } else if (event.clientX || event.clientY) {
     return {
-      top: event.clientY + document.documentElement.scrollTop + document.body.scrollTop,
-      left: event.clientX + document.documentElement.scrollLeft + document.body.scrollLeft
+      top:
+        event.clientY +
+        document.documentElement.scrollTop +
+        document.body.scrollTop,
+      left:
+        event.clientX +
+        document.documentElement.scrollLeft +
+        document.body.scrollLeft,
     };
   }
 }
@@ -294,7 +322,7 @@ export function getRect(el, check = {}, container) {
             bottom: bottom,
             right: right,
             width: width,
-            height: height
+            height: height,
           };
         }
         parentNode = parentNode.parentNode;
@@ -325,8 +353,10 @@ export function getRect(el, check = {}, container) {
           let containerRect = container.getBoundingClientRect();
 
           // Set relative to edges of padding box of container
-          top -= containerRect.top + parseInt(css(container, 'border-top-width'));
-          left -= containerRect.left + parseInt(css(container, 'border-left-width'));
+          top -=
+            containerRect.top + parseInt(css(container, 'border-top-width'));
+          left -=
+            containerRect.left + parseInt(css(container, 'border-left-width'));
           bottom = top + elRect.height;
           right = left + elRect.width;
 
@@ -343,7 +373,7 @@ export function getRect(el, check = {}, container) {
     bottom: bottom,
     right: right,
     width: width,
-    height: height
+    height: height,
   };
 }
 
@@ -365,7 +395,7 @@ export function getElement(group, el, onlyEl) {
           index,
           el: children[index],
           rect: getRect(children[index]),
-          offset: getOffset(children[index])
+          offset: getOffset(children[index]),
         };
 
   // When the dom cannot be found directly in children, need to look down
@@ -377,7 +407,7 @@ export function getElement(group, el, onlyEl) {
             index: i,
             el: children[i],
             rect: getRect(children[i]),
-            offset: getOffset(children[i])
+            offset: getOffset(children[i]),
           };
     }
   }
@@ -437,7 +467,10 @@ export function toggleClass(el, name, state) {
       const className = (' ' + el.className + ' ')
         .replace(R_SPACE, ' ')
         .replace(' ' + name + ' ', ' ');
-      el.className = (className + (state ? ' ' + name : '')).replace(R_SPACE, ' ');
+      el.className = (className + (state ? ' ' + name : '')).replace(
+        R_SPACE,
+        ' ',
+      );
     }
   }
 }
