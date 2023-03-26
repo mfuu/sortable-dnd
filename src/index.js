@@ -423,9 +423,10 @@ Sortable.prototype = {
     setTransition(ghostEl, 'none');
     setTransform(ghostEl, `translate3d(${x}px, ${y}px, 0)`);
 
+    let allowPut = this._allowPut();
     if (isMultiple) {
       // on-multi-move
-      this._onMultiMove(_params({ e, evt }));
+      this._onMultiMove(_params({ e, evt }), allowPut);
     } else {
       // on-move
       this._dispatchEvent('onMove', {
@@ -436,7 +437,7 @@ Sortable.prototype = {
       });
     }
     // check if element will exchange
-    if (this._allowPut()) this._triggerChangeEvent(target, e, evt);
+    if (allowPut) this._triggerChangeEvent(target, e, evt);
     // auto scroll
     const { autoScroll, scrollThreshold } = this.options;
     if (autoScroll) {

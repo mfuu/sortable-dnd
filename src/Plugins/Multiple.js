@@ -48,8 +48,6 @@ const _offsetChanged = function (ns1, ns2) {
 export default function Multiple() {
   return {
     _setMultiElements: function (event, group) {
-      if (!this.options.multiple) return;
-
       let target;
 
       const { draggable } = this.options;
@@ -59,13 +57,16 @@ export default function Multiple() {
         if (isHTMLElement(element)) target = element;
       }
       if (!target) target = getElement(this.el, event.target, true);
-
       if (!target) return;
+
+      if (!selectedElements[this.options.group.name]) {
+        selectedElements[this.options.group.name] = [];
+      }
 
       toggleClass(
         target,
         this.options.selectedClass,
-        selectedElements[this.options.group.name]?.indexOf(target) < 0
+        selectedElements[this.options.group.name].indexOf(target) < 0
       );
 
       let params = {
@@ -76,12 +77,7 @@ export default function Multiple() {
         originalEvent: event,
       };
 
-      if (!selectedElements[this.options.group.name]) {
-        selectedElements[this.options.group.name] = [target];
-        this._dispatchEvent('onSelect', params);
-      } else if (
-        selectedElements[this.options.group.name].indexOf(target) < 0
-      ) {
+      if (selectedElements[this.options.group.name].indexOf(target) < 0) {
         selectedElements[this.options.group.name].push(target);
         this._dispatchEvent('onSelect', params);
       } else {
@@ -166,7 +162,7 @@ export default function Multiple() {
       this._animate();
     },
 
-    _onMultiMove: function ({ e, evt, dragEl, ghostEl }) {
+    _onMultiMove: function ({ e, evt, dragEl, ghostEl }, allowPut) {
       // on-multi-move
       this._dispatchEvent('onMove', {
         ..._emitMultiDiffer(),
@@ -175,8 +171,9 @@ export default function Multiple() {
         originalEvent: evt,
       });
 
-      let rect = getMouseRect(e);
+      if (!allowPut) return;
 
+      let rect = getMouseRect(e);
       // move selected elements
       selectedElements[this.options.group.name].forEach((node) => {
         if (node === dragEl) return;

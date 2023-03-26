@@ -768,9 +768,7 @@
   function Multiple() {
     return {
       _setMultiElements: function _setMultiElements(event, group) {
-        var _selectedElements$thi,
-          _this = this;
-        if (!this.options.multiple) return;
+        var _this = this;
         var target;
         var draggable = this.options.draggable;
         if (typeof draggable === 'function') {
@@ -780,7 +778,10 @@
         }
         if (!target) target = getElement(this.el, event.target, true);
         if (!target) return;
-        toggleClass(target, this.options.selectedClass, ((_selectedElements$thi = selectedElements[this.options.group.name]) === null || _selectedElements$thi === void 0 ? void 0 : _selectedElements$thi.indexOf(target)) < 0);
+        if (!selectedElements[this.options.group.name]) {
+          selectedElements[this.options.group.name] = [];
+        }
+        toggleClass(target, this.options.selectedClass, selectedElements[this.options.group.name].indexOf(target) < 0);
         var params = {
           sortable: this,
           group: group,
@@ -788,10 +789,7 @@
           event: event,
           originalEvent: event
         };
-        if (!selectedElements[this.options.group.name]) {
-          selectedElements[this.options.group.name] = [target];
-          this._dispatchEvent('onSelect', params);
-        } else if (selectedElements[this.options.group.name].indexOf(target) < 0) {
+        if (selectedElements[this.options.group.name].indexOf(target) < 0) {
           selectedElements[this.options.group.name].push(target);
           this._dispatchEvent('onSelect', params);
         } else {
@@ -810,8 +808,8 @@
         });
       },
       _allowMultiDrag: function _allowMultiDrag(dragEl) {
-        var _selectedElements$thi2;
-        return this.options.multiple && selectedElements[this.options.group.name] && selectedElements[this.options.group.name].length && ((_selectedElements$thi2 = selectedElements[this.options.group.name]) === null || _selectedElements$thi2 === void 0 ? void 0 : _selectedElements$thi2.indexOf(dragEl)) > -1;
+        var _selectedElements$thi;
+        return this.options.multiple && selectedElements[this.options.group.name] && selectedElements[this.options.group.name].length && ((_selectedElements$thi = selectedElements[this.options.group.name]) === null || _selectedElements$thi === void 0 ? void 0 : _selectedElements$thi.indexOf(dragEl)) > -1;
       },
       _getMultiGhostElement: function _getMultiGhostElement() {
         var ghost = document.createElement('div');
@@ -868,7 +866,7 @@
         });
         this._animate();
       },
-      _onMultiMove: function _onMultiMove(_ref2) {
+      _onMultiMove: function _onMultiMove(_ref2, allowPut) {
         var e = _ref2.e,
           evt = _ref2.evt,
           dragEl = _ref2.dragEl,
@@ -879,8 +877,8 @@
           event: e,
           originalEvent: evt
         }));
+        if (!allowPut) return;
         var rect = getMouseRect(e);
-
         // move selected elements
         selectedElements[this.options.group.name].forEach(function (node) {
           if (node === dragEl) return;
@@ -1425,12 +1423,13 @@
       var y = evt.clientY - downEvent.clientY;
       setTransition(ghostEl, 'none');
       setTransform(ghostEl, "translate3d(".concat(x, "px, ").concat(y, "px, 0)"));
+      var allowPut = this._allowPut();
       if (isMultiple) {
         // on-multi-move
         this._onMultiMove(_params({
           e: e,
           evt: evt
-        }));
+        }), allowPut);
       } else {
         // on-move
         this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emitDiffer()), {}, {
@@ -1440,7 +1439,7 @@
         }));
       }
       // check if element will exchange
-      if (this._allowPut()) this._triggerChangeEvent(target, e, evt);
+      if (allowPut) this._triggerChangeEvent(target, e, evt);
       // auto scroll
       var _this$options3 = this.options,
         autoScroll = _this$options3.autoScroll,
