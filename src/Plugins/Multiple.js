@@ -30,7 +30,7 @@ class MultiDifference {
   }
 }
 
-let selectedElements = [];
+let selectedElements = {};
 
 let multiDiffer = new MultiDifference();
 
@@ -65,7 +65,7 @@ export default function Multiple() {
       toggleClass(
         target,
         this.options.selectedClass,
-        !~selectedElements.indexOf(target),
+        selectedElements[this.options.group.name]?.indexOf(target) < 0
       );
 
       let params = {
@@ -75,34 +75,46 @@ export default function Multiple() {
         event,
         originalEvent: event,
       };
-      if (!~selectedElements.indexOf(target)) {
-        selectedElements.push(target);
+
+      if (!selectedElements[this.options.group.name]) {
+        selectedElements[this.options.group.name] = [target];
+        this._dispatchEvent('onSelect', params);
+      } else if (
+        selectedElements[this.options.group.name].indexOf(target) < 0
+      ) {
+        selectedElements[this.options.group.name].push(target);
         this._dispatchEvent('onSelect', params);
       } else {
-        selectedElements.splice(selectedElements.indexOf(target), 1);
+        selectedElements[this.options.group.name].splice(
+          selectedElements[this.options.group.name].indexOf(target),
+          1
+        );
         this._dispatchEvent('onDeselect', params);
       }
 
       // get each node's index in group
-      selectedElements.forEach((node) => {
+      selectedElements[this.options.group.name].forEach((node) => {
         node.sortableIndex = getIndex(this.el, node);
       });
 
       // sort
-      selectedElements.sort((a, b) => a.sortableIndex - b.sortableIndex);
+      selectedElements[this.options.group.name].sort(
+        (a, b) => a.sortableIndex - b.sortableIndex
+      );
     },
 
     _allowMultiDrag: function (dragEl) {
       return (
         this.options.multiple &&
-        selectedElements.length &&
-        selectedElements.includes(dragEl)
+        selectedElements[this.options.group.name] &&
+        selectedElements[this.options.group.name].length &&
+        selectedElements[this.options.group.name]?.indexOf(dragEl) > -1
       );
     },
 
     _getMultiGhostElement: function () {
       const ghost = document.createElement('div');
-      selectedElements.forEach((node, index) => {
+      selectedElements[this.options.group.name].forEach((node, index) => {
         let clone = node.cloneNode(true);
         let pos = index * 4 + 4;
         let opacity = index === 0 ? 1 : 0.5;
@@ -116,7 +128,7 @@ export default function Multiple() {
       multiDiffer[key] = {
         sortable: this,
         group: this.el,
-        nodes: selectedElements.map((node) => {
+        nodes: selectedElements[this.options.group.name].map((node) => {
           return { node, rect: getRect(node), offset: getOffset(node) };
         }),
       };
@@ -137,7 +149,7 @@ export default function Multiple() {
       // capture animate
       this._captureAnimationState(dragEl);
 
-      selectedElements.forEach((node) => {
+      selectedElements[this.options.group.name].forEach((node) => {
         if (node === dragEl) return;
         css(node, 'position', 'absolute');
       });
@@ -145,7 +157,7 @@ export default function Multiple() {
       let dragRect = getRect(dragEl, { relative: true });
 
       // hide selected elements
-      selectedElements.forEach((node) => {
+      selectedElements[this.options.group.name].forEach((node) => {
         if (node === dragEl) return;
         setRect(node, dragRect);
         css(node, 'display', 'none');
@@ -166,7 +178,7 @@ export default function Multiple() {
       let rect = getMouseRect(e);
 
       // move selected elements
-      selectedElements.forEach((node) => {
+      selectedElements[this.options.group.name].forEach((node) => {
         if (node === dragEl) return;
         css(node, 'top', rect.top);
         css(node, 'left', rect.left);
@@ -181,7 +193,7 @@ export default function Multiple() {
       ) {
         multiDiffer.from.sortable._captureAnimationState(dragEl, dragEl);
 
-        selectedElements.forEach((node) => {
+        selectedElements[this.options.group.name].forEach((node) => {
           rootEl.appendChild(node);
         });
 
@@ -222,7 +234,7 @@ export default function Multiple() {
           if (multiDiffer.from.group !== multiDiffer.to.group) {
             multiDiffer.from.sortable._captureAnimationState(dragEl, el);
 
-            selectedElements.forEach((node) => {
+            selectedElements[this.options.group.name].forEach((node) => {
               rootEl.insertBefore(node, el);
             });
 
@@ -244,11 +256,11 @@ export default function Multiple() {
             // the top value is compared first, and the left is compared if the top value is the same
             const _offset = getOffset(dragEl);
             if (_offset.top < offset.top || _offset.left < offset.left) {
-              selectedElements.forEach((node) => {
+              selectedElements[this.options.group.name].forEach((node) => {
                 rootEl.insertBefore(node, el.nextSibling);
               });
             } else {
-              selectedElements.forEach((node) => {
+              selectedElements[this.options.group.name].forEach((node) => {
                 rootEl.insertBefore(node, el);
               });
             }
@@ -270,24 +282,37 @@ export default function Multiple() {
     _onMultiDrop: function ({ fromGroup, fromSortable, dragEl, rootEl, evt }) {
       this._captureAnimationState(dragEl);
 
-      selectedElements.forEach((node) => {
+      selectedElements[this.options.group.name].forEach((node) => {
         if (node === dragEl) return;
         unsetRect(node);
       });
 
-      let index = selectedElements.indexOf(dragEl);
-      for (let i = 0; i < selectedElements.length; i++) {
+      let index = selectedElements[this.options.group.name].indexOf(dragEl);
+      for (
+        let i = 0;
+        i < selectedElements[this.options.group.name].length;
+        i++
+      ) {
         if (i < index) {
-          rootEl.insertBefore(selectedElements[i], dragEl);
+          rootEl.insertBefore(
+            selectedElements[this.options.group.name][i],
+            dragEl
+          );
         } else {
-          let dropEl = i > 0 ? selectedElements[i - 1] : dragEl;
-          rootEl.insertBefore(selectedElements[i], dropEl.nextSibling);
+          let dropEl =
+            i > 0 ? selectedElements[this.options.group.name][i - 1] : dragEl;
+          rootEl.insertBefore(
+            selectedElements[this.options.group.name][i],
+            dropEl.nextSibling
+          );
         }
       }
 
-      multiDiffer.to.nodes = selectedElements.map((node) => {
-        return { node, rect: getRect(node), offset: getOffset(node) };
-      });
+      multiDiffer.to.nodes = selectedElements[this.options.group.name].map(
+        (node) => {
+          return { node, rect: getRect(node), offset: getOffset(node) };
+        }
+      );
       if (!multiDiffer.to.group) {
         multiDiffer.to.group = this.el;
         multiDiffer.to.sortable = this;
@@ -298,7 +323,7 @@ export default function Multiple() {
 
       const changed = _offsetChanged(
         multiDiffer.from.nodes,
-        multiDiffer.to.nodes,
+        multiDiffer.to.nodes
       );
       const params = {
         ..._emitMultiDiffer(),

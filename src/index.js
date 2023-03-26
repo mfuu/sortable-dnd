@@ -17,6 +17,7 @@ import {
   isHTMLElement,
   offsetChanged,
   getParentAutoScrollElement,
+  randomCode,
 } from './utils.js';
 import { Edge, Safari, IE11OrLess } from './utils.js';
 import AutoScroll from './Plugins/AutoScroll.js';
@@ -54,17 +55,18 @@ let rootEl,
   ghostEl,
   downEvent,
   moveEvent,
-  isMultiple,
   fromGroup,
+  isMultiple,
   activeGroup,
   fromSortable,
+  autoScroller,
   dragStartTimer, // timer for start to drag
   differ = new Difference(); // Record the difference before and after
 
 let distance = { x: 0, y: 0 };
 let lastPosition = { x: 0, y: 0 };
 
-const _prepareGroup = function (options) {
+const _prepareGroup = function (options, uniqueId) {
   let group = {};
   let originalGroup = options.group;
 
@@ -72,7 +74,7 @@ const _prepareGroup = function (options) {
     originalGroup = { name: originalGroup, pull: true, put: true };
   }
 
-  group.name = originalGroup.name;
+  group.name = originalGroup.name || uniqueId;
   group.pull = originalGroup.pull;
   group.put = originalGroup.put;
 
@@ -172,16 +174,16 @@ const _params = function (args) {
 function Sortable(el, options) {
   if (!(el && el.nodeType && el.nodeType === 1)) {
     throw `Sortable: \`el\` must be an HTMLElement, not ${{}.toString.call(
-      el,
+      el
     )}`;
   }
 
   el[expando] = this;
 
   this.el = el;
+  this.ownerDocument = el.ownerDocument;
   this.scrollEl = getParentAutoScrollElement(el, true); // scroll element
   this.options = options = Object.assign({}, options);
-  this.ownerDocument = el.ownerDocument;
 
   const defaults = {
     group: '', // string: 'group' or object: { name: 'group', put: true | false, pull: true | false }
@@ -220,7 +222,7 @@ function Sortable(el, options) {
     !(name in this.options) && (this.options[name] = defaults[name]);
   }
 
-  _prepareGroup(options);
+  _prepareGroup(options, 'group_' + randomCode());
 
   // Bind all private methods
   for (let fn in this) {
@@ -242,7 +244,7 @@ function Sortable(el, options) {
 
   Object.assign(this, Animation());
 
-  this._autoScroll = new AutoScroll();
+  autoScroller = new AutoScroll();
 
   if (this.options.multiple) {
     Object.assign(this, Multiple());
@@ -268,7 +270,7 @@ Sortable.prototype = {
     this._clearState();
     clearTimeout(dragStartTimer);
     sortables.splice(sortables.indexOf(this.el), 1);
-
+    if (sortables.length == 0) autoScroller = null;
     this.el = null;
   },
 
@@ -296,7 +298,7 @@ Sortable.prototype = {
       if (!matches(target, draggable)) return true;
     } else if (draggable) {
       throw new Error(
-        `draggable expected "function" or "string" but received "${typeof draggable}"`,
+        `draggable expected "function" or "string" but received "${typeof draggable}"`
       );
     }
 
@@ -438,7 +440,7 @@ Sortable.prototype = {
     // auto scroll
     const { autoScroll, scrollThreshold } = this.options;
     if (autoScroll) {
-      this._autoScroll.update(this.el, scrollThreshold, downEvent, moveEvent);
+      autoScroller.update(this.el, scrollThreshold, downEvent, moveEvent);
     }
   },
 
@@ -601,7 +603,7 @@ Sortable.prototype = {
     this._unbindMoveEvents();
     this._unbindDropEvents();
     this._preventEvent(evt);
-    this._autoScroll.clear();
+    autoScroller.clear();
     clearTimeout(dragStartTimer);
 
     // clear style, attrs and class

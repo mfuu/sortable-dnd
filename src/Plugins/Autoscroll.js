@@ -31,7 +31,7 @@ export default class AutoScroll {
     }
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = requestAnimationFrame(() =>
-      this.update(parentNode, scrollThreshold, downEvent, moveEvent),
+      this.update(parentNode, scrollThreshold, downEvent, moveEvent)
     );
   }
 
@@ -72,11 +72,11 @@ export default class AutoScroll {
 
     if (toLeft) {
       scrollx = Math.floor(
-        Math.max(-1, (clientX - left) / scrollThreshold - 1) * this.speed.x,
+        Math.max(-1, (clientX - left) / scrollThreshold - 1) * this.speed.x
       );
     } else if (toRight) {
       scrollx = Math.ceil(
-        Math.min(1, (clientX - right) / scrollThreshold + 1) * this.speed.x,
+        Math.min(1, (clientX - right) / scrollThreshold + 1) * this.speed.x
       );
     } else {
       scrollx = 0;
@@ -84,11 +84,11 @@ export default class AutoScroll {
 
     if (toTop) {
       scrolly = Math.floor(
-        Math.max(-1, (clientY - top) / scrollThreshold - 1) * this.speed.y,
+        Math.max(-1, (clientY - top) / scrollThreshold - 1) * this.speed.y
       );
     } else if (toBottom) {
       scrolly = Math.ceil(
-        Math.min(1, (clientY - bottom) / scrollThreshold + 1) * this.speed.y,
+        Math.min(1, (clientY - bottom) / scrollThreshold + 1) * this.speed.y
       );
     } else {
       scrolly = 0;

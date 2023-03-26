@@ -22,7 +22,7 @@ function userAgent(pattern) {
 }
 
 export const IE11OrLess = userAgent(
-  /(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i,
+  /(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i
 );
 export const Edge = userAgent(/Edge/i);
 export const FireFox = userAgent(/firefox/i);
@@ -134,7 +134,7 @@ export function on(el, event, fn) {
     el.addEventListener(
       event,
       fn,
-      SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false,
+      SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false
     );
   } else if (window.attachEvent) {
     el.attachEvent('on' + event, fn);
@@ -153,7 +153,7 @@ export function off(el, event, fn) {
     el.removeEventListener(
       event,
       fn,
-      SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false,
+      SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false
     );
   } else if (window.detachEvent) {
     el.detachEvent('on' + event, fn);
@@ -475,7 +475,7 @@ export function toggleClass(el, name, state) {
         .replace(' ' + name + ' ', ' ');
       el.className = (className + (state ? ' ' + name : '')).replace(
         R_SPACE,
-        ' ',
+        ' '
       );
     }
   }
@@ -564,6 +564,10 @@ export function throttle(fn, delay) {
 
 export function _nextTick(fn) {
   return setTimeout(fn, 0);
+}
+
+export function randomCode() {
+  return Number(Math.random().toString().slice(-3) + Date.now()).toString(32);
 }
 
 export const expando = 'Sortable' + Date.now();

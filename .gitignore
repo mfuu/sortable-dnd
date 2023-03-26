@@ -3,6 +3,7 @@
 dev
 issues
 coverage
+docs
 
 # dependencies
 node_modules
