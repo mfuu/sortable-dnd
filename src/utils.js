@@ -535,33 +535,6 @@ export function css(el, prop, val) {
   }
 }
 
-export function debounce(fn, delay, immediate) {
-  let timer = null;
-  return function () {
-    const context = this,
-      args = arguments;
-    timer && clearTimeout(timer);
-    immediate && !timer && fn.apply(context, args);
-    timer = setTimeout(function () {
-      fn.apply(context, args);
-    }, delay);
-  };
-}
-
-export function throttle(fn, delay) {
-  let timer = null;
-  return function () {
-    const context = this,
-      args = arguments;
-    if (!timer) {
-      timer = setTimeout(function () {
-        timer = null;
-        fn.apply(context, args);
-      }, delay);
-    }
-  };
-}
-
 export function _nextTick(fn) {
   return setTimeout(fn, 0);
 }

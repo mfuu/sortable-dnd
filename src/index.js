@@ -12,8 +12,6 @@ import {
   _nextTick,
   getElement,
   toggleClass,
-  setTransform,
-  setTransition,
   isHTMLElement,
   offsetChanged,
   getParentAutoScrollElement,
@@ -23,6 +21,7 @@ import { Edge, Safari, IE11OrLess } from './utils.js';
 import AutoScroll from './Plugins/AutoScroll.js';
 import Animation from './Plugins/Animation.js';
 import Multiple from './Plugins/Multiple.js';
+import Helper from './helper.js';
 
 const FromTo = {
   sortable: null,
@@ -52,7 +51,6 @@ const sortables = [];
 let rootEl,
   dragEl,
   dropEl,
-  ghostEl,
   downEvent,
   moveEvent,
   fromGroup,
@@ -61,6 +59,7 @@ let rootEl,
   fromSortable,
   autoScroller,
   dragStartTimer, // timer for start to drag
+  helper = new Helper(),
   differ = new Difference(); // Record the difference before and after
 
 let distance = { x: 0, y: 0 };
@@ -159,7 +158,7 @@ const _params = function (args) {
     ...args,
     rootEl,
     dragEl,
-    ghostEl,
+    ghostEl: helper.node,
     fromSortable,
     fromGroup,
     activeGroup,
@@ -242,8 +241,7 @@ function Sortable(el, options) {
 
   sortables.push(el);
 
-  Object.assign(this, Animation());
-
+  this.animation = new Animation();
   autoScroller = new AutoScroll();
 
   if (this.options.multiple) {
@@ -396,7 +394,8 @@ Sortable.prototype = {
       }
 
       // Init in the move event to prevent conflict with the click event
-      this._appendGhost();
+      const element = isMultiple ? this._getMultiGhostElement() : dragEl;
+      helper.init(dragEl, element, this.el, this.options, distance);
 
       // add class for drag element
       toggleClass(dragEl, this.options.chosenClass, true);
@@ -420,8 +419,7 @@ Sortable.prototype = {
 
     const x = evt.clientX - downEvent.clientX;
     const y = evt.clientY - downEvent.clientY;
-    setTransition(ghostEl, 'none');
-    setTransform(ghostEl, `translate3d(${x}px, ${y}px, 0)`);
+    helper.move(x, y);
 
     let allowPut = this._allowPut();
     if (isMultiple) {
@@ -431,7 +429,7 @@ Sortable.prototype = {
       // on-move
       this._dispatchEvent('onMove', {
         ..._emitDiffer(),
-        ghostEl,
+        ghostEl: helper.node,
         event: e,
         originalEvent: evt,
       });
@@ -456,49 +454,6 @@ Sortable.prototype = {
     }
   },
 
-  // -------------------------------- ghost ----------------------------------
-  _appendGhost: function () {
-    if (ghostEl) return;
-
-    const { fallbackOnBody, ghostClass, ghostStyle = {} } = this.options;
-    const container = fallbackOnBody ? document.body : this.el;
-    const rect = getRect(dragEl, { block: true }, container);
-
-    if (isMultiple) {
-      ghostEl = this._getMultiGhostElement();
-    } else {
-      ghostEl = dragEl.cloneNode(true);
-    }
-
-    toggleClass(ghostEl, ghostClass, true);
-    css(ghostEl, 'box-sizing', 'border-box');
-    css(ghostEl, 'margin', 0);
-    css(ghostEl, 'top', rect.top);
-    css(ghostEl, 'left', rect.left);
-    css(ghostEl, 'width', rect.width);
-    css(ghostEl, 'height', rect.height);
-    css(ghostEl, 'opacity', '0.8');
-    css(ghostEl, 'position', 'fixed');
-    css(ghostEl, 'zIndex', '100000');
-    css(ghostEl, 'pointerEvents', 'none');
-
-    for (const key in ghostStyle) {
-      css(ghostEl, key, ghostStyle[key]);
-    }
-
-    setTransition(ghostEl, 'none');
-    setTransform(ghostEl, 'translate3d(0px, 0px, 0px)');
-
-    container.appendChild(ghostEl);
-
-    let ox = (distance.x / parseInt(ghostEl.style.width)) * 100;
-    let oy = (distance.y / parseInt(ghostEl.style.height)) * 100;
-    css(ghostEl, 'transform-origin', `${ox}% ${oy}%`);
-    css(ghostEl, 'transform', 'translateZ(0)');
-
-    Sortable.ghost = ghostEl;
-  },
-
   // -------------------------------- on change ----------------------------------
   _triggerChangeEvent: function (target, e, evt) {
     if (!dragEl) return;
@@ -516,7 +471,7 @@ Sortable.prototype = {
       !lastChild(rootEl) ||
       (target === rootEl && differ.from.group !== rootEl)
     ) {
-      differ.from.sortable._captureAnimationState(dragEl, dragEl);
+      differ.from.sortable.animation.collect(dragEl, dragEl);
 
       differ.to = {
         sortable: this,
@@ -539,7 +494,7 @@ Sortable.prototype = {
       });
 
       rootEl.appendChild(dragEl);
-      differ.from.sortable._animate();
+      differ.from.sortable.animation.animate();
     } else {
       const { el, rect, offset } = getElement(rootEl, target);
       if (!el || (el && el.animated) || el === dragEl) return;
@@ -557,10 +512,9 @@ Sortable.prototype = {
         clientY > top &&
         clientY < bottom
       ) {
-        this._captureAnimationState(dragEl, dropEl);
-
+        this.animation.collect(dragEl, dropEl);
         if (differ.from.group !== differ.to.group) {
-          differ.from.sortable._captureAnimationState(dragEl, dropEl);
+          differ.from.sortable.animation.collect(dragEl, dropEl);
           // on-remove
           differ.from.sortable._dispatchEvent('onRemove', {
             ..._emitDiffer(),
@@ -575,7 +529,7 @@ Sortable.prototype = {
           });
 
           rootEl.insertBefore(dragEl, dropEl);
-          differ.from.sortable._animate();
+          differ.from.sortable.animation.animate();
         } else {
           // on-change
           this._dispatchEvent('onChange', {
@@ -592,7 +546,7 @@ Sortable.prototype = {
             rootEl.insertBefore(dragEl, dropEl);
           }
         }
-        this._animate();
+        this.animation.animate();
       }
     }
     differ.from.sortable = this;
@@ -665,10 +619,8 @@ Sortable.prototype = {
 
   // -------------------------------- clear ----------------------------------
   _clearState: function () {
-    ghostEl && ghostEl.parentNode && ghostEl.parentNode.removeChild(ghostEl);
     dragEl =
       dropEl =
-      ghostEl =
       downEvent =
       moveEvent =
       isMultiple =
@@ -680,6 +632,7 @@ Sortable.prototype = {
         null;
     distance = lastPosition = { x: 0, y: 0 };
     differ.destroy();
+    helper.destroy();
   },
   _unbindMoveEvents: function () {
     for (let i = 0; i < events.move.length; i++) {

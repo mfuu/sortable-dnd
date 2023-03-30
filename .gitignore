@@ -4,6 +4,7 @@ dev
 issues
 coverage
 docs
+*.html
 
 # dependencies
 node_modules

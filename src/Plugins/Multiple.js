@@ -2,7 +2,6 @@ import {
   css,
   getRect,
   setRect,
-  debounce,
   getIndex,
   getOffset,
   lastChild,
@@ -143,7 +142,7 @@ export default function Multiple() {
       });
 
       // capture animate
-      this._captureAnimationState(dragEl);
+      animation.collect(this.el, dragEl);
 
       selectedElements[this.options.group.name].forEach((node) => {
         if (node === dragEl) return;
@@ -159,7 +158,7 @@ export default function Multiple() {
         css(node, 'display', 'none');
       });
 
-      this._animate();
+      this.animation.animate();
     },
 
     _onMultiMove: function ({ e, evt, dragEl, ghostEl }, allowPut) {
@@ -188,7 +187,7 @@ export default function Multiple() {
         !lastChild(rootEl) ||
         (target === rootEl && multiDiffer.from.group !== rootEl)
       ) {
-        multiDiffer.from.sortable._captureAnimationState(dragEl, dragEl);
+        animation.collect(multiDiffer.from.group, dragEl, dragEl);
 
         selectedElements[this.options.group.name].forEach((node) => {
           rootEl.appendChild(node);
@@ -209,7 +208,7 @@ export default function Multiple() {
           originalEvent: evt,
         });
 
-        multiDiffer.from.sortable._animate();
+        multiDiffer.from.sortable.animation.animate();
       } else {
         const { el, rect, offset } = getElement(rootEl, target);
         if (!el || (el && el.animated) || el === dragEl) return;
@@ -226,10 +225,10 @@ export default function Multiple() {
           clientY > top &&
           clientY < bottom
         ) {
-          this._captureAnimationState(dragEl, el);
+          this.animation.collect(dragEl, el);
 
           if (multiDiffer.from.group !== multiDiffer.to.group) {
-            multiDiffer.from.sortable._captureAnimationState(dragEl, el);
+            multiDiffer.from.sortable.animation.collect(dragEl, el);
 
             selectedElements[this.options.group.name].forEach((node) => {
               rootEl.insertBefore(node, el);
@@ -248,7 +247,7 @@ export default function Multiple() {
               originalEvent: evt,
             });
 
-            multiDiffer.from.sortable._animate();
+            multiDiffer.from.sortable.animation.animate();
           } else {
             // the top value is compared first, and the left is compared if the top value is the same
             const _offset = getOffset(dragEl);
@@ -269,7 +268,7 @@ export default function Multiple() {
               originalEvent: evt,
             });
           }
-          this._animate();
+          this.animation.animate();
         }
       }
       multiDiffer.from.sortable = this;
@@ -277,7 +276,7 @@ export default function Multiple() {
     },
 
     _onMultiDrop: function ({ fromGroup, fromSortable, dragEl, rootEl, evt }) {
-      this._captureAnimationState(dragEl);
+      this.animation.collect(dragEl);
 
       selectedElements[this.options.group.name].forEach((node) => {
         if (node === dragEl) return;
@@ -285,6 +284,13 @@ export default function Multiple() {
       });
 
       let index = selectedElements[this.options.group.name].indexOf(dragEl);
+      console.log(
+        index,
+        selectedElements[this.options.group.name],
+        rootEl,
+        fromGroup,
+        this._allowPut()
+      );
       for (
         let i = 0;
         i < selectedElements[this.options.group.name].length;
@@ -334,7 +340,7 @@ export default function Multiple() {
         fromSortable._dispatchEvent('onDrop', params);
       this._dispatchEvent('onDrop', params);
 
-      this._animate();
+      this.animation.animate();
     },
   };
 }
