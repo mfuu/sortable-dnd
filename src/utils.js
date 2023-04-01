@@ -1,5 +1,3 @@
-import Sortable from './index.js';
-
 const captureMode = {
   capture: false,
   passive: false,
@@ -12,8 +10,6 @@ export const events = {
   move: ['pointermove', 'touchmove', 'mousemove'],
   end: ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup'],
 };
-
-export const SUPPORT_PASSIVE = supportPassive();
 
 function userAgent(pattern) {
   if (typeof window !== 'undefined' && window.navigator) {
@@ -30,6 +26,21 @@ export const Safari =
   userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
 export const IOS = userAgent(/iP(ad|od|hone)/i);
 export const ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
+
+/**
+ * detect passive event support
+ */
+export const supportPassive = (function () {
+  // https://github.com/Modernizr/Modernizr/issues/1894
+  let supportPassive = false;
+  document.addEventListener('checkIfSupportPassive', null, {
+    get passive() {
+      supportPassive = true;
+      return true;
+    },
+  });
+  return supportPassive;
+})();
 
 export const vendorPrefix = (function () {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -108,21 +119,6 @@ export function getEvent(evt) {
 }
 
 /**
- * detect passive event support
- */
-export function supportPassive() {
-  // https://github.com/Modernizr/Modernizr/issues/1894
-  let supportPassive = false;
-  document.addEventListener('checkIfSupportPassive', null, {
-    get passive() {
-      supportPassive = true;
-      return true;
-    },
-  });
-  return supportPassive;
-}
-
-/**
  * add specified event listener
  * @param {HTMLElement} el
  * @param {String} event
@@ -134,7 +130,7 @@ export function on(el, event, fn) {
     el.addEventListener(
       event,
       fn,
-      SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false
+      supportPassive || !IE11OrLess ? captureMode : false
     );
   } else if (window.attachEvent) {
     el.attachEvent('on' + event, fn);
@@ -153,7 +149,7 @@ export function off(el, event, fn) {
     el.removeEventListener(
       event,
       fn,
-      SUPPORT_PASSIVE || !IE11OrLess ? captureMode : false
+      supportPassive || !IE11OrLess ? captureMode : false
     );
   } else if (window.detachEvent) {
     el.detachEvent('on' + event, fn);
@@ -234,32 +230,6 @@ export function getWindowScrollingElement() {
   } else {
     return document;
   }
-}
-
-/**
- * get specified element's index in group
- * @param {HTMLElement} group
- * @param {HTMLElement} el
- * @returns {Number} index
- */
-export function getIndex(group, el) {
-  if (!el || !el.parentNode) return -1;
-
-  const children = [...Array.from(group.children)];
-  return children.indexOf(el);
-}
-
-export function setRect(el, rect) {
-  css(el, 'position', 'absolute');
-  css(el, 'top', rect.top);
-  css(el, 'left', rect.left);
-}
-
-export function unsetRect(el) {
-  css(el, 'display', '');
-  css(el, 'position', '');
-  css(el, 'top', '');
-  css(el, 'left', '');
 }
 
 export function getMouseRect(event) {
@@ -444,12 +414,12 @@ export function isChildOf(child, parent) {
  * @param  {selector} selector    Any other elements that should be ignored
  * @return {HTMLElement}          The last child, ignoring ghostEl
  */
-export function lastChild(el, selector) {
+export function lastChild(el, helper, selector) {
   let last = el.lastElementChild;
 
   while (
     last &&
-    (last === Sortable.ghost ||
+    (last === helper ||
       css(last, 'display') === 'none' ||
       (selector && !matches(last, selector)))
   ) {
@@ -533,33 +503,6 @@ export function css(el, prop, val) {
       style[prop] = val + (typeof val === 'string' ? '' : 'px');
     }
   }
-}
-
-export function debounce(fn, delay, immediate) {
-  let timer = null;
-  return function () {
-    const context = this,
-      args = arguments;
-    timer && clearTimeout(timer);
-    immediate && !timer && fn.apply(context, args);
-    timer = setTimeout(function () {
-      fn.apply(context, args);
-    }, delay);
-  };
-}
-
-export function throttle(fn, delay) {
-  let timer = null;
-  return function () {
-    const context = this,
-      args = arguments;
-    if (!timer) {
-      timer = setTimeout(function () {
-        timer = null;
-        fn.apply(context, args);
-      }, delay);
-    }
-  };
 }
 
 export function _nextTick(fn) {

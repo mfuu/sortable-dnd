@@ -1,59 +1,66 @@
 import { getRect, setTransition, setTransform } from '../utils.js';
 
-export default function Animation() {
-  const animationState = [];
-
-  function getRange(children, drag, drop) {
-    const start = children.indexOf(drag);
-    const end = children.indexOf(drop);
-    return start < end ? { start, end } : { start: end, end: start };
-  }
-
-  return {
-    _captureAnimationState(dragEl, dropEl) {
-      const children = [...Array.from(this.el.children)];
-      let { start, end } = getRange(children, dragEl, dropEl);
-
-      animationState.length = 0; // reset
-
-      if (start < 0) {
-        start = end;
-        end = Math.min(children.length - 1, 100);
-      }
-
-      if (end < 0) end = Math.min(children.length - 1, 100);
-
-      children.slice(start, end + 1).forEach((child) => {
-        animationState.push({ target: child, rect: getRect(child) });
-      });
-    },
-
-    _animate() {
-      animationState.forEach((state) => {
-        const { target, rect } = state;
-        this._excuteAnimation(target, rect, this.options.animation);
-      });
-    },
-
-    _excuteAnimation(el, preRect, animation = 150) {
-      const curRect = getRect(el);
-      const left = preRect.left - curRect.left;
-      const top = preRect.top - curRect.top;
-
-      setTransition(el, 'none');
-      setTransform(el, `translate3d(${left}px, ${top}px, 0)`);
-
-      el.offsetWidth; // trigger repaint
-
-      setTransition(el, `${animation}ms`);
-      setTransform(el, 'translate3d(0px, 0px, 0px)');
-
-      clearTimeout(el.animated);
-      el.animated = setTimeout(() => {
-        setTransition(el, '');
-        setTransform(el, '');
-        el.animated = null;
-      }, animation);
-    },
-  };
+function Animation() {
+  this.animations = [];
 }
+
+Animation.prototype = {
+  collect(dragEl, dropEl, container) {
+    container = container || dragEl.parentNode;
+    const children = [...Array.from(container.children)];
+    let { start, end } = this._getRange(children, dragEl, dropEl);
+
+    this.animations.length = 0;
+
+    const max = Math.floor(container.scrollHeight / dragEl.offsetHeight);
+    const min = Math.min(children.length - 1, max);
+
+    if (start < 0) {
+      start = end;
+      end = min;
+    }
+    if (end < 0) end = min;
+
+    children.slice(start, end + 1).forEach((node) => {
+      this.animations.push({ node, rect: getRect(node) });
+    });
+  },
+
+  animate(animation) {
+    this.animations.forEach((state) => {
+      const { node, rect } = state;
+      this._excute(node, rect, animation);
+    });
+  },
+
+  _excute(el, { left, top }, animation = 150) {
+    const rect = getRect(el);
+    const ot = top - rect.top;
+    const ol = left - rect.left;
+
+    setTransition(el, 'none');
+    setTransform(el, `translate3d(${ol}px, ${ot}px, 0)`);
+
+    // repaint
+    el.offsetWidth;
+
+    setTransition(el, `${animation}ms`);
+    setTransform(el, 'translate3d(0px, 0px, 0px)');
+
+    clearTimeout(el.animated);
+    el.animated = setTimeout(() => {
+      setTransition(el, '');
+      setTransform(el, '');
+      el.animated = null;
+    }, animation);
+  },
+
+  _getRange(children, dragEl, dropEl) {
+    let start = children.indexOf(dragEl);
+    let end = children.indexOf(dropEl);
+    if (start > end) [start, end] = [end, start];
+    return { start, end };
+  },
+};
+
+export default Animation;
