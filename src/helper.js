@@ -26,14 +26,13 @@ Helper.prototype = {
     setTransform(this.helper, `translate3d(${x}px, ${y}px, 0)`);
   },
 
-  init(baseEl, ghostEl, container, options, distance) {
+  init(rect, element, container, options, distance) {
     if (this.helper) return;
 
     const { fallbackOnBody, ghostClass, ghostStyle = {} } = options;
     const helperContainer = fallbackOnBody ? document.body : container;
-    const rect = getRect(baseEl, { block: true }, helperContainer);
 
-    this.helper = ghostEl.cloneNode(true);
+    this.helper = element.cloneNode(true);
     toggleClass(this.helper, ghostClass, true);
 
     const helperStyle = {

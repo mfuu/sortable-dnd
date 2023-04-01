@@ -353,41 +353,32 @@ export function getRect(el, check = {}, container) {
   };
 }
 
-/**
- * get target Element in group
- * @param {HTMLElement} group
- * @param {HTMLElement} el
- * @param {Boolean} onlyEl only get element
- */
-export function getElement(group, el, onlyEl) {
-  const children = [...Array.from(group.children)];
+export function closest(el, selector, ctx, includeCTX) {
+  if (el) {
+    ctx = ctx || document;
 
-  // If it can be found directly in the child element, return
-  const index = children.indexOf(el);
-  if (index > -1)
-    return onlyEl
-      ? children[index]
-      : {
-          index,
-          el: children[index],
-          rect: getRect(children[index]),
-          offset: getOffset(children[index]),
-        };
+    do {
+      if (selector == null) {
+        let children = [...Array.from(ctx.children)];
 
-  // When the dom cannot be found directly in children, need to look down
-  for (let i = 0; i < children.length; i++) {
-    if (isChildOf(el, children[i])) {
-      return onlyEl
-        ? children[i]
-        : {
-            index: i,
-            el: children[i],
-            rect: getRect(children[i]),
-            offset: getOffset(children[i]),
-          };
-    }
+        // If it can be found directly in the child element, return
+        let index = children.indexOf(el);
+        if (index > -1) return children[index];
+
+        // When the dom cannot be found directly in children, need to look down
+        for (let i = 0; i < children.length; i++) {
+          if (isChildOf(el, children[i])) return children[i];
+        }
+      } else if (
+        selector[0] === '>'
+          ? el.parentNode === ctx && matches(el, selector)
+          : matches(el, selector) || (includeCTX && el === ctx)
+      ) {
+        return el;
+      }
+    } while ((el = el.parentNode));
   }
-  return onlyEl ? null : { index: -1, el: null, rect: {}, offset: {} };
+  return null;
 }
 
 /**

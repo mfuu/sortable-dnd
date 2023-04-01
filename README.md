@@ -4,23 +4,23 @@
 
 A JS Library for Drag and Drop, supports Sortable and Draggable
 
-## [Live Demo](https://mfuu.github.io/sortable-dnd/)
+### [Live Demo](https://mfuu.github.io/sortable-dnd/)
 
-# Usage
+## Usage
 
 **HTML**
 ```html
 <ul id="group">
   <li class="item">
-    <i id="drag" class="drag">drag me</i>
+    <i id="handle" class="handle">drag me</i>
     <p>1</p>
   </li>
   <li class="item">
-    <i id="drag" class="drag">drag me</i>
+    <i id="handle" class="handle">drag me</i>
     <p>2</p>
   </li>
   <li class="item">
-    <i id="drag" class="drag">drag me</i>
+    <i id="handle" class="handle">drag me</i>
     <p>3</p>
   </li>
 </ul>
@@ -39,6 +39,10 @@ var DND = new Sortable(
     // draggable: '.item' // use class
     // draggable: '#item' // use id
     // draggable: (e) => e.target // use function to set drag Element
+    handle: (e) => e.target.tagName === 'I' ? true : false, // use function
+    // handle: 'I', // use tagName
+    // handle: '.handle', // use class
+    // handle: '#handle', // use id
     onDrag: ({ from, event }) => {
       // code
     },
@@ -67,20 +71,21 @@ var DND = new Sortable(
 )
 ```
 
-# Methods
+## Methods
 
 | **Method**   | **Description** |
 |--------------|--------------|
 | `destroy()`  | Manually clear all the state of the component, using this method the component will not be draggable |
 
 
-# Options
+## Options
 
 **Common used**
 
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `draggable`       | `String/Function` | `-`         | Specifies which items inside the element should be draggable |
+| `handle`          | `String|Funnction`| `-`         | Drag handle selector within list items |
 | `group`           | `String/Object`   | `-`         | string: 'name' or object: `{ name: 'group', put: true/false, pull: true/false }` |
 | `multiple`        | `Boolean`         | `false`     | Enable multiple drag |
 | `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
@@ -109,7 +114,3 @@ var DND = new Sortable(
 | `delayOnTouchOnly`| `Boolean`         | `false`     | Only delay if user is using touch |
 | `fallbackOnBody`  | `Boolean`         | `false`     | Appends the cloned DOM Element into the Document's Body |
 | `stopPropagation` | `Boolean`         | `false`     | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
-
-# LICENSE
-
-[MIT License](https://github.com/mfuu/sortable-dnd/blob/main/LICENSE)

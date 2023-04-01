@@ -48,13 +48,23 @@ type options = {
    * Specifies which items inside the element should be draggable
    * @example
    * Example Values:
-   * - (e) => e.target
    * - (e) => e.target.tagName === 'LI' ? true : false
+   * - (e) => e.target // use function to set the drag element if retrun HTMLElement
    * - 'div'   // use tag name
    * - '.item' // use class name
    * - '#item' // use id
    */
   draggable?: Function | String;
+
+  /**
+   *  Drag handle selector within list items
+   * @example
+   * - (e) => e.target.tagName === 'I' ? true : false
+   * - 'i' // use tag name
+   * - '.handle' // use class
+   * - '#handle' // use id
+   */
+  handle?: Function | String;
 
   /**
    * @example

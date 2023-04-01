@@ -5,17 +5,17 @@ import {
   events,
   expando,
   matches,
+  closest,
   getRect,
   getEvent,
   lastChild,
   getOffset,
   _nextTick,
-  getElement,
+  randomCode,
   toggleClass,
   isHTMLElement,
   offsetChanged,
   getParentAutoScrollElement,
-  randomCode,
 } from './utils.js';
 import { Edge, Safari, IE11OrLess } from './utils.js';
 import Multiple, { getMultiDiffer } from './Plugins/Multiple.js';
@@ -171,31 +171,33 @@ function Sortable(el, options) {
   this.options = options = Object.assign({}, options);
 
   const defaults = {
-    group: '', // string: 'group' or object: { name: 'group', put: true | false, pull: true | false }
-    animation: 150, // Define the timing of the sorting animation
+    group: '',
+    animation: 150,
 
-    multiple: false, // Enable multi-drag
+    multiple: false,
 
-    draggable: undefined, // String: css selector, Function: (e) => return (true || HTMLElement)
-    onDrag: undefined, // The callback function triggered when dragging starts
-    onMove: undefined, // The callback function during drag and drop
-    onDrop: undefined, // The callback function when the drag is completed
-    onChange: undefined, // The callback function when dragging an element to change its position
+    draggable: null,
+    handle: null,
+
+    onDrag: null,
+    onMove: null,
+    onDrop: null,
+    onChange: null,
 
     autoScroll: true,
-    scrollThreshold: 25, // Autoscroll threshold
+    scrollThreshold: 25,
 
-    delay: 0, // Defines the delay time after which the mouse-selected list cell can start dragging
-    delayOnTouchOnly: false, // only delay if user is using touch
-    disabled: false, // Defines whether the sortable object is available or not. When it is true, the sortable object cannot drag and drop sorting and other functions. When it is false, it can be sorted, which is equivalent to a switch.
+    delay: 0,
+    delayOnTouchOnly: false,
+    disabled: false,
 
-    ghostClass: '', // Ghost element class name
-    ghostStyle: {}, // Ghost element style
-    chosenClass: '', // Chosen element style
-    selectedClass: '', // The style of the element when it is selected
+    ghostClass: '',
+    ghostStyle: {},
+    chosenClass: '',
+    selectedClass: '',
 
-    fallbackOnBody: false, // Appends the cloned DOM Element into the Document's Body
-    stopPropagation: false, // Prevents further propagation of the current event in the capture and bubbling phases
+    fallbackOnBody: false,
+    stopPropagation: false,
 
     supportPointer: 'onpointerdown' in window && !Safari,
     supportTouch: 'ontouchstart' in window,
@@ -262,36 +264,32 @@ Sortable.prototype = {
   // -------------------------------- prepare start ----------------------------------
   _onDrag: function (/** Event|TouchEvent */ evt) {
     if (dragEl || this.options.disabled || !this.options.group.pull) return;
-    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return true; // only left button and enabled
+    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return; // only left button and enabled
 
     const { touch, e, target } = getEvent(evt);
 
     // Safari ignores further event handling after mousedown
-    if (Safari && target && target.tagName.toUpperCase() === 'SELECT')
-      return true;
-    if (target === this.el) return true;
+    if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
+    if (target === this.el) return;
 
-    const { draggable } = this.options;
+    const { draggable, handle } = this.options;
+
+    if (typeof handle === 'function' && !handle(e)) return;
+    if (typeof handle === 'string' && !matches(target, handle)) return;
+
     if (typeof draggable === 'function') {
       // Function type must return a HTMLElement if used to specifies the drag el
       const element = draggable(e);
-      if (!element) return true;
+      if (!element) return;
       // set drag element
       if (isHTMLElement(element)) dragEl = element;
-    } else if (typeof draggable === 'string') {
+    } else {
       // String use as 'TagName' or '.class' or '#id'
-      if (!matches(target, draggable)) return true;
-    } else if (draggable) {
-      throw new Error(
-        `draggable expected "function" or "string" but received "${typeof draggable}"`
-      );
+      dragEl = closest(target, draggable, this.el, false);
     }
 
-    // Get the dragged element
-    if (!dragEl) dragEl = getElement(this.el, target, true);
-
     // No dragging is allowed when there is no dragging element
-    if (!dragEl || dragEl.animated) return true;
+    if (!dragEl || dragEl.animated) return;
 
     // solve the problem that the mobile cannot be dragged
     if (touch) dragEl.style['touch-action'] = 'none';
@@ -304,8 +302,9 @@ Sortable.prototype = {
     // multi-drag
     if (isMultiple) this.multiplayer.onDrag(dragEl, this);
 
-    // get the position of the dragged element in the list
-    const { rect, offset } = getElement(this.el, dragEl);
+    // get the position of the dragEl
+    const rect = getRect(dragEl);
+    const offset = getOffset(dragEl);
     differFrom = {
       sortable: this,
       group: dragEl.parentNode,
@@ -377,7 +376,7 @@ Sortable.prototype = {
 
       // Init in the move event to prevent conflict with the click event
       const element = isMultiple ? this.multiplayer.getHelper() : dragEl;
-      helper.init(dragEl, element, this.el, this.options, distance);
+      helper.init(differFrom.rect, element, this.el, this.options, distance);
 
       // add class for drag element
       toggleClass(dragEl, this.options.chosenClass, true);
@@ -455,12 +454,13 @@ Sortable.prototype = {
       this._dispatchEvent('onAdd', { ..._emitDiffer(), event: evt });
 
       differFrom.sortable.animator.animate();
-      differFrom.group = rootEl;
+      differFrom.group = dragEl.parentNode;
     } else {
-      const { el, rect, offset } = getElement(rootEl, target);
-      if (!el || (el && el.animated) || el === dragEl) return;
+      dropEl = closest(target, this.options.draggable, rootEl, false);
+      if (!dropEl || (dropEl && dropEl.animated) || dropEl === dragEl) return;
 
-      dropEl = el;
+      const rect = getRect(dropEl);
+      const offset = getOffset(dropEl);
 
       if (isMultiple) this.multiplayer.onChange(dragEl, this);
       differTo = {
@@ -525,9 +525,8 @@ Sortable.prototype = {
 
     // clear style, attrs and class
     if (dragEl) {
-      const { touch } = getEvent(evt);
       toggleClass(dragEl, this.options.chosenClass, false);
-      if (touch) dragEl.style['touch-action'] = '';
+      if (getEvent(evt).touch) dragEl.style['touch-action'] = '';
       dragEl.style['will-change'] = '';
     }
     // drag and drop done
