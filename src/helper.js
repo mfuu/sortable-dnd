@@ -6,24 +6,25 @@ import {
   setTransition,
 } from './utils';
 
-export default class Helper {
-  constructor() {
-    this.helper = null;
-  }
+function Helper() {
+  this.helper = null;
+}
+
+Helper.prototype = {
   get node() {
     return this.helper;
-  }
+  },
 
   destroy() {
     if (this.helper && this.helper.parentNode) {
       this.helper.parentNode.removeChild(this.helper);
     }
     this.helper = null;
-  }
+  },
 
   move(x, y) {
     setTransform(this.helper, `translate3d(${x}px, ${y}px, 0)`);
-  }
+  },
 
   init(baseEl, ghostEl, container, options, distance) {
     if (this.helper) return;
@@ -61,5 +62,7 @@ export default class Helper {
     let oy = (distance.y / parseInt(this.helper.style.height)) * 100;
     css(this.helper, 'transform-origin', `${ox}% ${oy}%`);
     css(this.helper, 'transform', 'translateZ(0)');
-  }
-}
+  },
+};
+
+export default Helper;

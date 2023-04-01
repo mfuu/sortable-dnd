@@ -40,7 +40,7 @@ type MultiFromTo = {
   nodes: MultiNode[];
 }
 
-type EventType = Event & (DragEvent | PointerEvent | MouseEvent | TouchEvent);
+type EventType = Event & (PointerEvent | MouseEvent | TouchEvent);
 
 
 type options = {
@@ -48,10 +48,11 @@ type options = {
    * Specifies which items inside the element should be draggable
    * @example
    * Example Values:
-   * - (e) => e.target.tagName === 'div' ? true : false
+   * - (e) => e.target
+   * - (e) => e.target.tagName === 'LI' ? true : false
    * - 'div'   // use tag name
-   * - '.drag' // use class name
-   * - '#drag' // use id
+   * - '.item' // use class name
+   * - '#item' // use id
    */
   draggable?: Function | String;
 
@@ -82,7 +83,6 @@ type options = {
     from: FromTo | MultiFromTo;
     to: FromTo | MultiFromTo;
     event: EventType;
-    originalEvent: EventType;
   }) => void;
 
   /**
@@ -92,8 +92,6 @@ type options = {
     from: FromTo | MultiFromTo;
     to: FromTo | MultiFromTo;
     event: EventType;
-    originalEvent: EventType;
-    ghostEl: HTMLElement;
   }) => void;
 
   /**
@@ -103,7 +101,6 @@ type options = {
     from: FromTo | MultiFromTo;
     to: FromTo | MultiFromTo;
     event: EventType;
-    originalEvent: EventType;
     changed: Boolean;
   }) => void;
 
@@ -114,7 +111,6 @@ type options = {
     from: FromTo | MultiFromTo;
     to: FromTo | MultiFromTo;
     event: EventType;
-    originalEvent: EventType;
   }) => void;
 
   /**
@@ -124,7 +120,6 @@ type options = {
     from: FromTo | MultiFromTo;
     to: FromTo | MultiFromTo;
     event: EventType;
-    originalEvent: EventType;
   }) => void;
 
   /**
@@ -134,7 +129,6 @@ type options = {
     from: FromTo | MultiFromTo;
     to: FromTo | MultiFromTo;
     event: EventType;
-    originalEvent: EventType;
   }) => void;
 
   /**
@@ -145,7 +139,6 @@ type options = {
     group: HTMLElement;
     target: HTMLElement;
     event: EventType;
-    originalEvent: EventType;
   }) => void;
 
   /**
@@ -156,7 +149,6 @@ type options = {
     group: HTMLElement;
     target: HTMLElement;
     event: EventType;
-    originalEvent: EventType;
   }) => void;
 
   /**

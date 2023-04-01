@@ -1,10 +1,10 @@
 import { getRect, setTransition, setTransform } from '../utils.js';
 
-export default class Animation {
-  constructor() {
-    this.animations = [];
-  }
+function Animation() {
+  this.animations = [];
+}
 
+Animation.prototype = {
   collect(dragEl, dropEl, container) {
     container = container || dragEl.parentNode;
     const children = [...Array.from(container.children)];
@@ -24,14 +24,14 @@ export default class Animation {
     children.slice(start, end + 1).forEach((node) => {
       this.animations.push({ node, rect: getRect(node) });
     });
-  }
+  },
 
   animate(animation) {
     this.animations.forEach((state) => {
       const { node, rect } = state;
       this._excute(node, rect, animation);
     });
-  }
+  },
 
   _excute(el, { left, top }, animation = 150) {
     const rect = getRect(el);
@@ -53,12 +53,14 @@ export default class Animation {
       setTransform(el, '');
       el.animated = null;
     }, animation);
-  }
+  },
 
   _getRange(children, dragEl, dropEl) {
     let start = children.indexOf(dragEl);
     let end = children.indexOf(dropEl);
     if (start > end) [start, end] = [end, start];
     return { start, end };
-  }
-}
+  },
+};
+
+export default Animation;

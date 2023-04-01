@@ -11,15 +11,15 @@ A JS Library for Drag and Drop, supports Sortable and Draggable
 **HTML**
 ```html
 <ul id="group">
-  <li>
+  <li class="item">
     <i id="drag" class="drag">drag me</i>
     <p>1</p>
   </li>
-  <li>
+  <li class="item">
     <i id="drag" class="drag">drag me</i>
     <p>2</p>
   </li>
-  <li>
+  <li class="item">
     <i id="drag" class="drag">drag me</i>
     <p>3</p>
   </li>
@@ -34,33 +34,33 @@ var DND = new Sortable(
   document.getElementById('group'),
   {
     chosenClass: 'chosen',
-    draggable: (e) => e.target.tagName === 'I' ? true : false, // use function
-    // draggable: 'i' // use tagName 
-    // draggable: '.drag' // use class
-    // draggable: '#drag' // use id
-    // draggable: (e) => e.target.parentNode // use function to set drag Element
-    onDrag: ({ from, event, originalEvent }) => {
+    draggable: (e) => e.target.tagName === 'LI' ? true : false, // use function
+    // draggable: 'li' // use tagName 
+    // draggable: '.item' // use class
+    // draggable: '#item' // use id
+    // draggable: (e) => e.target // use function to set drag Element
+    onDrag: ({ from, event }) => {
       // code
     },
-    onMove: ({ from, ghostEl, event, originalEvent }) => {
+    onMove: ({ from, event }) => {
       // code
     },
-    onDrop: ({ from, to, changed, event, originalEvent }) => {
+    onDrop: ({ from, to, changed, event }) => {
       // code
     },
-    onAdd: ({ from, to, event, originalEvent }) => {
+    onAdd: ({ from, to, event }) => {
       // code
     },
-    onRemove: ({ from, to, event, originalEvent }) => {
+    onRemove: ({ from, to, event }) => {
       // code
     },
-    onChange: ({ from, to, event, originalEvent }) => {
+    onChange: ({ from, to, event }) => {
       // code
     },
-    onSelect: ({ group, target, event, originalEvent }) => {
+    onSelect: ({ group, target, event }) => {
       // code
     },
-    onDeselect: ({ group, target, event, originalEvent }) => {
+    onDeselect: ({ group, target, event }) => {
       // code
     }
   }

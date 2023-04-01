@@ -11,19 +11,19 @@ if (!window.cancelAnimationFrame) {
   };
 }
 
-export default class AutoScroll {
-  constructor() {
-    this.autoScrollAnimationFrame = null;
-    this.speed = { x: 10, y: 10 };
-  }
+function AutoScroll() {
+  this.autoScrollAnimationFrame = null;
+  this.speed = { x: 10, y: 10 };
+}
 
+AutoScroll.prototype = {
   clear() {
     if (this.autoScrollAnimationFrame == null) {
       return;
     }
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = null;
-  }
+  },
 
   update(parentNode, scrollThreshold, downEvent, moveEvent) {
     if (downEvent && moveEvent) {
@@ -33,7 +33,7 @@ export default class AutoScroll {
     this.autoScrollAnimationFrame = requestAnimationFrame(() =>
       this.update(parentNode, scrollThreshold, downEvent, moveEvent)
     );
-  }
+  },
 
   autoScroll(parentNode, scrollThreshold, evt) {
     if (!parentNode) return;
@@ -43,14 +43,7 @@ export default class AutoScroll {
     const rect = getRect(parentNode);
     if (!rect) return;
 
-    const {
-      scrollTop,
-      scrollLeft,
-      scrollHeight,
-      scrollWidth,
-      clientHeight,
-      clientWidth,
-    } = parentNode;
+    const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = parentNode;
     const { top, right, bottom, left, height, width } = rect;
 
     // check direction
@@ -101,5 +94,7 @@ export default class AutoScroll {
     if (scrollx) {
       parentNode.scrollLeft += scrollx;
     }
-  }
-}
+  },
+};
+
+export default AutoScroll;

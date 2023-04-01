@@ -18,9 +18,9 @@ import {
   randomCode,
 } from './utils.js';
 import { Edge, Safari, IE11OrLess } from './utils.js';
+import Multiple, { getMultiDiffer } from './Plugins/Multiple.js';
 import AutoScroll from './Plugins/AutoScroll.js';
 import Animation from './Plugins/Animation.js';
-import Multiple from './Plugins/Multiple.js';
 import Helper from './helper.js';
 
 const FromTo = {
@@ -31,36 +31,22 @@ const FromTo = {
   offset: {},
 };
 
-/**
- * Difference before and after dragging
- */
-class Difference {
-  constructor() {
-    this.from = { ...FromTo };
-    this.to = { ...FromTo };
-  }
-  destroy() {
-    this.from = { ...FromTo };
-    this.to = { ...FromTo };
-  }
-}
-
 // -------------------------------- Sortable ----------------------------------
-const sortables = [];
+let sortables = [];
 
 let rootEl,
   dragEl,
   dropEl,
   downEvent,
   moveEvent,
-  fromGroup,
   isMultiple,
   activeGroup,
-  fromSortable,
   autoScroller,
   dragStartTimer, // timer for start to drag
-  helper = new Helper(),
-  differ = new Difference(); // Record the difference before and after
+  helper = new Helper();
+
+let differFrom = { ...FromTo };
+let differTo = { ...FromTo };
 
 let distance = { x: 0, y: 0 };
 let lastPosition = { x: 0, y: 0 };
@@ -99,7 +85,7 @@ const _nearestSortable = function (evt) {
       rootEl = nearest;
       event.preventDefault = void 0;
       event.stopPropagation = void 0;
-      if (rootEl === fromGroup) return;
+      if (rootEl === downEvent.group) return;
       nearest[expando]._onMove(event);
     }
   }
@@ -150,19 +136,19 @@ const _positionChanged = function (evt) {
 };
 
 const _emitDiffer = function () {
-  return { from: { ...differ.from }, to: { ...differ.to } };
-};
-
-const _params = function (args) {
-  return {
-    ...args,
-    rootEl,
-    dragEl,
-    ghostEl: helper.node,
-    fromSortable,
-    fromGroup,
-    activeGroup,
-  };
+  if (isMultiple) {
+    let ft = getMultiDiffer();
+    return {
+      from: {
+        ...ft.from,
+        sortable: differFrom.sortable,
+        group: differFrom.group,
+      },
+      to: { ...ft.to, sortable: differTo.sortable, group: differTo.group },
+    };
+  } else {
+    return { from: { ...differFrom }, to: { ...differTo } };
+  }
 };
 
 /**
@@ -241,16 +227,17 @@ function Sortable(el, options) {
 
   sortables.push(el);
 
-  this.animation = new Animation();
+  this.multiplayer = new Multiple(this.options);
+  this.animator = new Animation();
   autoScroller = new AutoScroll();
-
-  if (this.options.multiple) {
-    Object.assign(this, Multiple());
-  }
 }
 
 Sortable.prototype = {
   constructor: Sortable,
+
+  get helper() {
+    return helper.node;
+  },
 
   // -------------------------------- public methods ----------------------------------
   /**
@@ -266,7 +253,7 @@ Sortable.prototype = {
 
     // clear status
     this._clearState();
-    clearTimeout(dragStartTimer);
+
     sortables.splice(sortables.indexOf(this.el), 1);
     if (sortables.length == 0) autoScroller = null;
     this.el = null;
@@ -309,25 +296,27 @@ Sortable.prototype = {
     // solve the problem that the mobile cannot be dragged
     if (touch) dragEl.style['touch-action'] = 'none';
 
-    fromGroup = this.el;
-    fromSortable = this;
+    downEvent = e;
+    downEvent.sortable = this;
+    downEvent.group = dragEl.parentNode;
 
-    isMultiple = this.options.multiple && this._allowMultiDrag(dragEl);
+    isMultiple = this.options.multiple && this.multiplayer.allowDrag(dragEl);
     // multi-drag
-    if (isMultiple) this._onMultiDrag();
+    if (isMultiple) this.multiplayer.onDrag(dragEl, this);
 
     // get the position of the dragged element in the list
     const { rect, offset } = getElement(this.el, dragEl);
-    differ.from = {
+    differFrom = {
       sortable: this,
-      group: this.el,
+      group: dragEl.parentNode,
       node: dragEl,
       rect,
       offset,
     };
+    differTo.group = dragEl.parentNode;
+    differTo.sortable = this;
 
     distance = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    downEvent = e; // sortable state down is active
 
     // enable drag between groups
     if (this.options.supportPointer) {
@@ -381,20 +370,13 @@ Sortable.prototype = {
   // -------------------------------- real started ----------------------------------
   _onTrulyStarted: function (e, /** originalEvent */ evt) {
     if (!moveEvent) {
+      // on-drag
+      this._dispatchEvent('onDrag', { ..._emitDiffer(), event: evt });
       // on-multi-drag
-      if (isMultiple) {
-        this._onMultiStarted(_params({ e, evt }));
-      } else {
-        // on-drag
-        this._dispatchEvent('onDrag', {
-          ..._emitDiffer(),
-          event: e,
-          originalEvent: evt,
-        });
-      }
+      if (isMultiple) this.multiplayer.onTrulyStarted(dragEl, this);
 
       // Init in the move event to prevent conflict with the click event
-      const element = isMultiple ? this._getMultiGhostElement() : dragEl;
+      const element = isMultiple ? this.multiplayer.getHelper() : dragEl;
       helper.init(dragEl, element, this.el, this.options, distance);
 
       // add class for drag element
@@ -422,20 +404,10 @@ Sortable.prototype = {
     helper.move(x, y);
 
     let allowPut = this._allowPut();
-    if (isMultiple) {
-      // on-multi-move
-      this._onMultiMove(_params({ e, evt }), allowPut);
-    } else {
-      // on-move
-      this._dispatchEvent('onMove', {
-        ..._emitDiffer(),
-        ghostEl: helper.node,
-        event: e,
-        originalEvent: evt,
-      });
-    }
+    // on-move
+    this._dispatchEvent('onMove', { ..._emitDiffer(), event: evt });
     // check if element will exchange
-    if (allowPut) this._triggerChangeEvent(target, e, evt);
+    if (allowPut) this._onChange(target, e, evt);
     // auto scroll
     const { autoScroll, scrollThreshold } = this.options;
     if (autoScroll) {
@@ -444,7 +416,7 @@ Sortable.prototype = {
   },
 
   _allowPut: function () {
-    if (fromGroup === this.el) {
+    if (downEvent.group === this.el) {
       return true;
     } else if (!this.options.group.put) {
       return false;
@@ -455,25 +427,16 @@ Sortable.prototype = {
   },
 
   // -------------------------------- on change ----------------------------------
-  _triggerChangeEvent: function (target, e, evt) {
-    if (!dragEl) return;
-    // on-multi-change
-    if (isMultiple) {
-      this._onMultiChange(_params({ target, e, evt }));
-    } else {
-      // on-change
-      this._onChange(target, e, evt);
-    }
-  },
   _onChange: function (target, e, evt) {
-    if (!differ.from.group) return;
+    if (!differFrom.group) return;
     if (
-      !lastChild(rootEl) ||
-      (target === rootEl && differ.from.group !== rootEl)
+      !lastChild(rootEl, helper.node) ||
+      (target === rootEl && differFrom.group !== rootEl)
     ) {
-      differ.from.sortable.animation.collect(dragEl, dragEl);
+      differFrom.sortable.animator.collect(dragEl, dragEl);
 
-      differ.to = {
+      if (isMultiple) this.multiplayer.onChange(dragEl, this, rootEl);
+      differTo = {
         sortable: this,
         group: rootEl,
         node: dragEl,
@@ -481,26 +444,32 @@ Sortable.prototype = {
         offset: getOffset(dragEl),
       };
       // on-remove
-      differ.from.sortable._dispatchEvent('onRemove', {
+      differFrom.sortable._dispatchEvent('onRemove', {
         ..._emitDiffer(),
-        event: e,
-        originalEvent: evt,
-      });
-      // on-add
-      this._dispatchEvent('onAdd', {
-        ..._emitDiffer(),
-        event: e,
-        originalEvent: evt,
+        event: evt,
       });
 
       rootEl.appendChild(dragEl);
-      differ.from.sortable.animation.animate();
+
+      // on-add
+      this._dispatchEvent('onAdd', { ..._emitDiffer(), event: evt });
+
+      differFrom.sortable.animator.animate();
+      differFrom.group = rootEl;
     } else {
       const { el, rect, offset } = getElement(rootEl, target);
       if (!el || (el && el.animated) || el === dragEl) return;
 
       dropEl = el;
-      differ.to = { sortable: this, group: rootEl, node: dropEl, rect, offset };
+
+      if (isMultiple) this.multiplayer.onChange(dragEl, this);
+      differTo = {
+        sortable: this,
+        group: dropEl.parentNode,
+        node: dropEl,
+        rect,
+        offset,
+      };
 
       const { clientX, clientY } = e;
       const { left, right, top, bottom } = rect;
@@ -512,45 +481,38 @@ Sortable.prototype = {
         clientY > top &&
         clientY < bottom
       ) {
-        this.animation.collect(dragEl, dropEl);
-        if (differ.from.group !== differ.to.group) {
-          differ.from.sortable.animation.collect(dragEl, dropEl);
+        this.animator.collect(dragEl, dropEl);
+        if (differFrom.group !== differTo.group) {
+          differFrom.sortable.animator.collect(dragEl, dropEl);
           // on-remove
-          differ.from.sortable._dispatchEvent('onRemove', {
+          differFrom.sortable._dispatchEvent('onRemove', {
             ..._emitDiffer(),
-            event: e,
-            originalEvent: evt,
-          });
-          // on-add
-          this._dispatchEvent('onAdd', {
-            ..._emitDiffer(),
-            event: e,
-            originalEvent: evt,
+            event: evt,
           });
 
-          rootEl.insertBefore(dragEl, dropEl);
-          differ.from.sortable.animation.animate();
+          dropEl.parentNode.insertBefore(dragEl, dropEl);
+
+          // on-add
+          this._dispatchEvent('onAdd', { ..._emitDiffer(), event: evt });
+
+          differFrom.sortable.animator.animate();
         } else {
           // on-change
-          this._dispatchEvent('onChange', {
-            ..._emitDiffer(),
-            event: e,
-            originalEvent: evt,
-          });
+          this._dispatchEvent('onChange', { ..._emitDiffer(), event: evt });
 
           // the top value is compared first, and the left is compared if the top value is the same
           const _offset = getOffset(dragEl);
           if (_offset.top < offset.top || _offset.left < offset.left) {
-            rootEl.insertBefore(dragEl, dropEl.nextSibling);
+            dropEl.parentNode.insertBefore(dragEl, dropEl.nextSibling);
           } else {
-            rootEl.insertBefore(dragEl, dropEl);
+            dropEl.parentNode.insertBefore(dragEl, dropEl);
           }
         }
-        this.animation.animate();
+        this.animator.animate();
       }
+      differFrom.group = dropEl.parentNode;
     }
-    differ.from.sortable = this;
-    differ.from.group = rootEl;
+    differFrom.sortable = this;
   },
 
   // -------------------------------- on drop ----------------------------------
@@ -570,37 +532,28 @@ Sortable.prototype = {
     }
     // drag and drop done
     if (dragEl && downEvent && moveEvent) {
+      differFrom.group = downEvent.group;
+      differFrom.sortable = downEvent.sortable;
       if (isMultiple) {
-        this._onMultiDrop(_params({ evt }));
+        this.multiplayer.onDrop(evt, dragEl, this, downEvent, _emitDiffer);
       } else {
         // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
-        differ.to.rect = getRect(dragEl);
-        differ.to.offset = getOffset(dragEl);
-        if (!differ.to.group) {
-          differ.to.group = this.el;
-          differ.to.sortable = this;
-        }
+        differTo.rect = getRect(dragEl);
+        differTo.offset = getOffset(dragEl);
 
-        differ.from.group = fromGroup;
-        differ.from.sortable = fromSortable;
-
-        const changed = offsetChanged(differ.from.offset, differ.to.offset);
-        const params = {
-          ..._emitDiffer(),
-          changed,
-          event: evt,
-          originalEvent: evt,
-        };
+        const changed = offsetChanged(differFrom.offset, differTo.offset);
+        const params = { ..._emitDiffer(), changed, event: evt };
         // on-drop
-        if (differ.to.group !== fromGroup)
-          fromSortable._dispatchEvent('onDrop', params);
+        if (differTo.group !== downEvent.group) {
+          downEvent.sortable._dispatchEvent('onDrop', params);
+        }
         this._dispatchEvent('onDrop', params);
       }
 
       if (Safari) css(document.body, 'user-select', '');
     } else if (this.options.multiple) {
       // click event
-      this._setMultiElements(evt, this.el);
+      this.multiplayer.select(evt, dragEl, this);
     }
 
     this._clearState();
@@ -624,14 +577,12 @@ Sortable.prototype = {
       downEvent =
       moveEvent =
       isMultiple =
-      fromGroup =
       activeGroup =
-      fromSortable =
       dragStartTimer =
       Sortable.ghost =
         null;
     distance = lastPosition = { x: 0, y: 0 };
-    differ.destroy();
+    differFrom = differTo = { ...FromTo };
     helper.destroy();
   },
   _unbindMoveEvents: function () {
