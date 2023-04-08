@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.5
+ * sortable-dnd v0.4.6
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -953,7 +953,6 @@
     el[expando] = this;
     this.el = el;
     this.ownerDocument = el.ownerDocument;
-    this.scrollEl = getParentAutoScrollElement(el, true); // scroll element
     this.options = options = Object.assign({}, options);
     var defaults = {
       group: '',
@@ -1157,6 +1156,9 @@
         toggleClass(dragEl, this.options.chosenClass, true);
         dragEl.style['will-change'] = 'transform';
         if (Safari) css(document.body, 'user-select', 'none');
+
+        // re-get the scroll element, fix display 'none' to 'block'
+        this.scrollEl = getParentAutoScrollElement(this.el, true);
       }
     },
     // -------------------------------- move ----------------------------------
