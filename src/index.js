@@ -153,7 +153,6 @@ function Sortable(el, options) {
 
   this.el = el;
   this.ownerDocument = el.ownerDocument;
-  this.scrollEl = getParentAutoScrollElement(el, true); // scroll element
   this.options = options = Object.assign({}, options);
 
   const defaults = {
