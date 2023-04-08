@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.4
+ * sortable-dnd v0.4.5
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -568,7 +568,7 @@
       multiTo.sortable = sortable;
     },
     onTrulyStarted: function onTrulyStarted(dragEl, sortable) {
-      sortable.animator.collect(dragEl);
+      sortable.animator.collect(dragEl, dragEl, dragEl.parentNode);
       selectedElements[this.groupName].forEach(function (node) {
         if (node == dragEl) return;
         node.parentNode.removeChild(node);
@@ -589,7 +589,7 @@
     },
     onDrop: function onDrop(event, dragEl, downEvent, _emits) {
       var _this2 = this;
-      multiTo.sortable.animator.collect(dragEl);
+      multiTo.sortable.animator.collect(dragEl, dragEl, dragEl.parentNode);
       var index = selectedElements[this.groupName].indexOf(dragEl);
       selectedElements[this.groupName].forEach(function (node, i) {
         if (i < index) {
@@ -720,7 +720,7 @@
   Animation.prototype = {
     collect: function collect(dragEl, dropEl, container) {
       var _this = this;
-      container = container || dragEl.parentNode;
+      if (!container) return;
       var children = _toConsumableArray(Array.from(container.children));
       var _this$_getRange = this._getRange(children, dragEl, dropEl),
         start = _this$_getRange.start,
@@ -1185,7 +1185,7 @@
         autoScroll = _this$options4.autoScroll,
         scrollThreshold = _this$options4.scrollThreshold;
       if (autoScroll) {
-        autoScroller.update(this.el, scrollThreshold, downEvent, moveEvent);
+        autoScroller.update(this.scrollEl, scrollThreshold, downEvent, moveEvent);
       }
       if (!this._allowPut()) return;
       dropEl = closest(target, this.options.draggable, rootEl, false);
@@ -1215,7 +1215,7 @@
     _onInsert: function _onInsert( /** Event|TouchEvent */event, insert) {
       var target = insert ? dragEl : dropEl;
       var parentEl = insert ? rootEl : dropEl.parentNode;
-      from.sortable.animator.collect(dragEl, target);
+      from.sortable.animator.collect(dragEl, target, dragEl.parentNode);
       if (isMultiple) this.multiplayer.onChange(dragEl, this);
       to = {
         sortable: this,
@@ -1241,7 +1241,7 @@
     },
     _onChange: function _onChange( /** Event|TouchEvent */event) {
       var parentEl = dropEl.parentNode;
-      this.animator.collect(dragEl, dropEl);
+      this.animator.collect(dragEl, dropEl, parentEl);
       if (isMultiple) this.multiplayer.onChange(dragEl, this);
       to = {
         sortable: this,
