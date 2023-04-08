@@ -106,8 +106,8 @@ Multiple.prototype = {
     });
   },
 
-  onDrop(event, dragEl, sortable, downEvent, _emits) {
-    sortable.animator.collect(dragEl);
+  onDrop(event, dragEl, downEvent, _emits) {
+    multiTo.sortable.animator.collect(dragEl);
 
     const index = selectedElements[this.groupName].indexOf(dragEl);
 
@@ -130,9 +130,9 @@ Multiple.prototype = {
     if (multiTo.sortable.el != multiFrom.sortable.el) {
       multiFrom.sortable._dispatchEvent('onDrop', params);
     }
-    sortable._dispatchEvent('onDrop', params);
+    multiTo.sortable._dispatchEvent('onDrop', params);
 
-    sortable.animator.animate(sortable.options.animation);
+    multiTo.sortable.animator.animate(multiTo.sortable.options.animation);
   },
 
   _sortByOffset(o1, o2) {

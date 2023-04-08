@@ -506,7 +506,7 @@ Sortable.prototype = {
       from.group = downEvent.group;
       from.sortable = downEvent.sortable;
       if (isMultiple) {
-        this.multiplayer.onDrop(evt, dragEl, this, downEvent, _emits);
+        this.multiplayer.onDrop(evt, dragEl, downEvent, _emits);
       } else {
         // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
         to.rect = getRect(dragEl);
@@ -518,7 +518,7 @@ Sortable.prototype = {
         if (to.sortable.el !== from.sortable.el) {
           from.sortable._dispatchEvent('onDrop', params);
         }
-        this._dispatchEvent('onDrop', params);
+        to.sortable._dispatchEvent('onDrop', params);
       }
 
       if (Safari) css(document.body, 'user-select', '');
