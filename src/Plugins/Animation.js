@@ -6,7 +6,7 @@ function Animation() {
 
 Animation.prototype = {
   collect(dragEl, dropEl, container) {
-    container = container || dragEl.parentNode;
+    if (!container) return;
     const children = [...Array.from(container.children)];
     let { start, end } = this._getRange(children, dragEl, dropEl);
 

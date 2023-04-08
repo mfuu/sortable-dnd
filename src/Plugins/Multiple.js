@@ -86,7 +86,7 @@ Multiple.prototype = {
   },
 
   onTrulyStarted(dragEl, sortable) {
-    sortable.animator.collect(dragEl);
+    sortable.animator.collect(dragEl, dragEl, dragEl.parentNode);
 
     selectedElements[this.groupName].forEach((node) => {
       if (node == dragEl) return;
@@ -107,7 +107,7 @@ Multiple.prototype = {
   },
 
   onDrop(event, dragEl, downEvent, _emits) {
-    multiTo.sortable.animator.collect(dragEl);
+    multiTo.sortable.animator.collect(dragEl, dragEl, dragEl.parentNode);
 
     const index = selectedElements[this.groupName].indexOf(dragEl);
 

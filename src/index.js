@@ -397,7 +397,7 @@ Sortable.prototype = {
     // auto scroll
     const { autoScroll, scrollThreshold } = this.options;
     if (autoScroll) {
-      autoScroller.update(this.el, scrollThreshold, downEvent, moveEvent);
+      autoScroller.update(this.scrollEl, scrollThreshold, downEvent, moveEvent);
     }
 
     if (!this._allowPut()) return;
@@ -433,7 +433,7 @@ Sortable.prototype = {
     let target = insert ? dragEl : dropEl;
     let parentEl = insert ? rootEl : dropEl.parentNode;
 
-    from.sortable.animator.collect(dragEl, target);
+    from.sortable.animator.collect(dragEl, target, dragEl.parentNode);
 
     if (isMultiple) this.multiplayer.onChange(dragEl, this);
     to = {
@@ -462,7 +462,7 @@ Sortable.prototype = {
   _onChange: function (/** Event|TouchEvent */ event) {
     let parentEl = dropEl.parentNode;
 
-    this.animator.collect(dragEl, dropEl);
+    this.animator.collect(dragEl, dropEl, parentEl);
 
     if (isMultiple) this.multiplayer.onChange(dragEl, this);
     to = {
