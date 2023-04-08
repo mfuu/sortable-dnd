@@ -61,10 +61,10 @@ var DND = new Sortable(
     onChange: ({ from, to, event }) => {
       // code
     },
-    onSelect: ({ group, target, event }) => {
+    onSelect: (params) => {
       // code
     },
-    onDeselect: ({ group, target, event }) => {
+    onDeselect: (params) => {
       // code
     }
   }
