@@ -404,6 +404,7 @@ Sortable.prototype = {
 
     dropEl = closest(target, this.options.draggable, rootEl, false);
     if (dropEl === dragEl || (dropEl && dropEl.animated)) return;
+    if (dropEl && containes(dropEl, dragEl)) return;
 
     if (rootEl !== from.sortable.el) {
       if (target === rootEl || !lastChild(rootEl, helper.node)) {
