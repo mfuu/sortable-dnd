@@ -372,6 +372,9 @@ Sortable.prototype = {
       dragEl.style['will-change'] = 'transform';
 
       if (Safari) css(document.body, 'user-select', 'none');
+
+      // re-get the scroll element, fix display 'none' to 'block'
+      this.scrollEl = getParentAutoScrollElement(this.el, true);
     }
   },
 
