@@ -10,10 +10,8 @@ new Sortable(
   gridGroup,
   {
     animation: 150,
+    handle: '.drag',
     chosenClass: 'chosen',
-    draggable: (e) => {
-      return e.target.tagName === 'I' ? true : false
-    },
     onDrag: (e) => {
       console.log(e, 'ondrag')
     },

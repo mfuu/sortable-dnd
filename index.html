@@ -7,61 +7,223 @@
   <link rel="stylesheet" href="./css/sortable.css">
   <title>Sortable</title>
   <script src="https://cdn.jsdelivr.net/npm/sortable-dnd/dist/sortable.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    .tabs-list {
+      height: 39px;
+      border: 1px solid #ccc;
+      background-color: #f1f1f1;
+    }
+
+    .tabs-list li {
+      float: left;
+      height: 39px;
+      line-height: 39px;
+      padding: 0 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .tabs-list .current {
+      background-color: #c81623;
+      color: #fff;
+    }
+
+    .flex-center {
+      display: flex;
+      justify-content: center;
+    }
+
+    .tabs-item {
+      height: 0;
+      overflow: hidden;
+    }
+
+    .highlight {
+      background-color: black;
+      color: aliceblue;
+      margin-bottom: 50px;
+    }
+  </style>
 </head>
 <body>
-  <h1>vertical</h1>
-  <ul id="verticalGroup" class="vertical-group"></ul>
-  <h1>horizontal</h1>
-  <ul id="horizontalGroup" class="horizontal-group"></ul>
-  <h1>flex</h1>
-  <ul id="flexGroup" class="flex-group"></ul>
-  <h1>handle</h1>
-  <ul id="gridGroup" class="grid-group"></ul>
-
-  <h1>group</h1>
-  <div class="group flex">
-    <ul id="group1" class="group-item"></ul>
-    <ul id="group2" class="group-item"></ul>
+  <div class="tabs-list flex-center">
+    <ul>
+      <li class="tabs-title current">vertical</li>
+      <li class="tabs-title">horizontal</li>
+      <li class="tabs-title">flex</li>
+      <li class="tabs-title">handle</li>
+      <li class="tabs-title">group</li>
+      <li class="tabs-title">multiple</li>
+      <!-- <li class="tabs-title">nested</li> -->
+    </ul>
+  </div>
+  <div class="tabs-content">
+    <div class="tabs-item" style="height: auto;">
+      <div class="highlight flex-center">
+        <code style="white-space: pre-wrap;">
+          new Sortable(
+            document.getElementById('group'),
+            {
+              animation: 150,
+              onDrag: () => {},
+              onDrop: () => {}
+            }
+          )
+        </code>
+      </div>
+      <ul id="verticalGroup" class="vertical-group"></ul>
+    </div>
+    <div class="tabs-item">
+      <div class="highlight flex-center">
+        <code style="white-space: pre-wrap;">
+          new Sortable(
+            document.getElementById('group'),
+            {
+              animation: 150,
+              onDrag: () => {},
+              onDrop: () => {}
+            }
+          )
+        </code>
+      </div>
+      <ul id="horizontalGroup" class="horizontal-group"></ul>
+    </div>
+    <div class="tabs-item">
+      <div class="highlight flex-center">
+        <code style="white-space: pre-wrap;">
+          new Sortable(
+            document.getElementById('group'),
+            {
+              animation: 150,
+              onDrag: () => {},
+              onDrop: () => {}
+            }
+          )
+        </code>
+      </div>
+      <ul id="flexGroup" class="flex-group"></ul>
+    </div>
+    <div class="tabs-item">
+      <div class="highlight flex-center">
+        <code style="white-space: pre-wrap;">
+          new Sortable(
+            document.getElementById('group'),
+            {
+              animation: 150,
+              handle: '.drag',
+              onDrag: () => {},
+              onDrop: () => {}
+            }
+          )
+        </code>
+      </div>
+      <ul id="gridGroup" class="grid-group"></ul>
+    </div>
+    <div class="tabs-item">
+      <div class="highlight flex-center">
+        <code style="white-space: pre-wrap;">
+          new Sortable(
+            document.getElementById('group1'),
+            {
+              group: { name: 'group', put: true, pull: true },
+              animation: 150,
+              fallbackOnBody: true,
+              onDrag: () => {},
+              onDrop: () => {}
+            }
+          );
+          new Sortable(
+            document.getElementById('group2'),
+            {
+              group: { name: 'group', put: true, pull: true },
+              animation: 150,
+              fallbackOnBody: true,
+              onDrag: () => {},
+              onDrop: () => {}
+            }
+          )
+        </code>
+      </div>
+      <div class="group flex">
+        <ul id="group1" class="group-item"></ul>
+        <ul id="group2" class="group-item"></ul>
+      </div>
+    </div>
+    <div class="tabs-item">
+      <div class="highlight flex-center">
+        <code style="white-space: pre-wrap;">
+          new Sortable(
+            document.getElementById('group'),
+            {
+              animation: 150,
+              multiple: true,
+              chosenClass: 'chosen',
+              selectedClass: 'selected',
+              onDrag: () => {},
+              onDrop: () => {}
+            }
+          )
+        </code>
+      </div>
+      <ul id="multiGroup" class="flex-group"></ul>
+    </div>
+    <!-- <div id="nested" class="row">
+      <h4 class="col-12">嵌套排序例子</h4>
+      <p class="col-12">注意: 当开启嵌套排序动画的时候, 建议将 <code>fallbackOnBody</code> 选项设置为true。</p>
+      <div id="nestedDemo" class="list-group col nested-sortable">
+          
+          <div class="list-group-item nested-1" draggable="false" style="">Item 1.1
+              <div class="list-group nested-sortable">
+                  <div class="list-group-item nested-2">Item 2.1</div>
+                  <div class="list-group-item nested-2">Item 2.2
+                      <div class="list-group nested-sortable">
+                          <div class="list-group-item nested-3">Item 3.1</div>
+                          <div class="list-group-item nested-3">Item 3.2</div>
+                          <div class="list-group-item nested-3">Item 3.3</div>
+                          <div class="list-group-item nested-3">Item 3.4</div>
+                      </div>
+                  </div>
+                  <div class="list-group-item nested-2">Item 2.3</div>
+                  <div class="list-group-item nested-2">Item 2.4</div>
+              </div>
+          </div><div class="list-group-item nested-1" style="">Item 1.2</div>
+          <div class="list-group-item nested-1" style="">Item 1.3</div>
+          <div class="list-group-item nested-1">Item 1.4
+              <div class="list-group nested-sortable">
+                  <div class="list-group-item nested-2">Item 2.1</div>
+                  <div class="list-group-item nested-2">Item 2.2</div>
+                  <div class="list-group-item nested-2">Item 2.3</div>
+                  <div class="list-group-item nested-2">Item 2.4</div>
+              </div>
+          </div>
+          <div class="list-group-item nested-1">Item 1.5</div>
+      </div>
+    </div> -->
   </div>
 
-  <h1>
-    multiple
-    <p style="font-size: 14px; font-weight: 400;">Click to select an element</p>
-  </h1>
-  <ul id="multiGroup" class="flex-group"></ul>
-
-  <!-- <div id="nested" class="row">
-    <h4 class="col-12">嵌套排序例子</h4>
-    <p class="col-12">注意: 当开启嵌套排序动画的时候, 建议将 <code>fallbackOnBody</code> 选项设置为true。</p>
-    <div id="nestedDemo" class="list-group col nested-sortable">
-        
-        <div class="list-group-item nested-1" draggable="false" style="">Item 1.1
-            <div class="list-group nested-sortable">
-                <div class="list-group-item nested-2">Item 2.1</div>
-                <div class="list-group-item nested-2">Item 2.2
-                    <div class="list-group nested-sortable">
-                        <div class="list-group-item nested-3">Item 3.1</div>
-                        <div class="list-group-item nested-3">Item 3.2</div>
-                        <div class="list-group-item nested-3">Item 3.3</div>
-                        <div class="list-group-item nested-3">Item 3.4</div>
-                    </div>
-                </div>
-                <div class="list-group-item nested-2">Item 2.3</div>
-                <div class="list-group-item nested-2">Item 2.4</div>
-            </div>
-        </div><div class="list-group-item nested-1" style="">Item 1.2</div>
-        <div class="list-group-item nested-1" style="">Item 1.3</div>
-        <div class="list-group-item nested-1">Item 1.4
-            <div class="list-group nested-sortable">
-                <div class="list-group-item nested-2">Item 2.1</div>
-                <div class="list-group-item nested-2">Item 2.2</div>
-                <div class="list-group-item nested-2">Item 2.3</div>
-                <div class="list-group-item nested-2">Item 2.4</div>
-            </div>
-        </div>
-        <div class="list-group-item nested-1">Item 1.5</div>
-    </div>
-  </div> -->
+  <script>
+    var lis = document.querySelectorAll('.tabs-title');
+    var items = document.querySelectorAll('.tabs-item')
+    for (var i = 0; i < lis.length; i++) {
+        // 1.给每一个标题li添加自定义属性
+        lis[i].index = i
+        // 2.绑定事件
+        lis[i].onclick = function () {
+            for (var i = 0; i < lis.length; i++) {
+                lis[i].classList.remove('current')
+                items[i].style.height = '0'
+            }
+            this.classList.add('current')
+            var index = this.index
+            items[index].style.height = 'auto'
+        }
+    }
+  </script>
 
   <script src="./js/flex.js"></script>
   <script src="./js/handle.js"></script>
