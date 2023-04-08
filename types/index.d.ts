@@ -47,9 +47,8 @@ type options = {
   /**
    * Specifies which items inside the element should be draggable
    * @example
-   * Example Values:
-   * - (e) => e.target
    * - (e) => e.target.tagName === 'LI' ? true : false
+   * - (e) => e.target // use function to set the drag element if retrun HTMLElement
    * - 'div'   // use tag name
    * - '.item' // use class name
    * - '#item' // use id
@@ -57,6 +56,17 @@ type options = {
   draggable?: Function | String;
 
   /**
+   * Drag handle selector within list items
+   * @example
+   * - (e) => e.target.tagName === 'I' ? true : false
+   * - 'i' // use tag name
+   * - '.handle' // use class
+   * - '#handle' // use id
+   */
+  handle?: Function | String;
+
+  /**
+   * Set value to allow drag between different lists
    * @example
    * String: 'name'
    * Object: { name: 'group', put: true | false, pull: true | false }
@@ -134,22 +144,12 @@ type options = {
   /**
    * The callback function when element is selected
    */
-  onSelect?: (params: {
-    sortable: Sortable;
-    group: HTMLElement;
-    target: HTMLElement;
-    event: EventType;
-  }) => void;
+  onSelect?: (params: FromTo) => void;
 
   /**
    * The callback function when element is unselected
    */
-  onDeselect?: (params: {
-    sortable: Sortable;
-    group: HTMLElement;
-    target: HTMLElement;
-    event: EventType;
-  }) => void;
+  onDeselect?: (params: FromTo) => void;
 
   /**
    * Disables the sortable if set to true.
@@ -159,7 +159,7 @@ type options = {
 
   /**
    * This class will be added to the item while dragging.
-   * @defaults `{ }`
+   * @defaults `' '`
    */
   chosenClass?: String;
 
