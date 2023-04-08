@@ -85,7 +85,7 @@ var DND = new Sortable(
 |     **Option**    |      **Type**     | **Default** | **Description** |
 |-------------------|-------------------|-------------|--------------|
 | `draggable`       | `String/Function` | `-`         | Specifies which items inside the element should be draggable |
-| `handle`          | `String|Funnction`| `-`         | Drag handle selector within list items |
+| `handle`          | `String/Funnction`| `-`         | Drag handle selector within list items |
 | `group`           | `String/Object`   | `-`         | string: 'name' or object: `{ name: 'group', put: true/false, pull: true/false }` |
 | `multiple`        | `Boolean`         | `false`     | Enable multiple drag |
 | `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |

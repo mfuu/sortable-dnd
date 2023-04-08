@@ -1,6 +1,6 @@
 import { getOffset, getRect, offsetChanged, toggleClass } from '../utils';
 
-const multiFromTo = { sortable: null, group: null, nodes: [] };
+const multiFromTo = { sortable: null, nodes: [] };
 
 let multiFrom = { ...multiFromTo },
   multiTo = { ...multiFromTo },
@@ -51,7 +51,7 @@ Multiple.prototype = {
   /**
    * Collecting Multi-Drag Elements
    */
-  select(event, dragEl, sortable) {
+  select(event, dragEl, from) {
     if (!dragEl) return;
 
     if (!selectedElements[this.groupName]) {
@@ -62,19 +62,14 @@ Multiple.prototype = {
 
     toggleClass(dragEl, this.options.selectedClass, index < 0);
 
-    const params = {
-      event,
-      sortable,
-      target: dragEl,
-      group: dragEl.parentNode,
-    };
+    const params = { ...from, event };
 
     if (index < 0) {
       selectedElements[this.groupName].push(dragEl);
-      sortable._dispatchEvent('onSelect', params);
+      from.sortable._dispatchEvent('onSelect', params);
     } else {
       selectedElements[this.groupName].splice(index, 1);
-      sortable._dispatchEvent('onDeselect', params);
+      from.sortable._dispatchEvent('onDeselect', params);
     }
 
     selectedElements[this.groupName].sort((a, b) => {
@@ -82,14 +77,12 @@ Multiple.prototype = {
     });
   },
 
-  onDrag(dragEl, sortable) {
+  onDrag(sortable) {
     multiFrom.sortable = sortable;
-    multiFrom.group = dragEl.parentNode;
     multiFrom.nodes = selectedElements[this.groupName].map((node) => {
       return { node, rect: getRect(node), offset: getOffset(node) };
     });
     multiTo.sortable = sortable;
-    multiTo.group = dragEl.parentNode;
   },
 
   onTrulyStarted(dragEl, sortable) {
@@ -103,17 +96,17 @@ Multiple.prototype = {
     sortable.animator.animate(sortable.options.animation);
   },
 
-  onChange(dragEl, sortable, rootEl) {
+  onChange(dragEl, sortable) {
     const rect = getRect(dragEl);
     const offset = getOffset(dragEl);
+
     multiTo.sortable = sortable;
-    multiTo.group = rootEl || dragEl.parentNode;
     multiTo.nodes = selectedElements[this.groupName].map((node) => {
       return { node, rect, offset };
     });
   },
 
-  onDrop(event, dragEl, sortable, downEvent) {
+  onDrop(event, dragEl, sortable, downEvent, _emits) {
     sortable.animator.collect(dragEl);
 
     const index = selectedElements[this.groupName].indexOf(dragEl);
@@ -127,17 +120,15 @@ Multiple.prototype = {
       }
     });
 
+    multiFrom.sortable = downEvent.sortable;
     multiTo.nodes = selectedElements[this.groupName].map((node) => {
       return { node, rect: getRect(node), offset: getOffset(node) };
     });
 
-    multiFrom.group = downEvent.group;
-    multiFrom.sortable = downEvent.sortable;
-
     const changed = this._offsetChanged(multiFrom.nodes, multiTo.nodes);
-    const params = { ...getMultiDiffer(), changed, event };
-    if (multiFrom.group != downEvent.group) {
-      downEvent.sortable._dispatchEvent('onDrop', params);
+    const params = { ..._emits(), changed, event };
+    if (multiTo.sortable.el != multiFrom.sortable.el) {
+      multiFrom.sortable._dispatchEvent('onDrop', params);
     }
     sortable._dispatchEvent('onDrop', params);
 

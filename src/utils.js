@@ -70,14 +70,14 @@ export const vendorPrefix = (function () {
 /**
  * check if is HTMLElement
  */
-export function isHTMLElement(obj) {
-  if (!obj) return false;
-  let d = document.createElement('div');
+export function isHTMLElement(node) {
+  if (!node) return false;
+  let ctx = document.createElement('div');
   try {
-    d.appendChild(obj.cloneNode(true));
-    return obj.nodeType == 1 ? true : false;
+    ctx.appendChild(node.cloneNode(true));
+    return node.nodeType == 1 ? true : false;
   } catch (e) {
-    return obj == window || obj == document;
+    return node == window || node == document;
   }
 }
 
@@ -101,21 +101,6 @@ export function setTransition(el, transition) {
  */
 export function setTransform(el, transform) {
   el.style[`${vendorPrefix}Transform`] = transform ? `${transform}` : '';
-}
-
-/**
- * get touch event and current event
- * @param {Event} evt
- */
-export function getEvent(evt) {
-  const touch =
-    (evt.touches && evt.touches[0]) ||
-    (evt.pointerType && evt.pointerType === 'touch' && evt);
-  const e = touch || evt;
-  const target = touch
-    ? document.elementFromPoint(e.clientX, e.clientY)
-    : e.target;
-  return { touch, e, target };
 }
 
 /**
@@ -157,30 +142,49 @@ export function off(el, event, fn) {
 }
 
 /**
+ * get touch event and current event
+ * @param {Event|TouchEvent} evt
+ */
+export function getEvent(evt) {
+  let event = evt;
+  let touch =
+    (evt.touches && evt.touches[0]) ||
+    (evt.changedTouches && evt.changedTouches[0]) ||
+    (evt.pointerType && evt.pointerType === 'touch' && evt);
+  let target = touch
+    ? document.elementFromPoint(e.clientX, e.clientY)
+    : evt.target;
+  if (touch) {
+    event.clientX = touch.clientX;
+    event.clientY = touch.clientY;
+    event.pageX = touch.pageX;
+    event.pageY = touch.pageY;
+    event.screenX = touch.screenX;
+    event.screenY = touch.screenY;
+  }
+  return { touch, event, target };
+}
+
+/**
  * get element's offetTop
  * @param {HTMLElement} el
  */
 export function getOffset(el) {
-  let result = {
+  let offset = {
     top: 0,
     left: 0,
-    height: 0,
-    width: 0,
+    height: el.offsetHeight,
+    width: el.offsetWidth,
   };
-  result.height = el.offsetHeight;
-  result.width = el.offsetWidth;
-  result.top = el.offsetTop;
-  result.left = el.offsetLeft;
 
-  let parent = el.offsetParent;
+  let winScroller = getWindowScrollingElement();
 
-  while (parent !== null) {
-    result.top += parent.offsetTop;
-    result.left += parent.offsetLeft;
-    parent = parent.offsetParent;
-  }
+  do {
+    offset.top += el.offsetTop;
+    offset.left += el.offsetLeft;
+  } while (el !== winScroller && (el = el.offsetParent));
 
-  return result;
+  return offset;
 }
 
 /**
@@ -229,23 +233,6 @@ export function getWindowScrollingElement() {
       : scrollingElement;
   } else {
     return document;
-  }
-}
-
-export function getMouseRect(event) {
-  if (event.pageX || event.pageY) {
-    return { top: event.pageY, left: event.pageX };
-  } else if (event.clientX || event.clientY) {
-    return {
-      top:
-        event.clientY +
-        document.documentElement.scrollTop +
-        document.body.scrollTop,
-      left:
-        event.clientX +
-        document.documentElement.scrollLeft +
-        document.body.scrollLeft,
-    };
   }
 }
 
@@ -367,7 +354,7 @@ export function closest(el, selector, ctx, includeCTX) {
 
         // When the dom cannot be found directly in children, need to look down
         for (let i = 0; i < children.length; i++) {
-          if (isChildOf(el, children[i])) return children[i];
+          if (containes(el, children[i])) return children[i];
         }
       } else if (
         selector[0] === '>'
@@ -383,19 +370,17 @@ export function closest(el, selector, ctx, includeCTX) {
 
 /**
  * Check if child element is contained in parent element
- * @param {HTMLElement} child
- * @param {HTMLElement} parent
- * @returns {Boolean} true | false
+ * @param {HTMLElement} el
+ * @param {HTMLElement} root
  */
-export function isChildOf(child, parent) {
-  let parentNode;
-  if (child && parent) {
-    parentNode = child.parentNode;
-    while (parentNode) {
-      if (parent === parentNode) return true;
-      parentNode = parentNode.parentNode;
-    }
+export function containes(el, root) {
+  if (root.compareDocumentPosition) {
+    return root === el || !!(root.compareDocumentPosition(el) & 16);
   }
+  if (root.contains && el.nodeType === 1) {
+    return root.contains(el) && root !== el;
+  }
+  while ((el = el.parentNode)) if (el === root) return true;
   return false;
 }
 

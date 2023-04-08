@@ -1,10 +1,4 @@
-import {
-  css,
-  getRect,
-  toggleClass,
-  setTransform,
-  setTransition,
-} from './utils';
+import { css, toggleClass, setTransform, setTransition } from './utils';
 
 function Helper() {
   this.helper = null;
