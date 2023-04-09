@@ -25,25 +25,35 @@ AutoScroll.prototype = {
     this.autoScrollAnimationFrame = null;
   },
 
-  update(parentNode, scrollThreshold, downEvent, moveEvent) {
-    if (downEvent && moveEvent) {
-      this.autoScroll(parentNode, scrollThreshold, moveEvent);
-    }
+  update(scrollEl, scrollThreshold, downEvent, moveEvent) {
     cancelAnimationFrame(this.autoScrollAnimationFrame);
-    this.autoScrollAnimationFrame = requestAnimationFrame(() =>
-      this.update(parentNode, scrollThreshold, downEvent, moveEvent)
-    );
+    this.autoScrollAnimationFrame = requestAnimationFrame(() => {
+      const { top, right, bottom, left } = getRect(scrollEl);
+      const { clientX, clientY } = moveEvent;
+      if (
+        clientY < top ||
+        clientY > bottom ||
+        clientX < left ||
+        clientX > right
+      ) {
+        return;
+      }
+      if (downEvent && moveEvent) {
+        this.autoScroll(scrollEl, scrollThreshold, moveEvent);
+      }
+      this.update(scrollEl, scrollThreshold, downEvent, moveEvent);
+    });
   },
 
-  autoScroll(parentNode, scrollThreshold, evt) {
-    if (!parentNode) return;
+  autoScroll(scrollEl, scrollThreshold, evt) {
+    if (!scrollEl) return;
     const { clientX, clientY } = evt;
     if (clientX === void 0 || clientY === void 0) return;
 
-    const rect = getRect(parentNode);
+    const rect = getRect(scrollEl);
     if (!rect) return;
 
-    const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = parentNode;
+    const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
     const { top, right, bottom, left, height, width } = rect;
 
     // check direction
@@ -88,11 +98,11 @@ AutoScroll.prototype = {
     }
 
     if (scrolly) {
-      parentNode.scrollTop += scrolly;
+      scrollEl.scrollTop += scrolly;
     }
 
     if (scrollx) {
-      parentNode.scrollLeft += scrollx;
+      scrollEl.scrollLeft += scrollx;
     }
   },
 };

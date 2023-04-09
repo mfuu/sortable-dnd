@@ -77,7 +77,7 @@ const _nearestSortable = function (evt) {
 
     if (nearest) {
       rootEl = nearest;
-      if (rootEl === downEvent.group) return;
+      if (rootEl === downEvent.sortable.el) return;
       nearest[expando]._onMove(evt);
     }
   }
@@ -371,9 +371,6 @@ Sortable.prototype = {
       dragEl.style['will-change'] = 'transform';
 
       if (Safari) css(document.body, 'user-select', 'none');
-
-      // re-get the scroll element, fix display 'none' to 'block'
-      this.scrollEl = getParentAutoScrollElement(this.el, true);
     }
   },
 
@@ -395,6 +392,11 @@ Sortable.prototype = {
 
     // on-move
     this._dispatchEvent('onMove', { ..._emits(), event });
+
+    if (!this.scrollEl) {
+      // get the scroll element, fix display 'none' to 'block'
+      this.scrollEl = getParentAutoScrollElement(this.el, true);
+    }
 
     // auto scroll
     const { autoScroll, scrollThreshold } = this.options;
@@ -435,7 +437,8 @@ Sortable.prototype = {
     let target = insert ? dragEl : dropEl;
     let parentEl = insert ? rootEl : dropEl.parentNode;
 
-    from.sortable.animator.collect(dragEl, target, dragEl.parentNode);
+    from.sortable.animator.collect(dragEl, null, dragEl.parentNode);
+    this.animator.collect(null, target, parentEl);
 
     if (isMultiple) this.multiplayer.onChange(dragEl, this);
     to = {
@@ -457,6 +460,7 @@ Sortable.prototype = {
     this._dispatchEvent('onAdd', { ..._emits(), event });
 
     from.sortable.animator.animate();
+    this.animator.animate();
     from.group = parentEl;
     from.sortable = this;
   },

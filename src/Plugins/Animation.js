@@ -12,7 +12,8 @@ Animation.prototype = {
 
     this.animations.length = 0;
 
-    const max = Math.floor(container.scrollHeight / dragEl.offsetHeight);
+    const offsetHeight = (dragEl || dropEl).offsetHeight;
+    const max = Math.floor(container.scrollHeight / offsetHeight);
     const min = Math.min(children.length - 1, max);
 
     if (start < 0) {

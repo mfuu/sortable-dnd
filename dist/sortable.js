@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.6
+ * sortable-dnd v0.4.7
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -656,27 +656,37 @@
       cancelAnimationFrame(this.autoScrollAnimationFrame);
       this.autoScrollAnimationFrame = null;
     },
-    update: function update(parentNode, scrollThreshold, downEvent, moveEvent) {
+    update: function update(scrollEl, scrollThreshold, downEvent, moveEvent) {
       var _this = this;
-      if (downEvent && moveEvent) {
-        this.autoScroll(parentNode, scrollThreshold, moveEvent);
-      }
       cancelAnimationFrame(this.autoScrollAnimationFrame);
       this.autoScrollAnimationFrame = requestAnimationFrame(function () {
-        return _this.update(parentNode, scrollThreshold, downEvent, moveEvent);
+        var _getRect = getRect(scrollEl),
+          top = _getRect.top,
+          right = _getRect.right,
+          bottom = _getRect.bottom,
+          left = _getRect.left;
+        var clientX = moveEvent.clientX,
+          clientY = moveEvent.clientY;
+        if (clientY < top || clientY > bottom || clientX < left || clientX > right) {
+          return;
+        }
+        if (downEvent && moveEvent) {
+          _this.autoScroll(scrollEl, scrollThreshold, moveEvent);
+        }
+        _this.update(scrollEl, scrollThreshold, downEvent, moveEvent);
       });
     },
-    autoScroll: function autoScroll(parentNode, scrollThreshold, evt) {
-      if (!parentNode) return;
+    autoScroll: function autoScroll(scrollEl, scrollThreshold, evt) {
+      if (!scrollEl) return;
       var clientX = evt.clientX,
         clientY = evt.clientY;
       if (clientX === void 0 || clientY === void 0) return;
-      var rect = getRect(parentNode);
+      var rect = getRect(scrollEl);
       if (!rect) return;
-      var scrollTop = parentNode.scrollTop,
-        scrollLeft = parentNode.scrollLeft,
-        scrollHeight = parentNode.scrollHeight,
-        scrollWidth = parentNode.scrollWidth;
+      var scrollTop = scrollEl.scrollTop,
+        scrollLeft = scrollEl.scrollLeft,
+        scrollHeight = scrollEl.scrollHeight,
+        scrollWidth = scrollEl.scrollWidth;
       var top = rect.top,
         right = rect.right,
         bottom = rect.bottom,
@@ -706,10 +716,10 @@
         scrolly = 0;
       }
       if (scrolly) {
-        parentNode.scrollTop += scrolly;
+        scrollEl.scrollTop += scrolly;
       }
       if (scrollx) {
-        parentNode.scrollLeft += scrollx;
+        scrollEl.scrollLeft += scrollx;
       }
     }
   };
@@ -726,7 +736,8 @@
         start = _this$_getRange.start,
         end = _this$_getRange.end;
       this.animations.length = 0;
-      var max = Math.floor(container.scrollHeight / dragEl.offsetHeight);
+      var offsetHeight = (dragEl || dropEl).offsetHeight;
+      var max = Math.floor(container.scrollHeight / offsetHeight);
       var min = Math.min(children.length - 1, max);
       if (start < 0) {
         start = end;
@@ -889,7 +900,7 @@
       var nearest = _detectNearestSortable(e.clientX, e.clientY);
       if (nearest) {
         rootEl = nearest;
-        if (rootEl === downEvent.group) return;
+        if (rootEl === downEvent.sortable.el) return;
         nearest[expando]._onMove(evt);
       }
     }
@@ -1156,9 +1167,6 @@
         toggleClass(dragEl, this.options.chosenClass, true);
         dragEl.style['will-change'] = 'transform';
         if (Safari) css(document.body, 'user-select', 'none');
-
-        // re-get the scroll element, fix display 'none' to 'block'
-        this.scrollEl = getParentAutoScrollElement(this.el, true);
       }
     },
     // -------------------------------- move ----------------------------------
@@ -1181,6 +1189,10 @@
       this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
       }));
+      if (!this.scrollEl) {
+        // get the scroll element, fix display 'none' to 'block'
+        this.scrollEl = getParentAutoScrollElement(this.el, true);
+      }
 
       // auto scroll
       var _this$options4 = this.options,
@@ -1217,7 +1229,8 @@
     _onInsert: function _onInsert( /** Event|TouchEvent */event, insert) {
       var target = insert ? dragEl : dropEl;
       var parentEl = insert ? rootEl : dropEl.parentNode;
-      from.sortable.animator.collect(dragEl, target, dragEl.parentNode);
+      from.sortable.animator.collect(dragEl, null, dragEl.parentNode);
+      this.animator.collect(null, target, parentEl);
       if (isMultiple) this.multiplayer.onChange(dragEl, this);
       to = {
         sortable: this,
@@ -1238,6 +1251,7 @@
         event: event
       }));
       from.sortable.animator.animate();
+      this.animator.animate();
       from.group = parentEl;
       from.sortable = this;
     },
