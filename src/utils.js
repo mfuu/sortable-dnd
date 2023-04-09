@@ -152,7 +152,7 @@ export function getEvent(evt) {
     (evt.changedTouches && evt.changedTouches[0]) ||
     (evt.pointerType && evt.pointerType === 'touch' && evt);
   let target = touch
-    ? document.elementFromPoint(e.clientX, e.clientY)
+    ? document.elementFromPoint(touch.clientX, touch.clientY)
     : evt.target;
   if (touch) {
     event.clientX = touch.clientX;

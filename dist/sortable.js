@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.7
+ * sortable-dnd v0.4.8
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -214,7 +214,7 @@
   function getEvent(evt) {
     var event = evt;
     var touch = evt.touches && evt.touches[0] || evt.changedTouches && evt.changedTouches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
-    var target = touch ? document.elementFromPoint(e.clientX, e.clientY) : evt.target;
+    var target = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : evt.target;
     if (touch) {
       event.clientX = touch.clientX;
       event.clientY = touch.clientY;
