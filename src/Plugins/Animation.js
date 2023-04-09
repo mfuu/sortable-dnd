@@ -5,10 +5,10 @@ function Animation() {
 }
 
 Animation.prototype = {
-  collect(dragEl, dropEl, container) {
+  collect(dragEl, dropEl, container, except) {
     if (!container) return;
     const children = [...Array.from(container.children)];
-    let { start, end } = this._getRange(children, dragEl, dropEl);
+    let { start, end } = this._getRange(children, dragEl, dropEl, except);
 
     this.animations.length = 0;
 
@@ -23,6 +23,7 @@ Animation.prototype = {
     if (end < 0) end = min;
 
     children.slice(start, end + 1).forEach((node) => {
+      if (node === except) return;
       this.animations.push({ node, rect: getRect(node) });
     });
   },

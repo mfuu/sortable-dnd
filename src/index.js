@@ -437,8 +437,8 @@ Sortable.prototype = {
     let target = insert ? dragEl : dropEl;
     let parentEl = insert ? rootEl : dropEl.parentNode;
 
-    from.sortable.animator.collect(dragEl, null, dragEl.parentNode);
-    this.animator.collect(null, target, parentEl);
+    from.sortable.animator.collect(dragEl, null, dragEl.parentNode, dragEl);
+    this.animator.collect(null, target, parentEl, dragEl);
 
     if (isMultiple) this.multiplayer.onChange(dragEl, this);
     to = {

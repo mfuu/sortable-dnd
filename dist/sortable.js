@@ -728,11 +728,11 @@
     this.animations = [];
   }
   Animation.prototype = {
-    collect: function collect(dragEl, dropEl, container) {
+    collect: function collect(dragEl, dropEl, container, except) {
       var _this = this;
       if (!container) return;
       var children = _toConsumableArray(Array.from(container.children));
-      var _this$_getRange = this._getRange(children, dragEl, dropEl),
+      var _this$_getRange = this._getRange(children, dragEl, dropEl, except),
         start = _this$_getRange.start,
         end = _this$_getRange.end;
       this.animations.length = 0;
@@ -745,6 +745,7 @@
       }
       if (end < 0) end = min;
       children.slice(start, end + 1).forEach(function (node) {
+        if (node === except) return;
         _this.animations.push({
           node: node,
           rect: getRect(node)
@@ -1229,8 +1230,8 @@
     _onInsert: function _onInsert( /** Event|TouchEvent */event, insert) {
       var target = insert ? dragEl : dropEl;
       var parentEl = insert ? rootEl : dropEl.parentNode;
-      from.sortable.animator.collect(dragEl, null, dragEl.parentNode);
-      this.animator.collect(null, target, parentEl);
+      from.sortable.animator.collect(dragEl, null, dragEl.parentNode, dragEl);
+      this.animator.collect(null, target, parentEl, dragEl);
       if (isMultiple) this.multiplayer.onChange(dragEl, this);
       to = {
         sortable: this,
