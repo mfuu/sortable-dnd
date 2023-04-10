@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.8
+ * sortable-dnd v0.4.9
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -568,7 +568,7 @@
       multiTo.sortable = sortable;
     },
     onTrulyStarted: function onTrulyStarted(dragEl, sortable) {
-      sortable.animator.collect(dragEl, dragEl, dragEl.parentNode);
+      sortable.animator.collect(dragEl, null, dragEl.parentNode);
       selectedElements[this.groupName].forEach(function (node) {
         if (node == dragEl) return;
         node.parentNode.removeChild(node);
@@ -589,7 +589,7 @@
     },
     onDrop: function onDrop(event, dragEl, downEvent, _emits) {
       var _this2 = this;
-      multiTo.sortable.animator.collect(dragEl, dragEl, dragEl.parentNode);
+      multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
       var index = selectedElements[this.groupName].indexOf(dragEl);
       selectedElements[this.groupName].forEach(function (node, i) {
         if (i < index) {
@@ -660,16 +660,6 @@
       var _this = this;
       cancelAnimationFrame(this.autoScrollAnimationFrame);
       this.autoScrollAnimationFrame = requestAnimationFrame(function () {
-        var _getRect = getRect(scrollEl),
-          top = _getRect.top,
-          right = _getRect.right,
-          bottom = _getRect.bottom,
-          left = _getRect.left;
-        var clientX = moveEvent.clientX,
-          clientY = moveEvent.clientY;
-        if (clientY < top || clientY > bottom || clientX < left || clientX > right) {
-          return;
-        }
         if (downEvent && moveEvent) {
           _this.autoScroll(scrollEl, scrollThreshold, moveEvent);
         }
@@ -693,6 +683,9 @@
         left = rect.left,
         height = rect.height,
         width = rect.width;
+      if (clientY < top || clientY > bottom || clientX < left || clientX > right) {
+        return;
+      }
 
       // check direction
       var toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
