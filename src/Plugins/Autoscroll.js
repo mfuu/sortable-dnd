@@ -28,16 +28,6 @@ AutoScroll.prototype = {
   update(scrollEl, scrollThreshold, downEvent, moveEvent) {
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = requestAnimationFrame(() => {
-      const { top, right, bottom, left } = getRect(scrollEl);
-      const { clientX, clientY } = moveEvent;
-      if (
-        clientY < top ||
-        clientY > bottom ||
-        clientX < left ||
-        clientX > right
-      ) {
-        return;
-      }
       if (downEvent && moveEvent) {
         this.autoScroll(scrollEl, scrollThreshold, moveEvent);
       }
@@ -55,6 +45,15 @@ AutoScroll.prototype = {
 
     const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
     const { top, right, bottom, left, height, width } = rect;
+
+    if (
+      clientY < top ||
+      clientX > right ||
+      clientY > bottom ||
+      clientX < left
+    ) {
+      return;
+    }
 
     // check direction
     const toTop =
