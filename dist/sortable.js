@@ -133,21 +133,12 @@
       return node == window || node == document;
     }
   }
-
-  /**
-   * set transition style
-   * @param {HTMLElement} el
-   * @param {String | Function} transition
-   */
   function setTransition(el, transition) {
     el.style["".concat(vendorPrefix, "Transition")] = transition ? transition === 'none' ? 'none' : "".concat(transition) : '';
   }
-
-  /**
-   * set transform style
-   * @param {HTMLElement} el
-   * @param {String} transform
-   */
+  function setTransitionDuration(el, duration) {
+    el.style["".concat(vendorPrefix, "TransitionDuration")] = duration == null ? '' : "".concat(duration, "ms");
+  }
   function setTransform(el, transform) {
     el.style["".concat(vendorPrefix, "Transform")] = transform ? "".concat(transform) : '';
   }
@@ -157,7 +148,6 @@
    * @param {HTMLElement} el
    * @param {String} event
    * @param {Function} fn
-   * @param {Boolean} sp
    */
   function on(el, event, fn) {
     if (window.addEventListener) {
@@ -172,7 +162,6 @@
    * @param {HTMLElement} el
    * @param {String} event
    * @param {Function} fn
-   * @param {Boolean} sp
    */
   function off(el, event, fn) {
     if (window.removeEventListener) {
@@ -445,6 +434,9 @@
   function offsetChanged(o1, o2) {
     return o1.top !== o2.top || o1.left !== o2.left;
   }
+  function sortByOffset(o1, o2) {
+    return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
+  }
   function css(el, prop, val) {
     var style = el && el.style;
     if (style) {
@@ -510,7 +502,6 @@
      * Collecting Multi-Drag Elements
      */
     select: function select(event, dragEl, from) {
-      var _this = this;
       if (!dragEl) return;
       if (!selectedElements[this.groupName]) {
         selectedElements[this.groupName] = [];
@@ -528,7 +519,7 @@
         from.sortable._dispatchEvent('onDeselect', params);
       }
       selectedElements[this.groupName].sort(function (a, b) {
-        return _this._sortByOffset(getOffset(a), getOffset(b));
+        return sortByOffset(getOffset(a), getOffset(b));
       });
     },
     onDrag: function onDrag(sortable) {
@@ -563,14 +554,14 @@
       });
     },
     onDrop: function onDrop(event, dragEl, downEvent, _emits) {
-      var _this2 = this;
+      var _this = this;
       multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
       var index = selectedElements[this.groupName].indexOf(dragEl);
       selectedElements[this.groupName].forEach(function (node, i) {
         if (i < index) {
           dragEl.parentNode.insertBefore(node, dragEl);
         } else {
-          var dropEl = i > 0 ? selectedElements[_this2.groupName][i - 1] : dragEl;
+          var dropEl = i > 0 ? selectedElements[_this.groupName][i - 1] : dragEl;
           dragEl.parentNode.insertBefore(node, dropEl.nextSibling);
         }
       });
@@ -592,9 +583,6 @@
       }
       multiTo.sortable._dispatchEvent('onDrop', params);
       multiTo.sortable.animator.animate();
-    },
-    _sortByOffset: function _sortByOffset(o1, o2) {
-      return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
     },
     _offsetChanged: function _offsetChanged(ns1, ns2) {
       return !!ns1.find(function (node) {
@@ -735,17 +723,17 @@
       var rect = getRect(el);
       var ot = top - rect.top;
       var ol = left - rect.left;
-      setTransition(el, 'none');
+      setTransitionDuration(el);
       setTransform(el, "translate3d(".concat(ol, "px, ").concat(ot, "px, 0)"));
 
       // repaint
       el.offsetWidth;
       var duration = this.options.animation;
-      setTransition(el, "".concat(duration, "ms"));
+      setTransitionDuration(el, duration);
       setTransform(el, 'translate3d(0px, 0px, 0px)');
       clearTimeout(el.animated);
       el.animated = setTimeout(function () {
-        setTransition(el, '');
+        setTransitionDuration(el);
         setTransform(el, '');
         el.animated = null;
       }, duration);
