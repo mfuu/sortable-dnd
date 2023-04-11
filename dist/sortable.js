@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.9
+ * sortable-dnd v0.4.10
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -53,31 +53,6 @@
       obj[key] = value;
     }
     return obj;
-  }
-  function _toConsumableArray(arr) {
-    return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
-  }
-  function _arrayWithoutHoles(arr) {
-    if (Array.isArray(arr)) return _arrayLikeToArray(arr);
-  }
-  function _iterableToArray(iter) {
-    if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
-  }
-  function _unsupportedIterableToArray(o, minLen) {
-    if (!o) return;
-    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
-    var n = Object.prototype.toString.call(o).slice(8, -1);
-    if (n === "Object" && o.constructor) n = o.constructor.name;
-    if (n === "Map" || n === "Set") return Array.from(o);
-    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
-  }
-  function _arrayLikeToArray(arr, len) {
-    if (len == null || len > arr.length) len = arr.length;
-    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
-    return arr2;
-  }
-  function _nonIterableSpread() {
-    throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
   function _toPrimitive(input, hint) {
     if (typeof input !== "object" || input === null) return input;
@@ -374,7 +349,7 @@
       ctx = ctx || document;
       do {
         if (selector == null) {
-          var children = _toConsumableArray(Array.from(ctx.children));
+          var children = Array.prototype.slice.call(ctx.children);
 
           // If it can be found directly in the child element, return
           var index = children.indexOf(el);
@@ -573,7 +548,7 @@
         if (node == dragEl) return;
         node.parentNode.removeChild(node);
       });
-      sortable.animator.animate(sortable.options.animation);
+      sortable.animator.animate();
     },
     onChange: function onChange(dragEl, sortable) {
       var rect = getRect(dragEl);
@@ -616,10 +591,10 @@
         multiFrom.sortable._dispatchEvent('onDrop', params);
       }
       multiTo.sortable._dispatchEvent('onDrop', params);
-      multiTo.sortable.animator.animate(multiTo.sortable.options.animation);
+      multiTo.sortable.animator.animate();
     },
     _sortByOffset: function _sortByOffset(o1, o2) {
-      return o1.top == o2.top ? o1.left > o2.left : o1.top > o2.top;
+      return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
     },
     _offsetChanged: function _offsetChanged(ns1, ns2) {
       return !!ns1.find(function (node) {
@@ -683,7 +658,7 @@
         left = rect.left,
         height = rect.height,
         width = rect.width;
-      if (clientY < top || clientY > bottom || clientX < left || clientX > right) {
+      if (clientY < top || clientX > right || clientY > bottom || clientX < left) {
         return;
       }
 
@@ -717,14 +692,15 @@
     }
   };
 
-  function Animation() {
+  function Animation(options) {
+    this.options = options;
     this.animations = [];
   }
   Animation.prototype = {
     collect: function collect(dragEl, dropEl, container, except) {
       var _this = this;
       if (!container) return;
-      var children = _toConsumableArray(Array.from(container.children));
+      var children = Array.prototype.slice.call(container.children);
       var _this$_getRange = this._getRange(children, dragEl, dropEl, except),
         start = _this$_getRange.start,
         end = _this$_getRange.end;
@@ -738,25 +714,24 @@
       }
       if (end < 0) end = min;
       children.slice(start, end + 1).forEach(function (node) {
-        if (node === except) return;
+        if (node === except || node === Sortable.helper) return;
         _this.animations.push({
           node: node,
           rect: getRect(node)
         });
       });
     },
-    animate: function animate(animation) {
+    animate: function animate() {
       var _this2 = this;
       this.animations.forEach(function (state) {
         var node = state.node,
           rect = state.rect;
-        _this2._excute(node, rect, animation);
+        _this2._excute(node, rect);
       });
     },
     _excute: function _excute(el, _ref) {
       var left = _ref.left,
         top = _ref.top;
-      var animation = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 150;
       var rect = getRect(el);
       var ot = top - rect.top;
       var ol = left - rect.left;
@@ -765,14 +740,15 @@
 
       // repaint
       el.offsetWidth;
-      setTransition(el, "".concat(animation, "ms"));
+      var duration = this.options.animation;
+      setTransition(el, "".concat(duration, "ms"));
       setTransform(el, 'translate3d(0px, 0px, 0px)');
       clearTimeout(el.animated);
       el.animated = setTimeout(function () {
         setTransition(el, '');
         setTransform(el, '');
         el.animated = null;
-      }, animation);
+      }, duration);
     },
     _getRange: function _getRange(children, dragEl, dropEl) {
       var start = children.indexOf(dragEl);
@@ -1009,7 +985,7 @@
     }
     sortables.push(el);
     this.multiplayer = new Multiple(this.options);
-    this.animator = new Animation();
+    this.animator = new Animation(this.options);
     autoScroller = new AutoScroll();
   }
   Sortable.prototype = {
@@ -1017,7 +993,6 @@
     get helper() {
       return helper.node;
     },
-    // -------------------------------- public methods ----------------------------------
     /**
      * Destroy
      */
@@ -1034,10 +1009,9 @@
       if (sortables.length == 0) autoScroller = null;
       this.el = null;
     },
-    // -------------------------------- prepare start ----------------------------------
     _onDrag: function _onDrag( /** Event|TouchEvent */evt) {
       var _this = this;
-      if (dragEl || this.options.disabled || !this.options.group.pull) return;
+      if (this.options.disabled || !this.options.group.pull) return;
       if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return; // only left button and enabled
 
       var _getEvent = getEvent(evt),
@@ -1068,7 +1042,7 @@
       if (!dragEl || dragEl.animated) return;
 
       // solve the problem that the mobile cannot be dragged
-      if (touch) dragEl.style['touch-action'] = 'none';
+      if (touch) css(dragEl, 'touch-action', 'none');
       var parentEl = dragEl.parentNode;
       touchEvent = touch;
       downEvent = event;
@@ -1107,6 +1081,13 @@
         delay = _this$options3.delay,
         delayOnTouchOnly = _this$options3.delayOnTouchOnly;
       if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
+        if (this.options.supportPointer) {
+          on(this.ownerDocument, 'pointerup', this._onDrop);
+        } else if (touchEvent) {
+          on(this.ownerDocument, 'touchend', this._onDrop);
+        } else {
+          on(this.ownerDocument, 'mouseup', this._onDrop);
+        }
         clearTimeout(dragStartTimer);
         // delay to start
         dragStartTimer = setTimeout(function () {
@@ -1143,7 +1124,6 @@
         }
       } catch (error) {}
     },
-    // -------------------------------- real started ----------------------------------
     _onTrulyStarted: function _onTrulyStarted() {
       if (!moveEvent) {
         // on-drag
@@ -1156,14 +1136,14 @@
         // Init in the move event to prevent conflict with the click event
         var element = isMultiple ? this.multiplayer.getHelper() : dragEl;
         helper.init(from.rect, element, this.el, this.options, distance);
+        Sortable.helper = helper.node;
 
         // add class for drag element
         toggleClass(dragEl, this.options.chosenClass, true);
-        dragEl.style['will-change'] = 'transform';
+        css(dragEl, 'will-change', 'transform');
         if (Safari) css(document.body, 'user-select', 'none');
       }
     },
-    // -------------------------------- move ----------------------------------
     _onMove: function _onMove( /** Event|TouchEvent */evt) {
       this._preventEvent(evt);
       if (!downEvent || !dragEl) return;
@@ -1275,7 +1255,6 @@
       from.group = parentEl;
       from.sortable = this;
     },
-    // -------------------------------- on drop ----------------------------------
     _onDrop: function _onDrop( /** Event|TouchEvent */evt) {
       this._unbindMoveEvents();
       this._unbindDropEvents();
@@ -1286,38 +1265,41 @@
       // clear style, attrs and class
       if (dragEl) {
         toggleClass(dragEl, this.options.chosenClass, false);
-        if (touchEvent) dragEl.style['touch-action'] = '';
-        dragEl.style['will-change'] = '';
+        if (touchEvent) css(dragEl, 'touch-action', '');
+        css(dragEl, 'will-change', '');
       }
+
       // drag and drop done
       if (dragEl && downEvent && moveEvent) {
-        from.group = downEvent.group;
-        from.sortable = downEvent.sortable;
-        if (isMultiple) {
-          this.multiplayer.onDrop(evt, dragEl, downEvent, _emits);
-        } else {
-          // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
-          to.rect = getRect(dragEl);
-          to.offset = getOffset(dragEl);
-          var changed = offsetChanged(from.offset, to.offset);
-          var params = _objectSpread2(_objectSpread2({}, _emits()), {}, {
-            changed: changed,
-            event: evt
-          });
-          // on-drop
-          if (to.sortable.el !== from.sortable.el) {
-            from.sortable._dispatchEvent('onDrop', params);
-          }
-          to.sortable._dispatchEvent('onDrop', params);
-        }
-        if (Safari) css(document.body, 'user-select', '');
+        this._onEnd(evt);
       } else if (this.options.multiple) {
         // click event
         this.multiplayer.select(evt, dragEl, _objectSpread2({}, from));
       }
       this._clearState();
     },
-    // -------------------------------- event ----------------------------------
+    _onEnd: function _onEnd( /** Event|TouchEvent */evt) {
+      from.group = downEvent.group;
+      from.sortable = downEvent.sortable;
+      if (isMultiple) {
+        this.multiplayer.onDrop(evt, dragEl, downEvent, _emits);
+      } else {
+        // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
+        to.rect = getRect(dragEl);
+        to.offset = getOffset(dragEl);
+        var changed = offsetChanged(from.offset, to.offset);
+        var params = _objectSpread2(_objectSpread2({}, _emits()), {}, {
+          changed: changed,
+          event: evt
+        });
+        // on-drop
+        if (to.sortable.el !== from.sortable.el) {
+          from.sortable._dispatchEvent('onDrop', params);
+        }
+        to.sortable._dispatchEvent('onDrop', params);
+      }
+      if (Safari) css(document.body, 'user-select', '');
+    },
     _preventEvent: function _preventEvent(evt) {
       evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
       if (this.options.stopPropagation) evt.stopPropagation && evt.stopPropagation(); // prevent events from bubbling
@@ -1327,7 +1309,6 @@
       var callback = this.options[event];
       if (typeof callback === 'function') callback(params);
     },
-    // -------------------------------- clear ----------------------------------
     _clearState: function _clearState() {
       dragEl = dropEl = downEvent = moveEvent = touchEvent = isMultiple = dragStartTimer = Sortable.ghost = null;
       distance = lastPosition = {
