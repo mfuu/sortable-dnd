@@ -81,11 +81,6 @@ export function isHTMLElement(node) {
   }
 }
 
-/**
- * set transition style
- * @param {HTMLElement} el
- * @param {String | Function} transition
- */
 export function setTransition(el, transition) {
   el.style[`${vendorPrefix}Transition`] = transition
     ? transition === 'none'
@@ -94,11 +89,11 @@ export function setTransition(el, transition) {
     : '';
 }
 
-/**
- * set transform style
- * @param {HTMLElement} el
- * @param {String} transform
- */
+export function setTransitionDuration(el, duration) {
+  el.style[`${vendorPrefix}TransitionDuration`] =
+    duration == null ? '' : `${duration}ms`;
+}
+
 export function setTransform(el, transform) {
   el.style[`${vendorPrefix}Transform`] = transform ? `${transform}` : '';
 }
@@ -108,7 +103,6 @@ export function setTransform(el, transform) {
  * @param {HTMLElement} el
  * @param {String} event
  * @param {Function} fn
- * @param {Boolean} sp
  */
 export function on(el, event, fn) {
   if (window.addEventListener) {
@@ -127,7 +121,6 @@ export function on(el, event, fn) {
  * @param {HTMLElement} el
  * @param {String} event
  * @param {Function} fn
- * @param {Boolean} sp
  */
 export function off(el, event, fn) {
   if (window.removeEventListener) {
@@ -460,6 +453,10 @@ export function matches(el, selector) {
  */
 export function offsetChanged(o1, o2) {
   return o1.top !== o2.top || o1.left !== o2.left;
+}
+
+export function sortByOffset(o1, o2) {
+  return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
 }
 
 export function css(el, prop, val) {

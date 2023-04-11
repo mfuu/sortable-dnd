@@ -1,4 +1,4 @@
-import { getRect, setTransition, setTransform } from '../utils.js';
+import { getRect, setTransitionDuration, setTransform } from '../utils.js';
 import Sortable from '../index.js';
 
 function Animation(options) {
@@ -42,7 +42,7 @@ Animation.prototype = {
     const ot = top - rect.top;
     const ol = left - rect.left;
 
-    setTransition(el, 'none');
+    setTransitionDuration(el);
     setTransform(el, `translate3d(${ol}px, ${ot}px, 0)`);
 
     // repaint
@@ -50,12 +50,12 @@ Animation.prototype = {
 
     const duration = this.options.animation;
 
-    setTransition(el, `${duration}ms`);
+    setTransitionDuration(el, duration);
     setTransform(el, 'translate3d(0px, 0px, 0px)');
 
     clearTimeout(el.animated);
     el.animated = setTimeout(() => {
-      setTransition(el, '');
+      setTransitionDuration(el);
       setTransform(el, '');
       el.animated = null;
     }, duration);
