@@ -1,13 +1,15 @@
 import { getRect, setTransition, setTransform } from '../utils.js';
+import Sortable from '../index.js';
 
-function Animation() {
+function Animation(options) {
+  this.options = options;
   this.animations = [];
 }
 
 Animation.prototype = {
   collect(dragEl, dropEl, container, except) {
     if (!container) return;
-    const children = [...Array.from(container.children)];
+    const children = Array.prototype.slice.call(container.children);
     let { start, end } = this._getRange(children, dragEl, dropEl, except);
 
     this.animations.length = 0;
@@ -23,19 +25,19 @@ Animation.prototype = {
     if (end < 0) end = min;
 
     children.slice(start, end + 1).forEach((node) => {
-      if (node === except) return;
+      if (node === except || node === Sortable.helper) return;
       this.animations.push({ node, rect: getRect(node) });
     });
   },
 
-  animate(animation) {
+  animate() {
     this.animations.forEach((state) => {
       const { node, rect } = state;
-      this._excute(node, rect, animation);
+      this._excute(node, rect);
     });
   },
 
-  _excute(el, { left, top }, animation = 150) {
+  _excute(el, { left, top }) {
     const rect = getRect(el);
     const ot = top - rect.top;
     const ol = left - rect.left;
@@ -46,7 +48,9 @@ Animation.prototype = {
     // repaint
     el.offsetWidth;
 
-    setTransition(el, `${animation}ms`);
+    const duration = this.options.animation;
+
+    setTransition(el, `${duration}ms`);
     setTransform(el, 'translate3d(0px, 0px, 0px)');
 
     clearTimeout(el.animated);
@@ -54,7 +58,7 @@ Animation.prototype = {
       setTransition(el, '');
       setTransform(el, '');
       el.animated = null;
-    }, animation);
+    }, duration);
   },
 
   _getRange(children, dragEl, dropEl) {

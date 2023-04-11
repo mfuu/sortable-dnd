@@ -346,7 +346,7 @@ export function closest(el, selector, ctx, includeCTX) {
 
     do {
       if (selector == null) {
-        let children = [...Array.from(ctx.children)];
+        let children = Array.prototype.slice.call(ctx.children);
 
         // If it can be found directly in the child element, return
         let index = children.indexOf(el);

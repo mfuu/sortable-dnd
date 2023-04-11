@@ -93,7 +93,7 @@ Multiple.prototype = {
       node.parentNode.removeChild(node);
     });
 
-    sortable.animator.animate(sortable.options.animation);
+    sortable.animator.animate();
   },
 
   onChange(dragEl, sortable) {
@@ -132,11 +132,11 @@ Multiple.prototype = {
     }
     multiTo.sortable._dispatchEvent('onDrop', params);
 
-    multiTo.sortable.animator.animate(multiTo.sortable.options.animation);
+    multiTo.sortable.animator.animate();
   },
 
   _sortByOffset(o1, o2) {
-    return o1.top == o2.top ? o1.left > o2.left : o1.top > o2.top;
+    return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
   },
 
   _offsetChanged(ns1, ns2) {
