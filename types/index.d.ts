@@ -38,6 +38,9 @@ type MultiFromTo = {
   sortable: Sortable;
   group: HTMLElement;
   nodes: MultiNode[];
+  node: HTMLElement;
+  offset: Offset;
+  rect: Rect;
 }
 
 type EventType = Event & (PointerEvent | MouseEvent | TouchEvent);

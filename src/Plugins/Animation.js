@@ -14,16 +14,6 @@ Animation.prototype = {
 
     this.animations.length = 0;
 
-    const offsetHeight = (dragEl || dropEl).offsetHeight;
-    const max = Math.floor(container.scrollHeight / offsetHeight);
-    const min = Math.min(children.length - 1, max);
-
-    if (start < 0) {
-      start = end;
-      end = min;
-    }
-    if (end < 0) end = min;
-
     children.slice(start, end + 1).forEach((node) => {
       if (node === except || node === Sortable.helper) return;
       this.animations.push({ node, rect: getRect(node) });
@@ -65,6 +55,13 @@ Animation.prototype = {
     let start = children.indexOf(dragEl);
     let end = children.indexOf(dropEl);
     if (start > end) [start, end] = [end, start];
+
+    if (start < 0) {
+      start = end;
+      end = children.length - 1;
+    }
+    if (end < 0) end = children.length - 1;
+
     return { start, end };
   },
 };
