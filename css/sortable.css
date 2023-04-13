@@ -30,8 +30,50 @@ li {
   background-color: #e5bbbb;
 }
 
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.tabs-list {
+  height: 39px;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+
+.tabs-list li {
+  float: left;
+  height: 39px;
+  line-height: 39px;
+  padding: 0 20px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.tabs-list .current {
+  background-color: #c81623;
+  color: #fff;
+}
+
+.flex-center {
+  display: flex;
+  justify-content: center;
+}
+
+.tabs-item {
+  height: 0;
+  overflow: hidden;
+}
+
+.highlight {
+  background-color: black;
+  color: aliceblue;
+  margin-bottom: 50px;
+}
+
 .drag {
   cursor: grab;
+  float: right;
 }
 
 .drag::before {
@@ -105,6 +147,21 @@ li {
   margin: 5px;
   border: 1px solid #aaa;
   display: inline-block;
+}
+
+.handle-group {
+  height: 500px;
+  overflow: auto;
+  width: 300px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  margin-bottom: 100px;
+}
+
+.handle-group li {
+  padding: 5px;
+  margin: 5px;
+  border: 1px solid #aaa;
 }
 
 .grid-group {

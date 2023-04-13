@@ -7,48 +7,6 @@
   <link rel="stylesheet" href="./css/sortable.css">
   <title>Sortable</title>
   <script src="https://cdn.jsdelivr.net/npm/sortable-dnd/dist/sortable.min.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-    }
-
-    .tabs-list {
-      height: 39px;
-      border: 1px solid #ccc;
-      background-color: #f1f1f1;
-    }
-
-    .tabs-list li {
-      float: left;
-      height: 39px;
-      line-height: 39px;
-      padding: 0 20px;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    .tabs-list .current {
-      background-color: #c81623;
-      color: #fff;
-    }
-
-    .flex-center {
-      display: flex;
-      justify-content: center;
-    }
-
-    .tabs-item {
-      height: 0;
-      overflow: hidden;
-    }
-
-    .highlight {
-      background-color: black;
-      color: aliceblue;
-      margin-bottom: 50px;
-    }
-  </style>
 </head>
 <body>
   <div class="tabs-list flex-center">
@@ -122,7 +80,7 @@
           )
         </code>
       </div>
-      <ul id="gridGroup" class="grid-group"></ul>
+      <ul id="handleGroup" class="handle-group"></ul>
     </div>
     <div class="tabs-item">
       <div class="highlight flex-center">
