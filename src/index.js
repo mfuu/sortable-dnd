@@ -435,8 +435,11 @@ Sortable.prototype = {
     if (dropEl === dragEl) return;
 
     if (rootEl !== from.sortable.el) {
-      const insert = target === rootEl || !lastChild(rootEl, helper.node);
-      this._onInsert(event, insert);
+      if (target === rootEl || !lastChild(rootEl, helper.node)) {
+        this._onInsert(event, true);
+      } else if (dropEl) {
+        this._onInsert(event, false);
+      }
     } else if (dropEl) {
       this._onChange(event);
     }
