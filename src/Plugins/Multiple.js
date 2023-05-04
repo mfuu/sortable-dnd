@@ -78,15 +78,20 @@ Multiple.prototype = {
       from.sortable._dispatchEvent('onDeselect', params);
     }
 
+    const contaienr = from.sortable.el;
     selectedElements[this.groupName].sort((a, b) => {
-      return sortByOffset(getOffset(a), getOffset(b));
+      return sortByOffset(getOffset(a, contaienr), getOffset(b, contaienr));
     });
   },
 
   onDrag(sortable) {
     multiFrom.sortable = sortable;
     multiFrom.nodes = selectedElements[this.groupName].map((node) => {
-      return { node, rect: getRect(node), offset: getOffset(node) };
+      return {
+        node,
+        rect: getRect(node),
+        offset: getOffset(node, sortable.el),
+      };
     });
     multiTo.sortable = sortable;
   },
@@ -104,7 +109,7 @@ Multiple.prototype = {
 
   onChange(dragEl, sortable) {
     const rect = getRect(dragEl);
-    const offset = getOffset(dragEl);
+    const offset = getOffset(dragEl, sortable.el);
 
     multiTo.sortable = sortable;
     multiTo.nodes = selectedElements[this.groupName].map((node) => {
@@ -128,7 +133,11 @@ Multiple.prototype = {
 
     multiFrom.sortable = downEvent.sortable;
     multiTo.nodes = selectedElements[this.groupName].map((node) => {
-      return { node, rect: getRect(node), offset: getOffset(node) };
+      return {
+        node,
+        rect: getRect(node),
+        offset: getOffset(node, multiTo.sortable.el),
+      };
     });
 
     const changed = this._offsetChanged(multiFrom.nodes, multiTo.nodes);

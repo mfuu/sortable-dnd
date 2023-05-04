@@ -15,7 +15,6 @@ const banner = `
 `;
 
 export default {
-  external: ['vue'],
   input: 'src/index.js',
   output: [
     {
@@ -23,7 +22,7 @@ export default {
       file: 'dist/sortable.js',
       name: 'Sortable',
       sourcemap: false,
-      banner: banner.replace(/\n/, '')
+      banner: banner.replace(/\n/, ''),
     },
     {
       format: 'umd',
@@ -31,8 +30,8 @@ export default {
       name: 'Sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, ''),
-      plugins: [uglify()]
-    }
+      plugins: [uglify()],
+    },
   ],
-  plugins: [babel(), resolve(), commonJs()]
+  plugins: [babel(), resolve(), commonJs()],
 };

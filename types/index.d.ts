@@ -2,14 +2,14 @@ type Group = {
   name: String;
   put: Boolean;
   pull: Boolean;
-}
+};
 
 type Offset = {
   height: Number;
   width: Number;
   top: Number;
   left: Number;
-}
+};
 
 type Rect = {
   height: Number;
@@ -18,40 +18,34 @@ type Rect = {
   bottom: Number;
   left: Number;
   right: Number;
-}
+};
 
-type FromTo = {
+type SortableState = {
   sortable: Sortable;
   group: HTMLElement;
   node: HTMLElement;
   offset: Offset;
   rect: Rect;
-}
+};
 
 type MultiNode = {
   node: HTMLElement;
   offset: Offset;
   rect: Rect;
-}
+};
 
-type MultiFromTo = {
-  sortable: Sortable;
-  group: HTMLElement;
-  nodes: MultiNode[];
-  node: HTMLElement;
-  offset: Offset;
-  rect: Rect;
-}
+type EventType = Event & (PointerEvent | TouchEvent | MouseEvent);
 
-type EventType = Event & (PointerEvent | MouseEvent | TouchEvent);
+type FromTo = SortableState & { nodes?: MultiNode[] };
 
+type Select = SortableState & { event: EventType };
 
 type options = {
   /**
-   * Specifies which items inside the element should be draggable
+   * Specifies which items inside the element should be draggable.
    * @example
    * - (e) => e.target.tagName === 'LI' ? true : false
-   * - (e) => e.target // use function to set the drag element if retrun HTMLElement
+   * - (e) => e.target // use function to set the drag element if retrun an HTMLElement
    * - 'div'   // use tag name
    * - '.item' // use class name
    * - '#item' // use id
@@ -59,7 +53,7 @@ type options = {
   draggable?: Function | String;
 
   /**
-   * Drag handle selector within list items
+   * Drag handle selector within list items.
    * @example
    * - (e) => e.target.tagName === 'I' ? true : false
    * - 'i' // use tag name
@@ -69,10 +63,10 @@ type options = {
   handle?: Function | String;
 
   /**
-   * Set value to allow drag between different lists
+   * Set value to allow drag between different lists.
    * @example
-   * String: 'name'
-   * Object: { name: 'group', put: true | false, pull: true | false }
+   * String: '...'
+   * Object: { name: '...', put: true | false, pull: true | false }
    * @defaults `' '`
    */
   group?: String | Group;
@@ -93,8 +87,8 @@ type options = {
    * The callback function when the drag is started.
    */
   onDrag?: (params: {
-    from: FromTo | MultiFromTo;
-    to: FromTo | MultiFromTo;
+    from: FromTo;
+    to: FromTo;
     event: EventType;
   }) => void;
 
@@ -102,8 +96,8 @@ type options = {
    * The callback function when the dragged element is moving.
    */
   onMove?: (params: {
-    from: FromTo | MultiFromTo;
-    to: FromTo | MultiFromTo;
+    from: FromTo;
+    to: FromTo;
     event: EventType;
   }) => void;
 
@@ -111,48 +105,48 @@ type options = {
    * The callback function when the drag is completed.
    */
   onDrop?: (params: {
-    from: FromTo | MultiFromTo;
-    to: FromTo | MultiFromTo;
+    from: FromTo;
+    to: FromTo;
     event: EventType;
     changed: Boolean;
   }) => void;
 
   /**
-   * The callback function when element is dropped into the list from another list.
+   * The callback function when element is dropped into the current list from another list.
    */
   onAdd?: (params: {
-    from: FromTo | MultiFromTo;
-    to: FromTo | MultiFromTo;
+    from: FromTo;
+    to: FromTo;
     event: EventType;
   }) => void;
 
   /**
-   * The callback function when element is removed from the list into another list.
+   * The callback function when element is removed from the current list into another list.
    */
   onRemove?: (params: {
-    from: FromTo | MultiFromTo;
-    to: FromTo | MultiFromTo;
+    from: FromTo;
+    to: FromTo;
     event: EventType;
   }) => void;
 
   /**
-   * The callback function when the dragged element changes position in the list.
+   * The callback function when the dragged element changes position in the current list.
    */
   onChange?: (params: {
-    from: FromTo | MultiFromTo;
-    to: FromTo | MultiFromTo;
+    from: FromTo;
+    to: FromTo;
     event: EventType;
   }) => void;
 
   /**
-   * The callback function when element is selected
+   * The callback function when element is selected.
    */
-  onSelect?: (params: FromTo) => void;
+  onSelect?: (params: Select) => void;
 
   /**
-   * The callback function when element is unselected
+   * The callback function when element is unselected.
    */
-  onDeselect?: (params: FromTo) => void;
+  onDeselect?: (params: Select) => void;
 
   /**
    * Disables the sortable if set to true.
@@ -167,7 +161,7 @@ type options = {
   chosenClass?: String;
 
   /**
-   * Class name for selected item
+   * Class name for selected item.
    * @defaults `' '`
    */
   selectedClass?: String;
@@ -209,7 +203,7 @@ type options = {
   dealyOnTouchOnly?: Boolean;
 
   /**
-   * Appends the cloned DOM Element into the Document's Body
+   * Appends the cloned DOM Element into the Document's Body.
    * @defaults `false`
    */
   fallbackOnBody?: Boolean;
@@ -226,12 +220,12 @@ declare class Sortable {
    * @param ParentElement The Parent which holds the draggable element(s).
    * @param options Options to customise the behavior of the drag animations.
    */
-  constructor(ParentElement: HTMLElement, options?: options)
+  constructor(ParentElement: HTMLElement, options?: options);
 
   /**
-   * Manually clear all the state of the component. After using this method, the component will no longer be draggable.
+   * Manually clear all the state of the component, using this method the component will not be draggable.
    */
-  destroy(): void
+  destroy(): void;
 }
 
-export = Sortable
+export = Sortable;

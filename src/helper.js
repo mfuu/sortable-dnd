@@ -2,6 +2,7 @@ import { css, toggleClass, setTransform, setTransition } from './utils';
 
 function Helper() {
   this.helper = null;
+  this.distance = { x: 0, y: 0 };
 }
 
 Helper.prototype = {
@@ -14,13 +15,14 @@ Helper.prototype = {
       this.helper.parentNode.removeChild(this.helper);
     }
     this.helper = null;
+    this.distance = { x: 0, y: 0 };
   },
 
   move(x, y) {
     setTransform(this.helper, `translate3d(${x}px, ${y}px, 0)`);
   },
 
-  init(rect, element, container, options, distance) {
+  init(rect, element, container, options) {
     if (this.helper) return;
 
     const { fallbackOnBody, ghostClass, ghostStyle = {} } = options;
@@ -51,8 +53,8 @@ Helper.prototype = {
 
     helperContainer.appendChild(this.helper);
 
-    let ox = (distance.x / parseInt(this.helper.style.width)) * 100;
-    let oy = (distance.y / parseInt(this.helper.style.height)) * 100;
+    let ox = (this.distance.x / parseInt(this.helper.style.width)) * 100;
+    let oy = (this.distance.y / parseInt(this.helper.style.height)) * 100;
     css(this.helper, 'transform-origin', `${ox}% ${oy}%`);
     css(this.helper, 'transform', 'translateZ(0)');
   },
