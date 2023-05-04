@@ -147,7 +147,7 @@ export function getEvent(evt) {
   let target = touch
     ? document.elementFromPoint(touch.clientX, touch.clientY)
     : evt.target;
-  if (touch) {
+  if (touch && !('clientX' in event)) {
     event.clientX = touch.clientX;
     event.clientY = touch.clientY;
     event.pageX = touch.pageX;
@@ -161,8 +161,9 @@ export function getEvent(evt) {
 /**
  * get element's offetTop
  * @param {HTMLElement} el
+ * @param {HTMLElement} parentEl
  */
-export function getOffset(el) {
+export function getOffset(el, parentEl) {
   let offset = {
     top: 0,
     left: 0,
@@ -170,12 +171,10 @@ export function getOffset(el) {
     width: el.offsetWidth,
   };
 
-  let winScroller = getWindowScrollingElement();
-
   do {
     offset.top += el.offsetTop;
     offset.left += el.offsetLeft;
-  } while (el !== winScroller && (el = el.offsetParent));
+  } while ((el = el.parentNode) && el !== parentEl);
 
   return offset;
 }
@@ -367,6 +366,7 @@ export function closest(el, selector, ctx, includeCTX) {
  * @param {HTMLElement} root
  */
 export function containes(el, root) {
+  if (!el || !root) return false;
   if (root.compareDocumentPosition) {
     return root === el || !!(root.compareDocumentPosition(el) & 16);
   }
