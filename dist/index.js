@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.11
+ * sortable-dnd v0.4.12
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -179,7 +179,7 @@
     var event = evt;
     var touch = evt.touches && evt.touches[0] || evt.changedTouches && evt.changedTouches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
     var target = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : evt.target;
-    if (touch) {
+    if (touch && !('clientX' in event)) {
       event.clientX = touch.clientX;
       event.clientY = touch.clientY;
       event.pageX = touch.pageX;
@@ -197,19 +197,19 @@
   /**
    * get element's offetTop
    * @param {HTMLElement} el
+   * @param {HTMLElement} parentEl
    */
-  function getOffset(el) {
+  function getOffset(el, parentEl) {
     var offset = {
       top: 0,
       left: 0,
       height: el.offsetHeight,
       width: el.offsetWidth
     };
-    var winScroller = getWindowScrollingElement();
     do {
       offset.top += el.offsetTop;
       offset.left += el.offsetLeft;
-    } while (el !== winScroller && (el = el.offsetParent));
+    } while ((el = el.parentNode) && el !== parentEl);
     return offset;
   }
 
@@ -362,6 +362,7 @@
    * @param {HTMLElement} root
    */
   function containes(el, root) {
+    if (!el || !root) return false;
     if (root.compareDocumentPosition) {
       return root === el || !!(root.compareDocumentPosition(el) & 16);
     }
@@ -518,8 +519,9 @@
         selectedElements[this.groupName].splice(index, 1);
         from.sortable._dispatchEvent('onDeselect', params);
       }
+      var contaienr = from.sortable.el;
       selectedElements[this.groupName].sort(function (a, b) {
-        return sortByOffset(getOffset(a), getOffset(b));
+        return sortByOffset(getOffset(a, contaienr), getOffset(b, contaienr));
       });
     },
     onDrag: function onDrag(sortable) {
@@ -528,7 +530,7 @@
         return {
           node: node,
           rect: getRect(node),
-          offset: getOffset(node)
+          offset: getOffset(node, sortable.el)
         };
       });
       multiTo.sortable = sortable;
@@ -543,7 +545,7 @@
     },
     onChange: function onChange(dragEl, sortable) {
       var rect = getRect(dragEl);
-      var offset = getOffset(dragEl);
+      var offset = getOffset(dragEl, sortable.el);
       multiTo.sortable = sortable;
       multiTo.nodes = selectedElements[this.groupName].map(function (node) {
         return {
@@ -570,7 +572,7 @@
         return {
           node: node,
           rect: getRect(node),
-          offset: getOffset(node)
+          offset: getOffset(node, multiTo.sortable.el)
         };
       });
       var changed = this._offsetChanged(multiFrom.nodes, multiTo.nodes);
@@ -752,6 +754,10 @@
 
   function Helper() {
     this.helper = null;
+    this.distance = {
+      x: 0,
+      y: 0
+    };
   }
   Helper.prototype = {
     get node() {
@@ -762,11 +768,15 @@
         this.helper.parentNode.removeChild(this.helper);
       }
       this.helper = null;
+      this.distance = {
+        x: 0,
+        y: 0
+      };
     },
     move: function move(x, y) {
       setTransform(this.helper, "translate3d(".concat(x, "px, ").concat(y, "px, 0)"));
     },
-    init: function init(rect, element, container, options, distance) {
+    init: function init(rect, element, container, options) {
       if (this.helper) return;
       var fallbackOnBody = options.fallbackOnBody,
         ghostClass = options.ghostClass,
@@ -792,8 +802,8 @@
       setTransition(this.helper, 'none');
       setTransform(this.helper, 'translate3d(0px, 0px, 0px)');
       helperContainer.appendChild(this.helper);
-      var ox = distance.x / parseInt(this.helper.style.width) * 100;
-      var oy = distance.y / parseInt(this.helper.style.height) * 100;
+      var ox = this.distance.x / parseInt(this.helper.style.width) * 100;
+      var oy = this.distance.y / parseInt(this.helper.style.height) * 100;
       css(this.helper, 'transform-origin', "".concat(ox, "% ").concat(oy, "%"));
       css(this.helper, 'transform', 'translateZ(0)');
     }
@@ -806,8 +816,6 @@
     rect: {},
     offset: {}
   };
-
-  // -------------------------------- Sortable ----------------------------------
   var sortables = [];
   var rootEl,
     dragEl,
@@ -817,16 +825,11 @@
     touchEvent,
     isMultiple,
     lastDropEl,
-    autoScroller,
     dragStartTimer,
-    // timer for start to drag
-    helper = new Helper();
+    helper = new Helper(),
+    autoScroller = new AutoScroll();
   var from = _objectSpread2({}, FromTo);
   var to = _objectSpread2({}, FromTo);
-  var distance = {
-    x: 0,
-    y: 0
-  };
   var lastPosition = {
     x: 0,
     y: 0
@@ -861,6 +864,7 @@
       }
     }
   };
+
   /**
    * Detects first nearest empty sortable to X and Y position using emptyInsertThreshold.
    * @param  {Number} x      X position
@@ -964,6 +968,8 @@
       supportTouch = _this$options.supportTouch;
     if (supportPointer) {
       on(el, 'pointerdown', this._onDrag);
+      // Fixed some mobile terminals could not be dragged
+      on(el, 'touchstart', this._preventEvent);
     } else if (supportTouch) {
       on(el, 'touchstart', this._onDrag);
     } else {
@@ -972,15 +978,11 @@
     sortables.push(el);
     this.multiplayer = new Multiple(this.options);
     this.animator = new Animation(this.options);
-    autoScroller = new AutoScroll();
   }
   Sortable.prototype = {
     constructor: Sortable,
-    get helper() {
-      return helper.node;
-    },
     /**
-     * Destroy
+     * Manually clear all the state of the component, using this method the component will not be draggable
      */
     destroy: function destroy() {
       this._dispatchEvent('destroy', this);
@@ -988,11 +990,8 @@
       for (var i = 0; i < events.start.length; i++) {
         off(this.el, events.start[i], this._onDrag);
       }
-
-      // clear status
       this._clearState();
       sortables.splice(sortables.indexOf(this.el), 1);
-      if (sortables.length == 0) autoScroller = null;
       this.el = null;
     },
     _onDrag: function _onDrag( /** Event|TouchEvent */evt) {
@@ -1014,7 +1013,7 @@
       if (typeof handle === 'function' && !handle(evt)) return;
       if (typeof handle === 'string' && !matches(target, handle)) return;
       if (typeof draggable === 'function') {
-        // Function type must return a HTMLElement if used to specifies the drag el
+        // The function type must return an HTMLElement if used to specifies the drag el
         var element = draggable(evt);
         if (!element) return;
         // set drag element
@@ -1035,12 +1034,11 @@
       downEvent.sortable = this;
       downEvent.group = parentEl;
       isMultiple = this.options.multiple && this.multiplayer.allowDrag(dragEl);
-      // multi-drag
       isMultiple && this.multiplayer.onDrag(this);
 
       // get the position of the dragEl
       var rect = getRect(dragEl);
-      var offset = getOffset(dragEl);
+      var offset = getOffset(dragEl, this.el);
       from = {
         sortable: this,
         group: parentEl,
@@ -1050,7 +1048,7 @@
       };
       to.group = parentEl;
       to.sortable = this;
-      distance = {
+      helper.distance = {
         x: event.clientX - rect.left,
         y: event.clientY - rect.top
       };
@@ -1075,7 +1073,6 @@
           on(this.ownerDocument, 'mouseup', this._onDrop);
         }
         clearTimeout(dragStartTimer);
-        // delay to start
         dragStartTimer = setTimeout(function () {
           return _this._onStart();
         }, delay);
@@ -1112,16 +1109,14 @@
     },
     _onTrulyStarted: function _onTrulyStarted() {
       if (!moveEvent) {
-        // on-drag
         this._dispatchEvent('onDrag', _objectSpread2(_objectSpread2({}, _emits()), {}, {
           event: downEvent
         }));
-        // on-multi-drag
         isMultiple && this.multiplayer.onTrulyStarted(dragEl, this);
 
         // Init in the move event to prevent conflict with the click event
         var element = isMultiple ? this.multiplayer.getHelper() : dragEl;
-        helper.init(from.rect, element, this.el, this.options, distance);
+        helper.init(from.rect, element, this.el, this.options);
         Sortable.helper = helper.node;
 
         // add class for drag element
@@ -1150,13 +1145,10 @@
         target = _getEvent2.target;
       // truly started
       this._onTrulyStarted();
-      moveEvent = event; // sortable state move is active
-
+      moveEvent = event;
       var x = evt.clientX - downEvent.clientX;
       var y = evt.clientY - downEvent.clientY;
       helper.move(x, y);
-
-      // on-move
       this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
       }));
@@ -1164,8 +1156,6 @@
         // get the scroll element, fix display 'none' to 'block'
         this.scrollEl = getParentAutoScrollElement(this.el, true);
       }
-
-      // auto scroll
       var _this$options4 = this.options,
         autoScroll = _this$options4.autoScroll,
         scrollThreshold = _this$options4.scrollThreshold;
@@ -1201,7 +1191,7 @@
         group: parentEl,
         node: target,
         rect: getRect(dragEl),
-        offset: getOffset(dragEl)
+        offset: getOffset(dragEl, rootEl)
       };
       from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
@@ -1228,14 +1218,14 @@
         group: parentEl,
         node: dropEl,
         rect: getRect(dropEl),
-        offset: getOffset(dropEl)
+        offset: getOffset(dropEl, rootEl)
       };
       this._dispatchEvent('onChange', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
       }));
 
       // the top value is compared first, and the left is compared if the top value is the same
-      var offset = getOffset(dragEl);
+      var offset = getOffset(dragEl, rootEl);
       var nextEl = null;
       if (offset.top === to.offset.top) {
         nextEl = offset.left < to.offset.left ? dropEl.nextSibling : dropEl;
@@ -1260,8 +1250,6 @@
         touchEvent && css(dragEl, 'touch-action', '');
         css(dragEl, 'will-change', '');
       }
-
-      // drag and drop done
       if (dragEl && downEvent && moveEvent) {
         this._onEnd(evt);
       } else if (this.options.multiple) {
@@ -1278,13 +1266,12 @@
       } else {
         // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
         to.rect = getRect(dragEl);
-        to.offset = getOffset(dragEl);
-        var changed = offsetChanged(from.offset, to.offset);
+        to.offset = getOffset(dragEl, rootEl);
+        var changed = to.sortable.el !== from.sortable.el || offsetChanged(from.offset, to.offset);
         var params = _objectSpread2(_objectSpread2({}, _emits()), {}, {
           changed: changed,
           event: evt
         });
-        // on-drop
         if (to.sortable.el !== from.sortable.el) {
           from.sortable._dispatchEvent('onDrop', params);
         }
@@ -1307,8 +1294,8 @@
       if (typeof callback === 'function') callback(params);
     },
     _clearState: function _clearState() {
-      dragEl = dropEl = downEvent = moveEvent = touchEvent = isMultiple = lastDropEl = dragStartTimer = Sortable.ghost = null;
-      distance = lastPosition = {
+      dragEl = dropEl = downEvent = moveEvent = touchEvent = isMultiple = lastDropEl = dragStartTimer = Sortable.helper = null;
+      lastPosition = {
         x: 0,
         y: 0
       };

@@ -19,14 +19,14 @@ export default {
   output: [
     {
       format: 'umd',
-      file: 'dist/sortable.js',
+      file: 'dist/index.js',
       name: 'Sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, ''),
     },
     {
       format: 'umd',
-      file: 'dist/sortable.min.js',
+      file: 'dist/index.min.js',
       name: 'Sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, ''),
