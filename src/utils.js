@@ -6,9 +6,9 @@ const captureMode = {
 const R_SPACE = /\s+/g;
 
 export const events = {
-  start: ['pointerdown', 'touchstart', 'mousedown'],
-  move: ['pointermove', 'touchmove', 'mousemove'],
-  end: ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup'],
+  start: ['touchstart', 'mousedown'],
+  move: ['touchmove', 'mousemove'],
+  end: ['touchend', 'touchcancel', 'mouseup'],
 };
 
 function userAgent(pattern) {
@@ -142,8 +142,7 @@ export function getEvent(evt) {
   let event = evt;
   let touch =
     (evt.touches && evt.touches[0]) ||
-    (evt.changedTouches && evt.changedTouches[0]) ||
-    (evt.pointerType && evt.pointerType === 'touch' && evt);
+    (evt.changedTouches && evt.changedTouches[0]);
   let target = touch
     ? document.elementFromPoint(touch.clientX, touch.clientY)
     : evt.target;
@@ -349,9 +348,10 @@ export function closest(el, selector, ctx, includeCTX) {
           if (containes(el, children[i])) return children[i];
         }
       } else if (
-        selector[0] === '>'
+        (selector[0] === '>'
           ? el.parentNode === ctx && matches(el, selector)
-          : matches(el, selector) || (includeCTX && el === ctx)
+          : matches(el, selector)) ||
+        (includeCTX && el === ctx)
       ) {
         return el;
       }

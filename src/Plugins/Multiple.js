@@ -57,7 +57,7 @@ Multiple.prototype = {
   /**
    * Collecting Multi-Drag Elements
    */
-  select(event, dragEl, from) {
+  select(event, dragEl, rootEl, from) {
     if (!dragEl) return;
 
     if (!selectedElements[this.groupName]) {
@@ -78,20 +78,15 @@ Multiple.prototype = {
       from.sortable._dispatchEvent('onDeselect', params);
     }
 
-    const contaienr = from.sortable.el;
     selectedElements[this.groupName].sort((a, b) => {
-      return sortByOffset(getOffset(a, contaienr), getOffset(b, contaienr));
+      return sortByOffset(getOffset(a, rootEl), getOffset(b, rootEl));
     });
   },
 
-  onDrag(sortable) {
+  onDrag(rootEl, sortable) {
     multiFrom.sortable = sortable;
     multiFrom.nodes = selectedElements[this.groupName].map((node) => {
-      return {
-        node,
-        rect: getRect(node),
-        offset: getOffset(node, sortable.el),
-      };
+      return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
     });
     multiTo.sortable = sortable;
   },
@@ -117,7 +112,7 @@ Multiple.prototype = {
     });
   },
 
-  onDrop(event, dragEl, downEvent, _emits) {
+  onDrop(event, dragEl, rootEl, downEvent, _emits) {
     multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
     const index = selectedElements[this.groupName].indexOf(dragEl);
@@ -133,14 +128,12 @@ Multiple.prototype = {
 
     multiFrom.sortable = downEvent.sortable;
     multiTo.nodes = selectedElements[this.groupName].map((node) => {
-      return {
-        node,
-        rect: getRect(node),
-        offset: getOffset(node, multiTo.sortable.el),
-      };
+      return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
     });
 
-    const changed = this._offsetChanged(multiFrom.nodes, multiTo.nodes);
+    const changed =
+      multiTo.sortable.el != multiFrom.sortable.el ||
+      this._offsetChanged(multiFrom.nodes, multiTo.nodes);
     const params = { ..._emits(), changed, event };
     if (multiTo.sortable.el != multiFrom.sortable.el) {
       multiFrom.sortable._dispatchEvent('onDrop', params);
@@ -151,9 +144,9 @@ Multiple.prototype = {
   },
 
   _offsetChanged(ns1, ns2) {
-    return !!ns1.find((node) => {
-      let n = ns2.find((n) => n.node === node.node);
-      return offsetChanged(n.offset, node.offset);
+    return !!ns1.find((o2) => {
+      let o1 = ns2.find((n) => n.node === o2.node);
+      return offsetChanged(o1.offset, o2.offset);
     });
   },
 };

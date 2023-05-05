@@ -57,6 +57,7 @@ Helper.prototype = {
     let oy = (this.distance.y / parseInt(this.helper.style.height)) * 100;
     css(this.helper, 'transform-origin', `${ox}% ${oy}%`);
     css(this.helper, 'transform', 'translateZ(0)');
+    css(this.helper, 'will-change', 'transform');
   },
 };
 

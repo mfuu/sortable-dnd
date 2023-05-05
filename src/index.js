@@ -156,6 +156,8 @@ function Sortable(el, options) {
   this.options = options = Object.assign({}, options);
 
   const defaults = {
+    disabled: false,
+
     group: '',
     animation: 150,
 
@@ -174,7 +176,11 @@ function Sortable(el, options) {
 
     delay: 0,
     delayOnTouchOnly: false,
-    disabled: false,
+    touchStartThreshold:
+      (Number.parseInt ? Number : window).parseInt(
+        window.devicePixelRatio,
+        10
+      ) || 1,
 
     ghostClass: '',
     ghostStyle: {},
@@ -184,7 +190,6 @@ function Sortable(el, options) {
     fallbackOnBody: false,
     stopPropagation: false,
 
-    supportPointer: 'onpointerdown' in window && !Safari,
     supportTouch: 'ontouchstart' in window,
     emptyInsertThreshold: 5,
   };
@@ -203,12 +208,8 @@ function Sortable(el, options) {
     }
   }
 
-  const { supportPointer, supportTouch } = this.options;
-  if (supportPointer) {
-    on(el, 'pointerdown', this._onDrag);
-    // Fixed some mobile terminals could not be dragged
-    on(el, 'touchstart', this._preventEvent);
-  } else if (supportTouch) {
+  const { supportTouch } = this.options;
+  if (supportTouch) {
     on(el, 'touchstart', this._onDrag);
   } else {
     on(el, 'mousedown', this._onDrag);
@@ -269,20 +270,21 @@ Sortable.prototype = {
     // No dragging is allowed when there is no dragging element
     if (!dragEl || dragEl.animated) return;
 
-    // solve the problem that the mobile cannot be dragged
-    if (touch) css(dragEl, 'touch-action', 'none');
+    this._prepareStart(touch, event);
+  },
 
-    let parentEl = dragEl.parentNode;
+  _prepareStart: function (touch, event) {
+    const parentEl = dragEl.parentNode;
 
     touchEvent = touch;
 
     downEvent = event;
     downEvent.sortable = this;
-    downEvent.group = parentEl;
+    downEvent.group = dragEl.parentNode;
 
     isMultiple = this.options.multiple && this.multiplayer.allowDrag(dragEl);
 
-    isMultiple && this.multiplayer.onDrag(this);
+    isMultiple && this.multiplayer.onDrag(this.el, this);
 
     // get the position of the dragEl
     const rect = getRect(dragEl);
@@ -303,9 +305,7 @@ Sortable.prototype = {
     };
 
     // enable drag between groups
-    if (this.options.supportPointer) {
-      on(this.ownerDocument, 'pointermove', _nearestSortable);
-    } else if (touch) {
+    if (touch) {
       on(this.ownerDocument, 'touchmove', _nearestSortable);
     } else {
       on(this.ownerDocument, 'mousemove', _nearestSortable);
@@ -313,29 +313,49 @@ Sortable.prototype = {
 
     const { delay, delayOnTouchOnly } = this.options;
     if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
-      if (this.options.supportPointer) {
-        on(this.ownerDocument, 'pointerup', this._onDrop);
-      } else if (touchEvent) {
-        on(this.ownerDocument, 'touchend', this._onDrop);
-      } else {
-        on(this.ownerDocument, 'mouseup', this._onDrop);
+      for (let i = 0; i < events.end.length; i++) {
+        on(this.ownerDocument, events.end[i], this._cancelStart);
+      }
+      for (let i = 0; i < events.move.length; i++) {
+        on(this.ownerDocument, events.move[i], this._delayMoveHandler);
       }
 
-      clearTimeout(dragStartTimer);
       dragStartTimer = setTimeout(() => this._onStart(), delay);
     } else {
       this._onStart();
     }
   },
 
+  _delayMoveHandler: function (evt) {
+    let touch = evt.touches ? evt.touches[0] : evt;
+    if (
+      Math.max(
+        Math.abs(touch.clientX - downEvent.clientX),
+        Math.abs(touch.clientY - downEvent.clientY)
+      ) >=
+      Math.floor(
+        this.options.touchStartThreshold / (window.devicePixelRatio || 1)
+      )
+    ) {
+      this._cancelStart();
+    }
+  },
+
+  _cancelStart: function () {
+    clearTimeout(dragStartTimer);
+
+    for (let i = 0; i < events.end.length; i++) {
+      off(this.ownerDocument, events.end[i], this._cancelStart);
+    }
+    for (let i = 0; i < events.move.length; i++) {
+      off(this.ownerDocument, events.move[i], this._delayMoveHandler);
+    }
+  },
+
   _onStart: function () {
     rootEl = this.el;
 
-    if (this.options.supportPointer) {
-      on(this.ownerDocument, 'pointermove', this._onMove);
-      on(this.ownerDocument, 'pointerup', this._onDrop);
-      on(this.ownerDocument, 'pointercancel', this._onDrop);
-    } else if (touchEvent) {
+    if (touchEvent) {
       on(this.ownerDocument, 'touchmove', this._onMove);
       on(this.ownerDocument, 'touchend', this._onDrop);
       on(this.ownerDocument, 'touchcancel', this._onDrop);
@@ -369,7 +389,6 @@ Sortable.prototype = {
 
       // add class for drag element
       toggleClass(dragEl, this.options.chosenClass, true);
-      css(dragEl, 'will-change', 'transform');
 
       Safari && css(document.body, 'user-select', 'none');
     }
@@ -398,21 +417,14 @@ Sortable.prototype = {
 
     moveEvent = event;
 
-    const x = evt.clientX - downEvent.clientX;
-    const y = evt.clientY - downEvent.clientY;
-    helper.move(x, y);
+    helper.move(
+      evt.clientX - downEvent.clientX,
+      evt.clientY - downEvent.clientY
+    );
+
+    this._autoScroll();
 
     this._dispatchEvent('onMove', { ..._emits(), event });
-
-    if (!this.scrollEl) {
-      // get the scroll element, fix display 'none' to 'block'
-      this.scrollEl = getParentAutoScrollElement(this.el, true);
-    }
-
-    const { autoScroll, scrollThreshold } = this.options;
-    if (autoScroll) {
-      autoScroller.update(this.scrollEl, scrollThreshold, downEvent, moveEvent);
-    }
 
     if (!this._allowPut()) return;
 
@@ -434,6 +446,18 @@ Sortable.prototype = {
       }
     } else if (dropEl) {
       this._onChange(event);
+    }
+  },
+
+  _autoScroll: function () {
+    if (!this.scrollEl) {
+      // get the scroll element, fix display 'none' to 'block'
+      this.scrollEl = getParentAutoScrollElement(this.el, true);
+    }
+
+    const { autoScroll, scrollThreshold } = this.options;
+    if (autoScroll) {
+      autoScroller.update(this.scrollEl, scrollThreshold, downEvent, moveEvent);
     }
   },
 
@@ -508,17 +532,12 @@ Sortable.prototype = {
     clearTimeout(dragStartTimer);
 
     // clear style, attrs and class
-    if (dragEl) {
-      toggleClass(dragEl, this.options.chosenClass, false);
-      touchEvent && css(dragEl, 'touch-action', '');
-      css(dragEl, 'will-change', '');
-    }
+    dragEl && toggleClass(dragEl, this.options.chosenClass, false);
 
     if (dragEl && downEvent && moveEvent) {
       this._onEnd(evt);
     } else if (this.options.multiple) {
-      // click event
-      this.multiplayer.select(evt, dragEl, { ...from });
+      this.multiplayer.select(evt, dragEl, rootEl, { ...from });
     }
 
     this._clearState();
@@ -528,7 +547,7 @@ Sortable.prototype = {
     from.group = downEvent.group;
     from.sortable = downEvent.sortable;
     if (isMultiple) {
-      this.multiplayer.onDrop(evt, dragEl, downEvent, _emits);
+      this.multiplayer.onDrop(evt, dragEl, rootEl, downEvent, _emits);
     } else {
       // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
       to.rect = getRect(dragEl);

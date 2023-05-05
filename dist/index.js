@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.12
+ * sortable-dnd v0.4.13
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -75,9 +75,9 @@
   };
   var R_SPACE = /\s+/g;
   var events = {
-    start: ['pointerdown', 'touchstart', 'mousedown'],
-    move: ['pointermove', 'touchmove', 'mousemove'],
-    end: ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup']
+    start: ['touchstart', 'mousedown'],
+    move: ['touchmove', 'mousemove'],
+    end: ['touchend', 'touchcancel', 'mouseup']
   };
   function userAgent(pattern) {
     if (typeof window !== 'undefined' && window.navigator) {
@@ -177,7 +177,7 @@
    */
   function getEvent(evt) {
     var event = evt;
-    var touch = evt.touches && evt.touches[0] || evt.changedTouches && evt.changedTouches[0] || evt.pointerType && evt.pointerType === 'touch' && evt;
+    var touch = evt.touches && evt.touches[0] || evt.changedTouches && evt.changedTouches[0];
     var target = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : evt.target;
     if (touch && !('clientX' in event)) {
       event.clientX = touch.clientX;
@@ -348,7 +348,7 @@
           for (var i = 0; i < children.length; i++) {
             if (containes(el, children[i])) return children[i];
           }
-        } else if (selector[0] === '>' ? el.parentNode === ctx && matches(el, selector) : matches(el, selector) || includeCTX && el === ctx) {
+        } else if ((selector[0] === '>' ? el.parentNode === ctx && matches(el, selector) : matches(el, selector)) || includeCTX && el === ctx) {
           return el;
         }
       } while (el = el.parentNode);
@@ -502,7 +502,7 @@
     /**
      * Collecting Multi-Drag Elements
      */
-    select: function select(event, dragEl, from) {
+    select: function select(event, dragEl, rootEl, from) {
       if (!dragEl) return;
       if (!selectedElements[this.groupName]) {
         selectedElements[this.groupName] = [];
@@ -519,18 +519,17 @@
         selectedElements[this.groupName].splice(index, 1);
         from.sortable._dispatchEvent('onDeselect', params);
       }
-      var contaienr = from.sortable.el;
       selectedElements[this.groupName].sort(function (a, b) {
-        return sortByOffset(getOffset(a, contaienr), getOffset(b, contaienr));
+        return sortByOffset(getOffset(a, rootEl), getOffset(b, rootEl));
       });
     },
-    onDrag: function onDrag(sortable) {
+    onDrag: function onDrag(rootEl, sortable) {
       multiFrom.sortable = sortable;
       multiFrom.nodes = selectedElements[this.groupName].map(function (node) {
         return {
           node: node,
           rect: getRect(node),
-          offset: getOffset(node, sortable.el)
+          offset: getOffset(node, rootEl)
         };
       });
       multiTo.sortable = sortable;
@@ -555,7 +554,7 @@
         };
       });
     },
-    onDrop: function onDrop(event, dragEl, downEvent, _emits) {
+    onDrop: function onDrop(event, dragEl, rootEl, downEvent, _emits) {
       var _this = this;
       multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
       var index = selectedElements[this.groupName].indexOf(dragEl);
@@ -572,10 +571,10 @@
         return {
           node: node,
           rect: getRect(node),
-          offset: getOffset(node, multiTo.sortable.el)
+          offset: getOffset(node, rootEl)
         };
       });
-      var changed = this._offsetChanged(multiFrom.nodes, multiTo.nodes);
+      var changed = multiTo.sortable.el != multiFrom.sortable.el || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
       var params = _objectSpread2(_objectSpread2({}, _emits()), {}, {
         changed: changed,
         event: event
@@ -587,11 +586,11 @@
       multiTo.sortable.animator.animate();
     },
     _offsetChanged: function _offsetChanged(ns1, ns2) {
-      return !!ns1.find(function (node) {
-        var n = ns2.find(function (n) {
-          return n.node === node.node;
+      return !!ns1.find(function (o2) {
+        var o1 = ns2.find(function (n) {
+          return n.node === o2.node;
         });
-        return offsetChanged(n.offset, node.offset);
+        return offsetChanged(o1.offset, o2.offset);
       });
     }
   };
@@ -806,6 +805,7 @@
       var oy = this.distance.y / parseInt(this.helper.style.height) * 100;
       css(this.helper, 'transform-origin', "".concat(ox, "% ").concat(oy, "%"));
       css(this.helper, 'transform', 'translateZ(0)');
+      css(this.helper, 'will-change', 'transform');
     }
   };
 
@@ -926,6 +926,7 @@
     this.ownerDocument = el.ownerDocument;
     this.options = options = Object.assign({}, options);
     var defaults = {
+      disabled: false,
       group: '',
       animation: 150,
       multiple: false,
@@ -939,14 +940,13 @@
       scrollThreshold: 25,
       delay: 0,
       delayOnTouchOnly: false,
-      disabled: false,
+      touchStartThreshold: (Number.parseInt ? Number : window).parseInt(window.devicePixelRatio, 10) || 1,
       ghostClass: '',
       ghostStyle: {},
       chosenClass: '',
       selectedClass: '',
       fallbackOnBody: false,
       stopPropagation: false,
-      supportPointer: 'onpointerdown' in window && !Safari,
       supportTouch: 'ontouchstart' in window,
       emptyInsertThreshold: 5
     };
@@ -963,14 +963,8 @@
         this[fn] = this[fn].bind(this);
       }
     }
-    var _this$options = this.options,
-      supportPointer = _this$options.supportPointer,
-      supportTouch = _this$options.supportTouch;
-    if (supportPointer) {
-      on(el, 'pointerdown', this._onDrag);
-      // Fixed some mobile terminals could not be dragged
-      on(el, 'touchstart', this._preventEvent);
-    } else if (supportTouch) {
+    var supportTouch = this.options.supportTouch;
+    if (supportTouch) {
       on(el, 'touchstart', this._onDrag);
     } else {
       on(el, 'mousedown', this._onDrag);
@@ -995,7 +989,6 @@
       this.el = null;
     },
     _onDrag: function _onDrag( /** Event|TouchEvent */evt) {
-      var _this = this;
       if (this.options.disabled || !this.options.group.pull) return;
       if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return; // only left button and enabled
 
@@ -1007,9 +1000,9 @@
       // Safari ignores further event handling after mousedown
       if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
       if (target === this.el) return;
-      var _this$options2 = this.options,
-        draggable = _this$options2.draggable,
-        handle = _this$options2.handle;
+      var _this$options = this.options,
+        draggable = _this$options.draggable,
+        handle = _this$options.handle;
       if (typeof handle === 'function' && !handle(evt)) return;
       if (typeof handle === 'string' && !matches(target, handle)) return;
       if (typeof draggable === 'function') {
@@ -1025,16 +1018,17 @@
 
       // No dragging is allowed when there is no dragging element
       if (!dragEl || dragEl.animated) return;
-
-      // solve the problem that the mobile cannot be dragged
-      if (touch) css(dragEl, 'touch-action', 'none');
+      this._prepareStart(touch, event);
+    },
+    _prepareStart: function _prepareStart(touch, event) {
+      var _this = this;
       var parentEl = dragEl.parentNode;
       touchEvent = touch;
       downEvent = event;
       downEvent.sortable = this;
-      downEvent.group = parentEl;
+      downEvent.group = dragEl.parentNode;
       isMultiple = this.options.multiple && this.multiplayer.allowDrag(dragEl);
-      isMultiple && this.multiplayer.onDrag(this);
+      isMultiple && this.multiplayer.onDrag(this.el, this);
 
       // get the position of the dragEl
       var rect = getRect(dragEl);
@@ -1054,25 +1048,21 @@
       };
 
       // enable drag between groups
-      if (this.options.supportPointer) {
-        on(this.ownerDocument, 'pointermove', _nearestSortable);
-      } else if (touch) {
+      if (touch) {
         on(this.ownerDocument, 'touchmove', _nearestSortable);
       } else {
         on(this.ownerDocument, 'mousemove', _nearestSortable);
       }
-      var _this$options3 = this.options,
-        delay = _this$options3.delay,
-        delayOnTouchOnly = _this$options3.delayOnTouchOnly;
+      var _this$options2 = this.options,
+        delay = _this$options2.delay,
+        delayOnTouchOnly = _this$options2.delayOnTouchOnly;
       if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
-        if (this.options.supportPointer) {
-          on(this.ownerDocument, 'pointerup', this._onDrop);
-        } else if (touchEvent) {
-          on(this.ownerDocument, 'touchend', this._onDrop);
-        } else {
-          on(this.ownerDocument, 'mouseup', this._onDrop);
+        for (var i = 0; i < events.end.length; i++) {
+          on(this.ownerDocument, events.end[i], this._cancelStart);
         }
-        clearTimeout(dragStartTimer);
+        for (var _i = 0; _i < events.move.length; _i++) {
+          on(this.ownerDocument, events.move[_i], this._delayMoveHandler);
+        }
         dragStartTimer = setTimeout(function () {
           return _this._onStart();
         }, delay);
@@ -1080,13 +1070,24 @@
         this._onStart();
       }
     },
+    _delayMoveHandler: function _delayMoveHandler(evt) {
+      var touch = evt.touches ? evt.touches[0] : evt;
+      if (Math.max(Math.abs(touch.clientX - downEvent.clientX), Math.abs(touch.clientY - downEvent.clientY)) >= Math.floor(this.options.touchStartThreshold / (window.devicePixelRatio || 1))) {
+        this._cancelStart();
+      }
+    },
+    _cancelStart: function _cancelStart() {
+      clearTimeout(dragStartTimer);
+      for (var i = 0; i < events.end.length; i++) {
+        off(this.ownerDocument, events.end[i], this._cancelStart);
+      }
+      for (var _i2 = 0; _i2 < events.move.length; _i2++) {
+        off(this.ownerDocument, events.move[_i2], this._delayMoveHandler);
+      }
+    },
     _onStart: function _onStart() {
       rootEl = this.el;
-      if (this.options.supportPointer) {
-        on(this.ownerDocument, 'pointermove', this._onMove);
-        on(this.ownerDocument, 'pointerup', this._onDrop);
-        on(this.ownerDocument, 'pointercancel', this._onDrop);
-      } else if (touchEvent) {
+      if (touchEvent) {
         on(this.ownerDocument, 'touchmove', this._onMove);
         on(this.ownerDocument, 'touchend', this._onDrop);
         on(this.ownerDocument, 'touchcancel', this._onDrop);
@@ -1121,7 +1122,6 @@
 
         // add class for drag element
         toggleClass(dragEl, this.options.chosenClass, true);
-        css(dragEl, 'will-change', 'transform');
         Safari && css(document.body, 'user-select', 'none');
       }
     },
@@ -1146,22 +1146,11 @@
       // truly started
       this._onTrulyStarted();
       moveEvent = event;
-      var x = evt.clientX - downEvent.clientX;
-      var y = evt.clientY - downEvent.clientY;
-      helper.move(x, y);
+      helper.move(evt.clientX - downEvent.clientX, evt.clientY - downEvent.clientY);
+      this._autoScroll();
       this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
       }));
-      if (!this.scrollEl) {
-        // get the scroll element, fix display 'none' to 'block'
-        this.scrollEl = getParentAutoScrollElement(this.el, true);
-      }
-      var _this$options4 = this.options,
-        autoScroll = _this$options4.autoScroll,
-        scrollThreshold = _this$options4.scrollThreshold;
-      if (autoScroll) {
-        autoScroller.update(this.scrollEl, scrollThreshold, downEvent, moveEvent);
-      }
       if (!this._allowPut()) return;
       dropEl = closest(target, this.options.draggable, rootEl, false);
       if (dropEl) {
@@ -1178,6 +1167,18 @@
         }
       } else if (dropEl) {
         this._onChange(event);
+      }
+    },
+    _autoScroll: function _autoScroll() {
+      if (!this.scrollEl) {
+        // get the scroll element, fix display 'none' to 'block'
+        this.scrollEl = getParentAutoScrollElement(this.el, true);
+      }
+      var _this$options3 = this.options,
+        autoScroll = _this$options3.autoScroll,
+        scrollThreshold = _this$options3.scrollThreshold;
+      if (autoScroll) {
+        autoScroller.update(this.scrollEl, scrollThreshold, downEvent, moveEvent);
       }
     },
     _onInsert: function _onInsert( /** Event|TouchEvent */event, insert) {
@@ -1245,16 +1246,11 @@
       clearTimeout(dragStartTimer);
 
       // clear style, attrs and class
-      if (dragEl) {
-        toggleClass(dragEl, this.options.chosenClass, false);
-        touchEvent && css(dragEl, 'touch-action', '');
-        css(dragEl, 'will-change', '');
-      }
+      dragEl && toggleClass(dragEl, this.options.chosenClass, false);
       if (dragEl && downEvent && moveEvent) {
         this._onEnd(evt);
       } else if (this.options.multiple) {
-        // click event
-        this.multiplayer.select(evt, dragEl, _objectSpread2({}, from));
+        this.multiplayer.select(evt, dragEl, rootEl, _objectSpread2({}, from));
       }
       this._clearState();
     },
@@ -1262,7 +1258,7 @@
       from.group = downEvent.group;
       from.sortable = downEvent.sortable;
       if (isMultiple) {
-        this.multiplayer.onDrop(evt, dragEl, downEvent, _emits);
+        this.multiplayer.onDrop(evt, dragEl, rootEl, downEvent, _emits);
       } else {
         // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
         to.rect = getRect(dragEl);
