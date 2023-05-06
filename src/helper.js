@@ -19,6 +19,7 @@ Helper.prototype = {
   },
 
   move(x, y) {
+    if (!this.helper) return;
     setTransform(this.helper, `translate3d(${x}px, ${y}px, 0)`);
   },
 

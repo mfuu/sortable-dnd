@@ -1,6 +1,7 @@
 import {
   getRect,
   getOffset,
+  randomCode,
   toggleClass,
   sortByOffset,
   offsetChanged,
@@ -18,7 +19,7 @@ export const getMultiDiffer = function () {
 
 function Multiple(options) {
   this.options = options || {};
-  this.groupName = options.group.name;
+  this.groupName = options.group.name || 'group_' + randomCode();
 }
 
 Multiple.prototype = {
