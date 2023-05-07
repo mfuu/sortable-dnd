@@ -4,19 +4,15 @@ type Group = {
   pull: Boolean;
 };
 
-type Offset = {
+type DOMOffset = {
   height: Number;
   width: Number;
   top: Number;
   left: Number;
 };
 
-type Rect = {
-  height: Number;
-  width: Number;
-  top: Number;
+type DOMRect = DOMOffset & {
   bottom: Number;
-  left: Number;
   right: Number;
 };
 
@@ -24,14 +20,14 @@ type SortableState = {
   sortable: Sortable;
   group: HTMLElement;
   node: HTMLElement;
-  offset: Offset;
-  rect: Rect;
+  offset: DOMOffset;
+  rect: DOMRect;
 };
 
 type MultiNode = {
   node: HTMLElement;
-  offset: Offset;
-  rect: Rect;
+  offset: DOMOffset;
+  rect: DOMRect;
 };
 
 type EventType = Event & (PointerEvent | TouchEvent | MouseEvent);
@@ -40,7 +36,7 @@ type FromTo = SortableState & { nodes?: MultiNode[] };
 
 type Select = SortableState & { event: EventType };
 
-type options = {
+type Options = {
   /**
    * Specifies which items inside the element should be draggable.
    * @example
@@ -213,19 +209,19 @@ type options = {
    * @defualts `false`
    */
   stopPropagation?: Boolean;
-}
+};
 
 declare class Sortable {
   /**
    * @param ParentElement The Parent which holds the draggable element(s).
    * @param options Options to customise the behavior of the drag animations.
    */
-  constructor(ParentElement: HTMLElement, options?: options);
+  constructor(ParentElement: HTMLElement, options?: Options);
 
   /**
    * Manually clear all the state of the component, using this method the component will not be draggable.
    */
   destroy(): void;
-}
+};
 
 export = Sortable;
