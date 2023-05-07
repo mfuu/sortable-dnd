@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.4.13
+ * sortable-dnd v0.5.0
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -479,7 +479,7 @@
   };
   function Multiple(options) {
     this.options = options || {};
-    this.groupName = options.group.name;
+    this.groupName = options.group.name || 'group_' + randomCode();
   }
   Multiple.prototype = {
     /**
@@ -773,6 +773,7 @@
       };
     },
     move: function move(x, y) {
+      if (!this.helper) return;
       setTransform(this.helper, "translate3d(".concat(x, "px, ").concat(y, "px, 0)"));
     },
     init: function init(rect, element, container, options) {
@@ -834,7 +835,7 @@
     x: 0,
     y: 0
   };
-  var _prepareGroup = function _prepareGroup(options, uniqueId) {
+  var _prepareGroup = function _prepareGroup(options) {
     var group = {};
     var originalGroup = options.group;
     if (!originalGroup || _typeof(originalGroup) != 'object') {
@@ -844,25 +845,10 @@
         put: true
       };
     }
-    group.name = originalGroup.name || uniqueId;
+    group.name = originalGroup.name;
     group.pull = originalGroup.pull;
     group.put = originalGroup.put;
     options.group = group;
-  };
-
-  /**
-   * get nearest Sortable
-   */
-  var _nearestSortable = function _nearestSortable(evt) {
-    if (dragEl) {
-      var e = evt.touches ? evt.touches[0] : evt;
-      var nearest = _detectNearestSortable(e.clientX, e.clientY);
-      if (nearest) {
-        rootEl = nearest;
-        if (rootEl === downEvent.sortable.el) return;
-        nearest[expando]._onMove(evt);
-      }
-    }
   };
 
   /**
@@ -955,7 +941,7 @@
     for (var name in defaults) {
       !(name in this.options) && (this.options[name] = defaults[name]);
     }
-    _prepareGroup(options, 'group_' + randomCode());
+    _prepareGroup(options);
 
     // Bind all private methods
     for (var fn in this) {
@@ -1046,13 +1032,6 @@
         x: event.clientX - rect.left,
         y: event.clientY - rect.top
       };
-
-      // enable drag between groups
-      if (touch) {
-        on(this.ownerDocument, 'touchmove', _nearestSortable);
-      } else {
-        on(this.ownerDocument, 'mousemove', _nearestSortable);
-      }
       var _this$options2 = this.options,
         delay = _this$options2.delay,
         delayOnTouchOnly = _this$options2.delayOnTouchOnly;
@@ -1088,12 +1067,12 @@
     _onStart: function _onStart() {
       rootEl = this.el;
       if (touchEvent) {
-        on(this.ownerDocument, 'touchmove', this._onMove);
-        on(this.ownerDocument, 'touchend', this._onDrop);
-        on(this.ownerDocument, 'touchcancel', this._onDrop);
+        on(document, 'touchmove', this._nearestSortable);
+        on(document, 'touchend', this._onDrop);
+        on(document, 'touchcancel', this._onDrop);
       } else {
-        on(this.ownerDocument, 'mousemove', this._onMove);
-        on(this.ownerDocument, 'mouseup', this._onDrop);
+        on(document, 'mousemove', this._nearestSortable);
+        on(document, 'mouseup', this._onDrop);
       }
 
       // clear selection
@@ -1125,8 +1104,22 @@
         Safari && css(document.body, 'user-select', 'none');
       }
     },
+    _nearestSortable: function _nearestSortable( /** Event|TouchEvent */evt) {
+      this._preventEvent(evt);
+      if (!downEvent || !dragEl) return;
+      if (!_positionChanged(evt)) return;
+      var _getEvent2 = getEvent(evt),
+        event = _getEvent2.event,
+        target = _getEvent2.target;
+      var nearest = _detectNearestSortable(event.clientX, event.clientY);
+      helper.move(event.clientX - downEvent.clientX, event.clientY - downEvent.clientY);
+      if (nearest) {
+        rootEl = nearest;
+        nearest[expando]._onMove(event, target);
+      }
+    },
     _allowPut: function _allowPut() {
-      if (downEvent.group === this.el) {
+      if (downEvent.sortable.el === this.el) {
         return true;
       } else if (!this.options.group.put) {
         return false;
@@ -1136,17 +1129,10 @@
         return fromGroup.name && name && fromGroup.name === name;
       }
     },
-    _onMove: function _onMove( /** Event|TouchEvent */evt) {
-      this._preventEvent(evt);
-      if (!downEvent || !dragEl) return;
-      if (!_positionChanged(evt)) return;
-      var _getEvent2 = getEvent(evt),
-        event = _getEvent2.event,
-        target = _getEvent2.target;
+    _onMove: function _onMove( /** Event|TouchEvent */event, target) {
       // truly started
       this._onTrulyStarted();
       moveEvent = event;
-      helper.move(evt.clientX - downEvent.clientX, evt.clientY - downEvent.clientY);
       this._autoScroll();
       this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
@@ -1156,9 +1142,9 @@
       if (dropEl) {
         if (dropEl === lastDropEl) return;
         lastDropEl = dropEl;
+        if (dropEl === dragEl) return;
         if (dropEl.animated || containes(dropEl, dragEl)) return;
       }
-      if (dropEl === dragEl) return;
       if (rootEl !== from.sortable.el) {
         if (target === rootEl || !lastChild(rootEl, helper.node)) {
           this._onInsert(event, true);
@@ -1242,8 +1228,8 @@
       this._unbindMoveEvents();
       this._unbindDropEvents();
       this._preventEvent(evt);
+      this._cancelStart();
       autoScroller.clear();
-      clearTimeout(dragStartTimer);
 
       // clear style, attrs and class
       dragEl && toggleClass(dragEl, this.options.chosenClass, false);
@@ -1275,7 +1261,7 @@
       }
       Safari && css(document.body, 'user-select', '');
     },
-    _preventEvent: function _preventEvent(evt) {
+    _preventEvent: function _preventEvent( /** Event|TouchEvent */evt) {
       evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
       if (this.options.stopPropagation) {
         if (evt && evt.stopPropagation) {
@@ -1285,8 +1271,8 @@
         }
       }
     },
-    _dispatchEvent: function _dispatchEvent(event, params) {
-      var callback = this.options[event];
+    _dispatchEvent: function _dispatchEvent(emit, params) {
+      var callback = this.options[emit];
       if (typeof callback === 'function') callback(params);
     },
     _clearState: function _clearState() {
@@ -1300,13 +1286,12 @@
     },
     _unbindMoveEvents: function _unbindMoveEvents() {
       for (var i = 0; i < events.move.length; i++) {
-        off(this.ownerDocument, events.move[i], this._onMove);
-        off(this.ownerDocument, events.move[i], _nearestSortable);
+        off(document, events.move[i], this._nearestSortable);
       }
     },
     _unbindDropEvents: function _unbindDropEvents() {
       for (var i = 0; i < events.end.length; i++) {
-        off(this.ownerDocument, events.end[i], this._onDrop);
+        off(document, events.end[i], this._onDrop);
       }
     }
   };
