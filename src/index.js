@@ -416,10 +416,9 @@ Sortable.prototype = {
     if (dropEl) {
       if (dropEl === lastDropEl) return;
       lastDropEl = dropEl;
-
+      if (dropEl === dragEl) return;
       if (dropEl.animated || containes(dropEl, dragEl)) return;
     }
-    if (dropEl === dragEl) return;
 
     if (rootEl !== from.sortable.el) {
       if (target === rootEl || !lastChild(rootEl, helper.node)) {
@@ -511,8 +510,8 @@ Sortable.prototype = {
     this._unbindMoveEvents();
     this._unbindDropEvents();
     this._preventEvent(evt);
+    this._cancelStart();
     autoScroller.clear();
-    clearTimeout(dragStartTimer);
 
     // clear style, attrs and class
     dragEl && toggleClass(dragEl, this.options.chosenClass, false);
