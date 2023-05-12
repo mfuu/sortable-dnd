@@ -1,21 +1,3 @@
-type Group = {
-  name: String;
-  put: Boolean;
-  pull: Boolean;
-};
-
-type DOMOffset = {
-  height: Number;
-  width: Number;
-  top: Number;
-  left: Number;
-};
-
-type DOMRect = DOMOffset & {
-  bottom: Number;
-  right: Number;
-};
-
 type SortableState = {
   sortable: Sortable;
   group: HTMLElement;
@@ -30,13 +12,31 @@ type MultiNode = {
   rect: DOMRect;
 };
 
-type EventType = Event & (PointerEvent | TouchEvent | MouseEvent);
+export type Group = {
+  name: String;
+  put: Boolean;
+  pull: Boolean;
+};
 
-type FromTo = SortableState & { nodes?: MultiNode[] };
+export type DOMOffset = {
+  height: Number;
+  width: Number;
+  top: Number;
+  left: Number;
+};
 
-type Select = SortableState & { event: EventType };
+export type DOMRect = DOMOffset & {
+  bottom: Number;
+  right: Number;
+};
 
-type Options = {
+export type EventType = Event & (TouchEvent | MouseEvent);
+
+export type FromTo = SortableState & { nodes?: MultiNode[] };
+
+export type Select = SortableState & { event: EventType };
+
+export type Options = {
   /**
    * Specifies which items inside the element should be draggable.
    * @example
@@ -82,20 +82,12 @@ type Options = {
   /**
    * The callback function when the drag is started.
    */
-  onDrag?: (params: {
-    from: FromTo;
-    to: FromTo;
-    event: EventType;
-  }) => void;
+  onDrag?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
   /**
    * The callback function when the dragged element is moving.
    */
-  onMove?: (params: {
-    from: FromTo;
-    to: FromTo;
-    event: EventType;
-  }) => void;
+  onMove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
   /**
    * The callback function when the drag is completed.
@@ -110,29 +102,17 @@ type Options = {
   /**
    * The callback function when element is dropped into the current list from another list.
    */
-  onAdd?: (params: {
-    from: FromTo;
-    to: FromTo;
-    event: EventType;
-  }) => void;
+  onAdd?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
   /**
    * The callback function when element is removed from the current list into another list.
    */
-  onRemove?: (params: {
-    from: FromTo;
-    to: FromTo;
-    event: EventType;
-  }) => void;
+  onRemove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
   /**
    * The callback function when the dragged element changes position in the current list.
    */
-  onChange?: (params: {
-    from: FromTo;
-    to: FromTo;
-    event: EventType;
-  }) => void;
+  onChange?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
   /**
    * The callback function when element is selected.
@@ -222,6 +202,26 @@ declare class Sortable {
    * Manually clear all the state of the component, using this method the component will not be draggable.
    */
   destroy(): void;
-};
+
+  /**
+   * Get/Set sortable options.
+   * @param key option name
+   * @param value option value
+   */
+  option(key: string, value: any): any;
+
+  /**
+   * Get the Sortable instance of an element
+   * @param el
+   */
+  get(el: HTMLElement): Sortable | undefined;
+
+  /**
+   * Create sortable instance
+   * @param el
+   * @param options
+   */
+  create(el: HTMLElement, options: Options): void;
+}
 
 export = Sortable;

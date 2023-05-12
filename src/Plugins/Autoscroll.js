@@ -76,24 +76,21 @@ AutoScroll.prototype = {
       scrollx = Math.floor(
         Math.max(-1, (clientX - left) / scrollThreshold - 1) * this.speed.x
       );
-    } else if (toRight) {
+    }
+    if (toRight) {
       scrollx = Math.ceil(
         Math.min(1, (clientX - right) / scrollThreshold + 1) * this.speed.x
       );
-    } else {
-      scrollx = 0;
     }
-
     if (toTop) {
       scrolly = Math.floor(
         Math.max(-1, (clientY - top) / scrollThreshold - 1) * this.speed.y
       );
-    } else if (toBottom) {
+    }
+    if (toBottom) {
       scrolly = Math.ceil(
         Math.min(1, (clientY - bottom) / scrollThreshold + 1) * this.speed.y
       );
-    } else {
-      scrolly = 0;
     }
 
     if (scrolly) {

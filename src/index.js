@@ -38,7 +38,6 @@ let rootEl,
   dropEl,
   downEvent,
   moveEvent,
-  touchEvent,
   isMultiple,
   lastDropEl,
   dragStartTimer,
@@ -224,6 +223,24 @@ Sortable.prototype = {
     this.el = null;
   },
 
+  /**
+   * Set/get option
+   * @param   {string} key
+   * @param   {any} [value]
+   * @returns {any}
+   */
+  option: function (key, value) {
+    let options = this.options;
+    if (value === void 0) {
+      return options[key];
+    } else {
+      options[key] = value;
+      if (key === 'group') {
+        _prepareGroup(options);
+      }
+    }
+  },
+
   _onDrag: function (/** Event|TouchEvent */ evt) {
     if (this.options.disabled || !this.options.group.pull) return;
     if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return; // only left button and enabled
@@ -259,8 +276,6 @@ Sortable.prototype = {
   _prepareStart: function (touch, event) {
     const parentEl = dragEl.parentNode;
 
-    touchEvent = touch;
-
     downEvent = event;
     downEvent.sortable = this;
     downEvent.group = dragEl.parentNode;
@@ -287,6 +302,10 @@ Sortable.prototype = {
       y: event.clientY - rect.top,
     };
 
+    on(document, 'touchend', this._onDrop);
+    on(document, 'touchcancel', this._onDrop);
+    on(document, 'mouseup', this._onDrop);
+
     const { delay, delayOnTouchOnly } = this.options;
     if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
       for (let i = 0; i < events.end.length; i++) {
@@ -296,9 +315,9 @@ Sortable.prototype = {
         on(this.ownerDocument, events.move[i], this._delayMoveHandler);
       }
 
-      dragStartTimer = setTimeout(() => this._onStart(), delay);
+      dragStartTimer = setTimeout(() => this._onStart(touch), delay);
     } else {
-      this._onStart();
+      this._onStart(touch);
     }
   },
 
@@ -328,16 +347,13 @@ Sortable.prototype = {
     }
   },
 
-  _onStart: function () {
+  _onStart: function (/** TouchEvent */ touch) {
     rootEl = this.el;
 
-    if (touchEvent) {
+    if (touch) {
       on(document, 'touchmove', this._nearestSortable);
-      on(document, 'touchend', this._onDrop);
-      on(document, 'touchcancel', this._onDrop);
     } else {
       on(document, 'mousemove', this._nearestSortable);
-      on(document, 'mouseup', this._onDrop);
     }
 
     // clear selection
@@ -378,10 +394,14 @@ Sortable.prototype = {
     const { event, target } = getEvent(evt);
     const nearest = _detectNearestSortable(event.clientX, event.clientY);
 
+    this._onTrulyStarted();
+    moveEvent = event;
+
     helper.move(
       event.clientX - downEvent.clientX,
       event.clientY - downEvent.clientY
     );
+    this._autoScroll(target);
 
     if (nearest) {
       rootEl = nearest;
@@ -402,11 +422,6 @@ Sortable.prototype = {
   },
 
   _onMove: function (/** Event|TouchEvent */ event, target) {
-    // truly started
-    this._onTrulyStarted();
-
-    moveEvent = event;
-    this._autoScroll();
     this._dispatchEvent('onMove', { ..._emits(), event });
 
     if (!this._allowPut()) return;
@@ -431,15 +446,11 @@ Sortable.prototype = {
     }
   },
 
-  _autoScroll: function () {
-    if (!this.scrollEl) {
-      // get the scroll element, fix display 'none' to 'block'
-      this.scrollEl = getParentAutoScrollElement(this.el, true);
-    }
-
+  _autoScroll: function (target) {
+    const scrollEl = getParentAutoScrollElement(target, true);
     const { autoScroll, scrollThreshold } = this.options;
     if (autoScroll) {
-      autoScroller.update(this.scrollEl, scrollThreshold, downEvent, moveEvent);
+      autoScroller.update(scrollEl, scrollThreshold, downEvent, moveEvent);
     }
   },
 
@@ -570,7 +581,6 @@ Sortable.prototype = {
       dropEl =
       downEvent =
       moveEvent =
-      touchEvent =
       isMultiple =
       lastDropEl =
       dragStartTimer =
@@ -597,6 +607,24 @@ Sortable.prototype = {
 Sortable.prototype.utils = {
   getRect,
   getOffset,
+};
+
+/**
+ * Get the Sortable instance of an element
+ * @param  {HTMLElement} element The element
+ * @return {Sortable|undefined} The instance of Sortable
+ */
+Sortable.get = function (element) {
+  return element[expando];
+};
+
+/**
+ * Create sortable instance
+ * @param {HTMLElement} el
+ * @param {Object} options
+ */
+Sortable.create = function (el, options) {
+  return new Sortable(el, options);
 };
 
 export default Sortable;

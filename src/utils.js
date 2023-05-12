@@ -219,11 +219,9 @@ export function getWindowScrollingElement() {
   let scrollingElement = document.scrollingElement;
 
   if (scrollingElement) {
-    return scrollingElement.contains(document.body)
-      ? document
-      : scrollingElement;
+    return scrollingElement;
   } else {
-    return document;
+    return document.documentElement;
   }
 }
 
