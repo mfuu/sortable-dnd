@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.5.1
+ * sortable-dnd v0.5.2
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -1186,8 +1186,8 @@
         sortable: this,
         group: parentEl,
         node: target,
-        rect: getRect(dragEl),
-        offset: getOffset(dragEl, rootEl)
+        rect: getRect(target),
+        offset: getOffset(target, rootEl)
       };
       from.sortable._dispatchEvent('onRemove', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
@@ -1195,7 +1195,7 @@
       if (insert) {
         parentEl.appendChild(dragEl);
       } else {
-        parentEl.insertBefore(dragEl, target);
+        parentEl.insertBefore(dragEl, dropEl);
       }
       this._dispatchEvent('onAdd', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
