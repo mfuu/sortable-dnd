@@ -466,8 +466,8 @@ Sortable.prototype = {
       sortable: this,
       group: parentEl,
       node: target,
-      rect: getRect(dragEl),
-      offset: getOffset(dragEl, rootEl),
+      rect: getRect(target),
+      offset: getOffset(target, rootEl),
     };
 
     from.sortable._dispatchEvent('onRemove', { ..._emits(), event });
@@ -475,7 +475,7 @@ Sortable.prototype = {
     if (insert) {
       parentEl.appendChild(dragEl);
     } else {
-      parentEl.insertBefore(dragEl, target);
+      parentEl.insertBefore(dragEl, dropEl);
     }
 
     this._dispatchEvent('onAdd', { ..._emits(), event });
