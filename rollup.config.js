@@ -1,7 +1,8 @@
 import babel from 'rollup-plugin-babel';
-import { uglify } from 'rollup-plugin-uglify';
 import resolve from 'rollup-plugin-node-resolve';
 import commonJs from 'rollup-plugin-commonjs';
+import { uglify } from 'rollup-plugin-uglify';
+
 const packageJson = require('./package.json');
 const version = packageJson.version;
 const homepage = packageJson.homepage;
@@ -19,14 +20,14 @@ export default {
   output: [
     {
       format: 'umd',
-      file: 'dist/index.js',
+      file: 'dist/sortable-dnd.js',
       name: 'Sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, ''),
     },
     {
       format: 'umd',
-      file: 'dist/index.min.js',
+      file: 'dist/sortable-dnd.min.js',
       name: 'Sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, ''),

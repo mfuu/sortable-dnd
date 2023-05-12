@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.5.0
+ * sortable-dnd v0.5.1
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -240,9 +240,9 @@
   function getWindowScrollingElement() {
     var scrollingElement = document.scrollingElement;
     if (scrollingElement) {
-      return scrollingElement.contains(document.body) ? document : scrollingElement;
+      return scrollingElement;
     } else {
-      return document;
+      return document.documentElement;
     }
   }
 
@@ -660,17 +660,15 @@
         scrolly = 0;
       if (toLeft) {
         scrollx = Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * this.speed.x);
-      } else if (toRight) {
+      }
+      if (toRight) {
         scrollx = Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * this.speed.x);
-      } else {
-        scrollx = 0;
       }
       if (toTop) {
         scrolly = Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * this.speed.y);
-      } else if (toBottom) {
+      }
+      if (toBottom) {
         scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * this.speed.y);
-      } else {
-        scrolly = 0;
       }
       if (scrolly) {
         scrollEl.scrollTop += scrolly;
@@ -823,7 +821,6 @@
     dropEl,
     downEvent,
     moveEvent,
-    touchEvent,
     isMultiple,
     lastDropEl,
     dragStartTimer,
@@ -974,6 +971,23 @@
       sortables.splice(sortables.indexOf(this.el), 1);
       this.el = null;
     },
+    /**
+     * Set/get option
+     * @param   {string} key
+     * @param   {any} [value]
+     * @returns {any}
+     */
+    option: function option(key, value) {
+      var options = this.options;
+      if (value === void 0) {
+        return options[key];
+      } else {
+        options[key] = value;
+        if (key === 'group') {
+          _prepareGroup(options);
+        }
+      }
+    },
     _onDrag: function _onDrag( /** Event|TouchEvent */evt) {
       if (this.options.disabled || !this.options.group.pull) return;
       if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return; // only left button and enabled
@@ -1009,7 +1023,6 @@
     _prepareStart: function _prepareStart(touch, event) {
       var _this = this;
       var parentEl = dragEl.parentNode;
-      touchEvent = touch;
       downEvent = event;
       downEvent.sortable = this;
       downEvent.group = dragEl.parentNode;
@@ -1032,6 +1045,9 @@
         x: event.clientX - rect.left,
         y: event.clientY - rect.top
       };
+      on(document, 'touchend', this._onDrop);
+      on(document, 'touchcancel', this._onDrop);
+      on(document, 'mouseup', this._onDrop);
       var _this$options2 = this.options,
         delay = _this$options2.delay,
         delayOnTouchOnly = _this$options2.delayOnTouchOnly;
@@ -1043,10 +1059,10 @@
           on(this.ownerDocument, events.move[_i], this._delayMoveHandler);
         }
         dragStartTimer = setTimeout(function () {
-          return _this._onStart();
+          return _this._onStart(touch);
         }, delay);
       } else {
-        this._onStart();
+        this._onStart(touch);
       }
     },
     _delayMoveHandler: function _delayMoveHandler(evt) {
@@ -1064,15 +1080,12 @@
         off(this.ownerDocument, events.move[_i2], this._delayMoveHandler);
       }
     },
-    _onStart: function _onStart() {
+    _onStart: function _onStart( /** TouchEvent */touch) {
       rootEl = this.el;
-      if (touchEvent) {
+      if (touch) {
         on(document, 'touchmove', this._nearestSortable);
-        on(document, 'touchend', this._onDrop);
-        on(document, 'touchcancel', this._onDrop);
       } else {
         on(document, 'mousemove', this._nearestSortable);
-        on(document, 'mouseup', this._onDrop);
       }
 
       // clear selection
@@ -1112,7 +1125,10 @@
         event = _getEvent2.event,
         target = _getEvent2.target;
       var nearest = _detectNearestSortable(event.clientX, event.clientY);
+      this._onTrulyStarted();
+      moveEvent = event;
       helper.move(event.clientX - downEvent.clientX, event.clientY - downEvent.clientY);
+      this._autoScroll(target);
       if (nearest) {
         rootEl = nearest;
         nearest[expando]._onMove(event, target);
@@ -1130,10 +1146,6 @@
       }
     },
     _onMove: function _onMove( /** Event|TouchEvent */event, target) {
-      // truly started
-      this._onTrulyStarted();
-      moveEvent = event;
-      this._autoScroll();
       this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
       }));
@@ -1155,16 +1167,13 @@
         this._onChange(event);
       }
     },
-    _autoScroll: function _autoScroll() {
-      if (!this.scrollEl) {
-        // get the scroll element, fix display 'none' to 'block'
-        this.scrollEl = getParentAutoScrollElement(this.el, true);
-      }
+    _autoScroll: function _autoScroll(target) {
+      var scrollEl = getParentAutoScrollElement(target, true);
       var _this$options3 = this.options,
         autoScroll = _this$options3.autoScroll,
         scrollThreshold = _this$options3.scrollThreshold;
       if (autoScroll) {
-        autoScroller.update(this.scrollEl, scrollThreshold, downEvent, moveEvent);
+        autoScroller.update(scrollEl, scrollThreshold, downEvent, moveEvent);
       }
     },
     _onInsert: function _onInsert( /** Event|TouchEvent */event, insert) {
@@ -1276,7 +1285,7 @@
       if (typeof callback === 'function') callback(params);
     },
     _clearState: function _clearState() {
-      dragEl = dropEl = downEvent = moveEvent = touchEvent = isMultiple = lastDropEl = dragStartTimer = Sortable.helper = null;
+      dragEl = dropEl = downEvent = moveEvent = isMultiple = lastDropEl = dragStartTimer = Sortable.helper = null;
       lastPosition = {
         x: 0,
         y: 0
@@ -1298,6 +1307,24 @@
   Sortable.prototype.utils = {
     getRect: getRect,
     getOffset: getOffset
+  };
+
+  /**
+   * Get the Sortable instance of an element
+   * @param  {HTMLElement} element The element
+   * @return {Sortable|undefined} The instance of Sortable
+   */
+  Sortable.get = function (element) {
+    return element[expando];
+  };
+
+  /**
+   * Create sortable instance
+   * @param {HTMLElement} el
+   * @param {Object} options
+   */
+  Sortable.create = function (el, options) {
+    return new Sortable(el, options);
   };
 
   return Sortable;
