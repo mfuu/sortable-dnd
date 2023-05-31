@@ -1,4 +1,4 @@
-[![npm](https://img.shields.io/npm/v/sortable-dnd.svg)](https://www.npmjs.com/package/sortable-dnd)  [![npm](https://img.shields.io/npm/dt/sortable-dnd.svg)](https://npm-stat.com/charts.html?package=sortable-dnd)  [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
+[![npm](https://img.shields.io/npm/v/sortable-dnd.svg)](https://www.npmjs.com/package/sortable-dnd)  [![npm](https://img.shields.io/npm/dm/sortable-dnd.svg)](https://npm-stat.com/charts.html?package=sortable-dnd)  [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
 
 
@@ -76,6 +76,7 @@ var DND = new Sortable(
 | **Method**   | **Description** |
 |--------------|--------------|
 | `destroy()`  | Manually clear all the state of the component, using this method the component will not be draggable |
+| `option(key, value?)` | Get or set the option value, depending on whether the `value` is passed in |
 
 
 ## Options
