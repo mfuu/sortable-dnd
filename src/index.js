@@ -3,6 +3,7 @@ import {
   off,
   css,
   events,
+  visible,
   expando,
   matches,
   closest,
@@ -15,6 +16,7 @@ import {
   toggleClass,
   isHTMLElement,
   offsetChanged,
+  sortableChanged,
   getParentAutoScrollElement,
 } from './utils.js';
 import { Edge, Safari, IE11OrLess } from './utils.js';
@@ -36,6 +38,7 @@ let sortables = [];
 let rootEl,
   dragEl,
   dropEl,
+  cloneEl,
   downEvent,
   moveEvent,
   isMultiple,
@@ -154,7 +157,7 @@ function Sortable(el, options) {
     onChange: null,
 
     autoScroll: true,
-    scrollThreshold: 25,
+    scrollThreshold: 55,
 
     delay: 0,
     delayOnTouchOnly: false,
@@ -174,6 +177,8 @@ function Sortable(el, options) {
 
     supportTouch: 'ontouchstart' in window,
     emptyInsertThreshold: 5,
+
+    backToOriginalListOnDrop: false,
   };
 
   // Set default options
@@ -225,9 +230,6 @@ Sortable.prototype = {
 
   /**
    * Set/get option
-   * @param   {string} key
-   * @param   {any} [value]
-   * @returns {any}
    */
   option: function (key, value) {
     let options = this.options;
@@ -279,6 +281,7 @@ Sortable.prototype = {
     downEvent = event;
     downEvent.sortable = this;
     downEvent.group = dragEl.parentNode;
+    cloneEl = dragEl.cloneNode(true);
 
     isMultiple = this.options.multiple && this.multiplayer.allowDrag(dragEl);
 
@@ -381,6 +384,7 @@ Sortable.prototype = {
 
       // add class for drag element
       toggleClass(dragEl, this.options.chosenClass, true);
+      toggleClass(cloneEl, this.options.chosenClass, true);
 
       Safari && css(document.body, 'user-select', 'none');
     }
@@ -426,6 +430,7 @@ Sortable.prototype = {
 
     if (!this._allowPut()) return;
 
+    const dragEl = this._dragElement(true);
     dropEl = closest(target, this.options.draggable, rootEl, false);
 
     if (dropEl) {
@@ -454,9 +459,21 @@ Sortable.prototype = {
     }
   },
 
-  _onInsert: function (/** Event|TouchEvent */ event, insert) {
-    let target = insert ? dragEl : dropEl;
-    let parentEl = insert ? rootEl : dropEl.parentNode;
+  _dragElement: function (onlyEl) {
+    if (downEvent.sortable.el !== this.el) {
+      !onlyEl && visible(dragEl, false);
+      return cloneEl;
+    } else {
+      !onlyEl && cloneEl.parentNode?.removeChild(cloneEl);
+      !onlyEl && visible(dragEl, true);
+      return dragEl;
+    }
+  },
+
+  _onInsert: function (/** Event|TouchEvent */ event, insertToLast) {
+    const dragEl = this._dragElement();
+    const target = insertToLast ? dragEl : dropEl;
+    const parentEl = insertToLast ? rootEl : dropEl.parentNode;
 
     from.sortable.animator.collect(dragEl, null, dragEl.parentNode, dragEl);
     this.animator.collect(null, target, parentEl, dragEl);
@@ -472,7 +489,7 @@ Sortable.prototype = {
 
     from.sortable._dispatchEvent('onRemove', { ..._emits(), event });
 
-    if (insert) {
+    if (insertToLast) {
       parentEl.appendChild(dragEl);
     } else {
       parentEl.insertBefore(dragEl, dropEl);
@@ -482,12 +499,14 @@ Sortable.prototype = {
 
     from.sortable.animator.animate();
     this.animator.animate();
+
     from.group = parentEl;
     from.sortable = this;
   },
 
   _onChange: function (/** Event|TouchEvent */ event) {
-    let parentEl = dropEl.parentNode;
+    const dragEl = this._dragElement();
+    const parentEl = dropEl.parentNode;
 
     this.animator.collect(dragEl, dropEl, parentEl);
 
@@ -510,6 +529,7 @@ Sortable.prototype = {
     } else {
       nextEl = offset.top < to.offset.top ? dropEl.nextSibling : dropEl;
     }
+
     parentEl.insertBefore(dragEl, nextEl);
     this.animator.animate();
 
@@ -528,6 +548,10 @@ Sortable.prototype = {
     dragEl && toggleClass(dragEl, this.options.chosenClass, false);
 
     if (dragEl && downEvent && moveEvent) {
+      if (!this.options.backToOriginalListOnDrop) {
+        const node = sortableChanged(downEvent, to) ? cloneEl : dragEl;
+        node.parentNode.insertBefore(dragEl, node);
+      }
       this._onEnd(evt);
     } else if (this.options.multiple) {
       this.multiplayer.select(evt, dragEl, rootEl, { ...from });
@@ -537,6 +561,7 @@ Sortable.prototype = {
   },
 
   _onEnd(/** Event|TouchEvent */ evt) {
+    this._dragElement();
     from.group = downEvent.group;
     from.sortable = downEvent.sortable;
     if (isMultiple) {
@@ -547,11 +572,10 @@ Sortable.prototype = {
       to.offset = getOffset(dragEl, rootEl);
 
       const changed =
-        to.sortable.el !== from.sortable.el ||
-        offsetChanged(from.offset, to.offset);
+        sortableChanged(from, to) || offsetChanged(from.offset, to.offset);
       const params = { ..._emits(), changed, event: evt };
 
-      if (to.sortable.el !== from.sortable.el) {
+      if (sortableChanged(from, to)) {
         from.sortable._dispatchEvent('onDrop', params);
       }
       to.sortable._dispatchEvent('onDrop', params);
@@ -579,6 +603,7 @@ Sortable.prototype = {
   _clearState: function () {
     dragEl =
       dropEl =
+      cloneEl =
       downEvent =
       moveEvent =
       isMultiple =

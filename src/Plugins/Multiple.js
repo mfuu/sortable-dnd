@@ -1,10 +1,13 @@
 import {
+  css,
+  visible,
   getRect,
   getOffset,
   randomCode,
   toggleClass,
   sortByOffset,
   offsetChanged,
+  sortableChanged,
 } from '../utils';
 
 const multiFromTo = { sortable: null, nodes: [] };
@@ -97,7 +100,7 @@ Multiple.prototype = {
 
     selectedElements[this.groupName].forEach((node) => {
       if (node == dragEl) return;
-      node.parentNode.removeChild(node);
+      visible(node, false);
     });
 
     sortable.animator.animate();
@@ -119,6 +122,7 @@ Multiple.prototype = {
     const index = selectedElements[this.groupName].indexOf(dragEl);
 
     selectedElements[this.groupName].forEach((node, i) => {
+      visible(node, true);
       if (i < index) {
         dragEl.parentNode.insertBefore(node, dragEl);
       } else {
@@ -133,10 +137,10 @@ Multiple.prototype = {
     });
 
     const changed =
-      multiTo.sortable.el != multiFrom.sortable.el ||
+      sortableChanged(multiFrom, multiTo) ||
       this._offsetChanged(multiFrom.nodes, multiTo.nodes);
     const params = { ..._emits(), changed, event };
-    if (multiTo.sortable.el != multiFrom.sortable.el) {
+    if (sortableChanged(multiFrom, multiTo)) {
       multiFrom.sortable._dispatchEvent('onDrop', params);
     }
     multiTo.sortable._dispatchEvent('onDrop', params);

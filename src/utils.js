@@ -476,6 +476,14 @@ export function css(el, prop, val) {
   }
 }
 
+export function sortableChanged(from, to) {
+  return from.sortable.el !== to.sortable.el
+}
+
+export function visible(el, visible) {
+  css(el, 'display', visible ? '' : 'none')
+}
+
 export function _nextTick(fn) {
   return setTimeout(fn, 0);
 }
