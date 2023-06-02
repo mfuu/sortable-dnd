@@ -110,8 +110,9 @@ var DND = new Sortable(
 | `ghostStyle`      | `Object`          | `{}`        | The style of the mask element when dragging |
 | `ghostClass`      | `String`          | `''`        | The class of the mask element when dragging |
 | `autoScroll`      | `Boolean`         | `true`      | Automatic scrolling when moving to the edge of the container |
-| `scrollThreshold` | `Number`          | `25`        | Threshold to trigger autoscroll |
+| `scrollThreshold` | `Number`          | `55`        | Threshold to trigger autoscroll |
 | `delay`           | `Number`          | `0`         | Time in milliseconds to define when the sorting should start |
 | `delayOnTouchOnly`| `Boolean`         | `false`     | Only delay if user is using touch |
 | `fallbackOnBody`  | `Boolean`         | `false`     | Appends the cloned DOM Element into the Document's Body |
 | `stopPropagation` | `Boolean`         | `false`     | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
+| `swapOnDrop`      | `Boolean`         | `true`      | When the value is false, the dragged element will return to the starting position of the drag |
