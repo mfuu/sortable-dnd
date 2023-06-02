@@ -529,12 +529,15 @@ Sortable.prototype = {
     autoScroller.clear();
 
     if (dragEl && downEvent && moveEvent) {
-      if (!this.options.backToInitialOnDrop) {
+      if (this.options.backToInitialOnDrop) {
+        to.node = dragEl;
+        to.group = downEvent.group;
+        to.sortable = downEvent.sortable;
+        rootEl = downEvent.sortable.el;
+      } else {
         cloneEl.parentNode.insertBefore(dragEl, cloneEl);
       }
       this._onEnd(evt);
-      visible(dragEl, true);
-      cloneEl.parentNode?.removeChild(cloneEl);
     } else if (this.options.multiple) {
       this.multiplayer.select(evt, dragEl, rootEl, { ...from });
     }
@@ -543,8 +546,12 @@ Sortable.prototype = {
   },
 
   _onEnd(/** Event|TouchEvent */ evt) {
+    visible(dragEl, true);
+    cloneEl.parentNode.removeChild(cloneEl);
+
     from.group = downEvent.group;
     from.sortable = downEvent.sortable;
+
     if (isMultiple) {
       this.multiplayer.onDrop(evt, dragEl, rootEl, downEvent, _emits);
     } else {

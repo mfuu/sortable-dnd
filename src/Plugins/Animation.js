@@ -1,4 +1,4 @@
-import { getRect, setTransitionDuration, setTransform } from '../utils.js';
+import { css, getRect, setTransform, setTransitionDuration } from '../utils.js';
 import Sortable from '../index.js';
 
 function Animation(options) {
@@ -15,6 +15,7 @@ Animation.prototype = {
     this.animations.length = 0;
 
     children.slice(start, end + 1).forEach((node) => {
+      if (css(node, 'display') === 'none') return;
       if (node === except || node === Sortable.helper) return;
       this.animations.push({ node, rect: getRect(node) });
     });
