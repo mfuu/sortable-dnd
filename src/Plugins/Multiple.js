@@ -136,8 +136,7 @@ Multiple.prototype = {
     });
 
     const changed =
-      sortableChanged(multiFrom, multiTo) ||
-      this._offsetChanged(multiFrom.nodes, multiTo.nodes);
+      sortableChanged(multiFrom, multiTo) || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
     const params = { ..._emits(), changed, event };
     if (sortableChanged(multiFrom, multiTo)) {
       multiFrom.sortable._dispatchEvent('onDrop', params);
