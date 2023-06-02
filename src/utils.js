@@ -17,13 +17,10 @@ function userAgent(pattern) {
   }
 }
 
-export const IE11OrLess = userAgent(
-  /(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i
-);
+export const IE11OrLess = userAgent(/(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i);
 export const Edge = userAgent(/Edge/i);
 export const FireFox = userAgent(/firefox/i);
-export const Safari =
-  userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
+export const Safari = userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
 export const IOS = userAgent(/iP(ad|od|hone)/i);
 export const ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
 
@@ -50,9 +47,7 @@ export const vendorPrefix = (function () {
 
   // window.getComputedStyle() returns null inside an iframe with display: none
   // in this case return an array with a fake mozilla style in it.
-  const styles = window.getComputedStyle(document.documentElement, '') || [
-    '-moz-hidden-iframe',
-  ];
+  const styles = window.getComputedStyle(document.documentElement, '') || ['-moz-hidden-iframe'];
   const pre = (Array.prototype.slice
     .call(styles)
     .join('')
@@ -90,8 +85,7 @@ export function setTransition(el, transition) {
 }
 
 export function setTransitionDuration(el, duration) {
-  el.style[`${vendorPrefix}TransitionDuration`] =
-    duration == null ? '' : `${duration}ms`;
+  el.style[`${vendorPrefix}TransitionDuration`] = duration == null ? '' : `${duration}ms`;
 }
 
 export function setTransform(el, transform) {
@@ -100,17 +94,10 @@ export function setTransform(el, transform) {
 
 /**
  * add specified event listener
- * @param {HTMLElement} el
- * @param {String} event
- * @param {Function} fn
  */
 export function on(el, event, fn) {
   if (window.addEventListener) {
-    el.addEventListener(
-      event,
-      fn,
-      supportPassive || !IE11OrLess ? captureMode : false
-    );
+    el.addEventListener(event, fn, supportPassive || !IE11OrLess ? captureMode : false);
   } else if (window.attachEvent) {
     el.attachEvent('on' + event, fn);
   }
@@ -118,17 +105,10 @@ export function on(el, event, fn) {
 
 /**
  * remove specified event listener
- * @param {HTMLElement} el
- * @param {String} event
- * @param {Function} fn
  */
 export function off(el, event, fn) {
   if (window.removeEventListener) {
-    el.removeEventListener(
-      event,
-      fn,
-      supportPassive || !IE11OrLess ? captureMode : false
-    );
+    el.removeEventListener(event, fn, supportPassive || !IE11OrLess ? captureMode : false);
   } else if (window.detachEvent) {
     el.detachEvent('on' + event, fn);
   }
@@ -140,12 +120,8 @@ export function off(el, event, fn) {
  */
 export function getEvent(evt) {
   let event = evt;
-  let touch =
-    (evt.touches && evt.touches[0]) ||
-    (evt.changedTouches && evt.changedTouches[0]);
-  let target = touch
-    ? document.elementFromPoint(touch.clientX, touch.clientY)
-    : evt.target;
+  let touch = (evt.touches && evt.touches[0]) || (evt.changedTouches && evt.changedTouches[0]);
+  let target = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : evt.target;
   if (touch && !('clientX' in event)) {
     event.clientX = touch.clientX;
     event.clientY = touch.clientY;
@@ -158,9 +134,7 @@ export function getEvent(evt) {
 }
 
 /**
- * get element's offetTop
- * @param {HTMLElement} el
- * @param {HTMLElement} parentEl
+ * get element's offetTop in given parent node
  */
 export function getOffset(el, parentEl) {
   let offset = {
@@ -180,7 +154,6 @@ export function getOffset(el, parentEl) {
 
 /**
  * get scroll element
- * @param {HTMLElement} el
  * @param {Boolean} includeSelf whether to include the passed element
  * @returns {HTMLElement} scroll element
  */
@@ -192,10 +165,7 @@ export function getParentAutoScrollElement(el, includeSelf) {
   let gotSelf = false;
   do {
     // we don't need to get elem css if it isn't even overflowing in the first place (performance)
-    if (
-      elem.clientWidth < elem.scrollWidth ||
-      elem.clientHeight < elem.scrollHeight
-    ) {
+    if (elem.clientWidth < elem.scrollWidth || elem.clientHeight < elem.scrollHeight) {
       let elemCSS = css(elem);
       if (
         (elem.clientWidth < elem.scrollWidth &&
@@ -305,10 +275,8 @@ export function getRect(el, check = {}, container) {
           let containerRect = container.getBoundingClientRect();
 
           // Set relative to edges of padding box of container
-          top -=
-            containerRect.top + parseInt(css(container, 'border-top-width'));
-          left -=
-            containerRect.left + parseInt(css(container, 'border-left-width'));
+          top -= containerRect.top + parseInt(css(container, 'border-top-width'));
+          left -= containerRect.left + parseInt(css(container, 'border-left-width'));
           bottom = top + elRect.height;
           right = left + elRect.width;
 
@@ -360,8 +328,6 @@ export function closest(el, selector, ctx, includeCTX) {
 
 /**
  * Check if child element is contained in parent element
- * @param {HTMLElement} el
- * @param {HTMLElement} root
  */
 export function containes(el, root) {
   if (!el || !root) return false;
@@ -377,18 +343,14 @@ export function containes(el, root) {
 
 /**
  * Gets the last child in the el, ignoring ghostEl or invisible elements (clones)
- * @param  {HTMLElement} el       Parent element
- * @param  {selector} selector    Any other elements that should be ignored
- * @return {HTMLElement}          The last child, ignoring ghostEl
+ * @return {HTMLElement|null} The last child, ignoring ghostEl
  */
 export function lastChild(el, helper, selector) {
   let last = el.lastElementChild;
 
   while (
     last &&
-    (last === helper ||
-      css(last, 'display') === 'none' ||
-      (selector && !matches(last, selector)))
+    (last === helper || css(last, 'display') === 'none' || (selector && !matches(last, selector)))
   ) {
     last = last.previousElementSibling;
   }
@@ -398,9 +360,6 @@ export function lastChild(el, helper, selector) {
 
 /**
  * add or remove element's class
- * @param {HTMLElement} el element
- * @param {String} name class name
- * @param {Boolean} state true: add, false: remove
  */
 export function toggleClass(el, name, state) {
   if (el && name) {
@@ -410,18 +369,13 @@ export function toggleClass(el, name, state) {
       const className = (' ' + el.className + ' ')
         .replace(R_SPACE, ' ')
         .replace(' ' + name + ' ', ' ');
-      el.className = (className + (state ? ' ' + name : '')).replace(
-        R_SPACE,
-        ' '
-      );
+      el.className = (className + (state ? ' ' + name : '')).replace(R_SPACE, ' ');
     }
   }
 }
 
 /**
  * Check if a DOM element matches a given selector
- * @param {HTMLElement} el
- * @param {String} selector
  * @returns
  */
 export function matches(el, selector) {
@@ -474,6 +428,14 @@ export function css(el, prop, val) {
       style[prop] = val + (typeof val === 'string' ? '' : 'px');
     }
   }
+}
+
+export function sortableChanged(from, to) {
+  return from.sortable.el !== to.sortable.el;
+}
+
+export function visible(el, visible) {
+  css(el, 'display', visible ? '' : 'none');
 }
 
 export function _nextTick(fn) {

@@ -189,6 +189,12 @@ export type Options = {
    * @defualts `false`
    */
   stopPropagation?: Boolean;
+
+  /**
+   * When the value is false, the dragged element will return to the starting position of the drag.
+   * @defaults `true`
+   */
+  swapOnDrop?: Boolean;
 };
 
 declare class Sortable {

@@ -3,6 +3,7 @@ import {
   off,
   css,
   events,
+  visible,
   expando,
   matches,
   closest,
@@ -15,6 +16,7 @@ import {
   toggleClass,
   isHTMLElement,
   offsetChanged,
+  sortableChanged,
   getParentAutoScrollElement,
 } from './utils.js';
 import { Edge, Safari, IE11OrLess } from './utils.js';
@@ -36,6 +38,7 @@ let sortables = [];
 let rootEl,
   dragEl,
   dropEl,
+  cloneEl,
   downEvent,
   moveEvent,
   isMultiple,
@@ -66,9 +69,7 @@ const _prepareGroup = function (options) {
 
 /**
  * Detects first nearest empty sortable to X and Y position using emptyInsertThreshold.
- * @param  {Number} x      X position
- * @param  {Number} y      Y position
- * @return {HTMLElement}   Element of the first found nearest Sortable
+ * @return {HTMLElement} Element of the first found nearest Sortable
  */
 const _detectNearestSortable = function (x, y) {
   let result;
@@ -77,10 +78,8 @@ const _detectNearestSortable = function (x, y) {
     if (!threshold) return;
 
     const rect = getRect(sortable, { parent: true }),
-      insideHorizontally =
-        x >= rect.left - threshold && x <= rect.right + threshold,
-      insideVertically =
-        y >= rect.top - threshold && y <= rect.bottom + threshold;
+      insideHorizontally = x >= rect.left - threshold && x <= rect.right + threshold,
+      insideVertically = y >= rect.top - threshold && y <= rect.bottom + threshold;
 
     if (insideHorizontally && insideVertically) {
       return (result = sortable);
@@ -120,15 +119,13 @@ const _emits = function () {
 };
 
 /**
- * @class  Sortable
- * @param  {HTMLElement}  el group element
- * @param  {Object}       options
+ * @class Sortable
+ * @param {HTMLElement} el container
+ * @param {Object} options
  */
 function Sortable(el, options) {
   if (!(el && el.nodeType && el.nodeType === 1)) {
-    throw `Sortable: \`el\` must be an HTMLElement, not ${{}.toString.call(
-      el
-    )}`;
+    throw `Sortable: \`el\` must be an HTMLElement, not ${{}.toString.call(el)}`;
   }
 
   el[expando] = this;
@@ -154,21 +151,19 @@ function Sortable(el, options) {
     onChange: null,
 
     autoScroll: true,
-    scrollThreshold: 25,
+    scrollThreshold: 55,
 
     delay: 0,
     delayOnTouchOnly: false,
     touchStartThreshold:
-      (Number.parseInt ? Number : window).parseInt(
-        window.devicePixelRatio,
-        10
-      ) || 1,
+      (Number.parseInt ? Number : window).parseInt(window.devicePixelRatio, 10) || 1,
 
     ghostClass: '',
     ghostStyle: {},
     chosenClass: '',
     selectedClass: '',
 
+    swapOnDrop: true,
     fallbackOnBody: false,
     stopPropagation: false,
 
@@ -224,10 +219,7 @@ Sortable.prototype = {
   },
 
   /**
-   * Set/get option
-   * @param   {string} key
-   * @param   {any} [value]
-   * @returns {any}
+   * Get or set the option value, depending on whether the `value` is passed in
    */
   option: function (key, value) {
     let options = this.options;
@@ -270,6 +262,7 @@ Sortable.prototype = {
     // No dragging is allowed when there is no dragging element
     if (!dragEl || dragEl.animated) return;
 
+    cloneEl = dragEl.cloneNode(true);
     this._prepareStart(touch, event);
   },
 
@@ -327,10 +320,7 @@ Sortable.prototype = {
       Math.max(
         Math.abs(touch.clientX - downEvent.clientX),
         Math.abs(touch.clientY - downEvent.clientY)
-      ) >=
-      Math.floor(
-        this.options.touchStartThreshold / (window.devicePixelRatio || 1)
-      )
+      ) >= Math.floor(this.options.touchStartThreshold / (window.devicePixelRatio || 1))
     ) {
       this._cancelStart();
     }
@@ -379,8 +369,9 @@ Sortable.prototype = {
       helper.init(from.rect, element, this.el, this.options);
       Sortable.helper = helper.node;
 
-      // add class for drag element
-      toggleClass(dragEl, this.options.chosenClass, true);
+      visible(dragEl, false);
+      dragEl.parentNode.insertBefore(cloneEl, dragEl);
+      toggleClass(cloneEl, this.options.chosenClass, true);
 
       Safari && css(document.body, 'user-select', 'none');
     }
@@ -397,10 +388,7 @@ Sortable.prototype = {
     this._onTrulyStarted();
     moveEvent = event;
 
-    helper.move(
-      event.clientX - downEvent.clientX,
-      event.clientY - downEvent.clientY
-    );
+    helper.move(event.clientX - downEvent.clientX, event.clientY - downEvent.clientY);
     this._autoScroll(target);
 
     if (nearest) {
@@ -431,8 +419,8 @@ Sortable.prototype = {
     if (dropEl) {
       if (dropEl === lastDropEl) return;
       lastDropEl = dropEl;
-      if (dropEl === dragEl) return;
-      if (dropEl.animated || containes(dropEl, dragEl)) return;
+      if (dropEl === cloneEl) return;
+      if (dropEl.animated || containes(dropEl, cloneEl)) return;
     }
 
     if (rootEl !== from.sortable.el) {
@@ -454,14 +442,14 @@ Sortable.prototype = {
     }
   },
 
-  _onInsert: function (/** Event|TouchEvent */ event, insert) {
-    let target = insert ? dragEl : dropEl;
-    let parentEl = insert ? rootEl : dropEl.parentNode;
+  _onInsert: function (/** Event|TouchEvent */ event, insertToLast) {
+    const target = insertToLast ? cloneEl : dropEl;
+    const parentEl = insertToLast ? rootEl : dropEl.parentNode;
 
-    from.sortable.animator.collect(dragEl, null, dragEl.parentNode, dragEl);
-    this.animator.collect(null, target, parentEl, dragEl);
+    from.sortable.animator.collect(cloneEl, null, cloneEl.parentNode, cloneEl);
+    this.animator.collect(null, target, parentEl, cloneEl);
 
-    isMultiple && this.multiplayer.onChange(dragEl, this);
+    isMultiple && this.multiplayer.onChange(cloneEl, this);
     to = {
       sortable: this,
       group: parentEl,
@@ -472,26 +460,27 @@ Sortable.prototype = {
 
     from.sortable._dispatchEvent('onRemove', { ..._emits(), event });
 
-    if (insert) {
-      parentEl.appendChild(dragEl);
+    if (insertToLast) {
+      parentEl.appendChild(cloneEl);
     } else {
-      parentEl.insertBefore(dragEl, dropEl);
+      parentEl.insertBefore(cloneEl, dropEl);
     }
 
     this._dispatchEvent('onAdd', { ..._emits(), event });
 
     from.sortable.animator.animate();
     this.animator.animate();
+
     from.group = parentEl;
     from.sortable = this;
   },
 
   _onChange: function (/** Event|TouchEvent */ event) {
-    let parentEl = dropEl.parentNode;
+    const parentEl = dropEl.parentNode;
 
-    this.animator.collect(dragEl, dropEl, parentEl);
+    this.animator.collect(cloneEl, dropEl, parentEl);
 
-    isMultiple && this.multiplayer.onChange(dragEl, this);
+    isMultiple && this.multiplayer.onChange(cloneEl, this);
     to = {
       sortable: this,
       group: parentEl,
@@ -503,14 +492,15 @@ Sortable.prototype = {
     this._dispatchEvent('onChange', { ..._emits(), event });
 
     // the top value is compared first, and the left is compared if the top value is the same
-    const offset = getOffset(dragEl, rootEl);
+    const offset = getOffset(cloneEl, rootEl);
     let nextEl = null;
     if (offset.top === to.offset.top) {
       nextEl = offset.left < to.offset.left ? dropEl.nextSibling : dropEl;
     } else {
       nextEl = offset.top < to.offset.top ? dropEl.nextSibling : dropEl;
     }
-    parentEl.insertBefore(dragEl, nextEl);
+
+    parentEl.insertBefore(cloneEl, nextEl);
     this.animator.animate();
 
     from.group = parentEl;
@@ -524,9 +514,6 @@ Sortable.prototype = {
     this._cancelStart();
     autoScroller.clear();
 
-    // clear style, attrs and class
-    dragEl && toggleClass(dragEl, this.options.chosenClass, false);
-
     if (dragEl && downEvent && moveEvent) {
       this._onEnd(evt);
     } else if (this.options.multiple) {
@@ -536,27 +523,33 @@ Sortable.prototype = {
     this._clearState();
   },
 
-  _onEnd(/** Event|TouchEvent */ evt) {
+  _onEnd: function (/** Event|TouchEvent */ evt) {
+    if (this.options.swapOnDrop) {
+      cloneEl.parentNode.insertBefore(dragEl, cloneEl);
+    }
+
     from.group = downEvent.group;
     from.sortable = downEvent.sortable;
+
     if (isMultiple) {
       this.multiplayer.onDrop(evt, dragEl, rootEl, downEvent, _emits);
     } else {
       // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
-      to.rect = getRect(dragEl);
-      to.offset = getOffset(dragEl, rootEl);
+      to.rect = getRect(cloneEl);
+      to.offset = getOffset(cloneEl, rootEl);
+      if (to.node === cloneEl) to.node = dragEl;
 
-      const changed =
-        to.sortable.el !== from.sortable.el ||
-        offsetChanged(from.offset, to.offset);
+      const changed = sortableChanged(from, to) || offsetChanged(from.offset, to.offset);
       const params = { ..._emits(), changed, event: evt };
 
-      if (to.sortable.el !== from.sortable.el) {
+      if (sortableChanged(from, to)) {
         from.sortable._dispatchEvent('onDrop', params);
       }
       to.sortable._dispatchEvent('onDrop', params);
     }
 
+    visible(dragEl, true);
+    cloneEl.parentNode.removeChild(cloneEl);
     Safari && css(document.body, 'user-select', '');
   },
 
@@ -579,6 +572,7 @@ Sortable.prototype = {
   _clearState: function () {
     dragEl =
       dropEl =
+      cloneEl =
       downEvent =
       moveEvent =
       isMultiple =
