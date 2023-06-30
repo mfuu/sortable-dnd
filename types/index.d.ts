@@ -40,7 +40,7 @@ export type Options = {
   /**
    * Specifies which items inside the element should be draggable.
    * @example
-   * - (e) => e.target.tagName === 'LI' ? true : false
+   * - (e) => e.target.tagName === 'LI' ? true : false // use function
    * - (e) => e.target // use function to set the drag element if retrun an HTMLElement
    * - 'div'   // use tag name
    * - '.item' // use class name
@@ -80,82 +80,13 @@ export type Options = {
   animation?: Number;
 
   /**
-   * The callback function when the drag is started.
-   */
-  onDrag?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
-
-  /**
-   * The callback function when the dragged element is moving.
-   */
-  onMove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
-
-  /**
-   * The callback function when the drag is completed.
-   */
-  onDrop?: (params: {
-    from: FromTo;
-    to: FromTo;
-    event: EventType;
-    changed: Boolean;
-  }) => void;
-
-  /**
-   * The callback function when element is dropped into the current list from another list.
-   */
-  onAdd?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
-
-  /**
-   * The callback function when element is removed from the current list into another list.
-   */
-  onRemove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
-
-  /**
-   * The callback function when the dragged element changes position in the current list.
-   */
-  onChange?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
-
-  /**
-   * The callback function when element is selected.
-   */
-  onSelect?: (params: Select) => void;
-
-  /**
-   * The callback function when element is unselected.
-   */
-  onDeselect?: (params: Select) => void;
-
-  /**
    * Disables the sortable if set to true.
    * @defaults `false`
    */
   disabled?: Boolean;
 
   /**
-   * This class will be added to the item while dragging.
-   * @defaults `' '`
-   */
-  chosenClass?: String;
-
-  /**
-   * Class name for selected item.
-   * @defaults `' '`
-   */
-  selectedClass?: String;
-
-  /**
-   * This styles will be applied to the mask of the dragging element.
-   * @defaults `{ }`
-   */
-  ghostStyle?: CSSStyleDeclaration;
-
-  /**
-   * This class will be applied to the mask of the dragging element.
-   * @defaults `' '`
-   */
-  ghostClass?: String;
-
-  /**
-   * Automatic scrolling when moving to the edge of the container, **for browsers that do not support HTML5 drag events**.
+   * Automatic scrolling when moving to the edge of the container.
    * @defaults `true`
    */
   autoScroll?: Boolean;
@@ -195,6 +126,70 @@ export type Options = {
    * @defaults `true`
    */
   swapOnDrop?: Boolean;
+
+  /**
+   * This class will be added to the item while dragging.
+   * @defaults `' '`
+   */
+  chosenClass?: String;
+
+  /**
+   * Class name for selected item.
+   * @defaults `' '`
+   */
+  selectedClass?: String;
+
+  /**
+   * This styles will be applied to the mask of the dragging element.
+   * @defaults `{ }`
+   */
+  ghostStyle?: CSSStyleDeclaration;
+
+  /**
+   * This class will be applied to the mask of the dragging element.
+   * @defaults `' '`
+   */
+  ghostClass?: String;
+
+  /**
+   * The callback function when the drag is started.
+   */
+  onDrag?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+
+  /**
+   * The callback function when the dragged element is moving.
+   */
+  onMove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+
+  /**
+   * The callback function when the drag is completed.
+   */
+  onDrop?: (params: { from: FromTo; to: FromTo; event: EventType; changed: Boolean }) => void;
+
+  /**
+   * The callback function when element is dropped into the current list from another list.
+   */
+  onAdd?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+
+  /**
+   * The callback function when element is removed from the current list into another list.
+   */
+  onRemove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+
+  /**
+   * The callback function when the dragged element changes position in the current list.
+   */
+  onChange?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+
+  /**
+   * The callback function when element is selected.
+   */
+  onSelect?: (params: Select) => void;
+
+  /**
+   * The callback function when element is unselected.
+   */
+  onDeselect?: (params: Select) => void;
 };
 
 declare class Sortable {
@@ -210,7 +205,7 @@ declare class Sortable {
   destroy(): void;
 
   /**
-   * Get/Set sortable options.
+   * Get or set the option value, depending on whether the `value` is passed in
    * @param key option name
    * @param value option value
    */
