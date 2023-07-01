@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.5.3
+ * sortable-dnd v0.5.4
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -482,7 +482,7 @@
       selectedElements[this.groupName].forEach(function (node, index) {
         var clone = node.cloneNode(true);
         var opacity = index === 0 ? 1 : 0.5;
-        clone.style = "\n        opacity: ".concat(opacity, ";\n        position: absolute;\n        z-index: ").concat(index, ";\n        left: 0;\n        top: 0;\n        width: 100%;\n        height: 100%;\n      ");
+        clone.style = "\n        opacity: ".concat(opacity, ";\n        position: absolute;\n        z-index: ").concat(index, ";\n        left: 0;\n        top: 0;\n        bottom: 0;\n        right: 0;\n      ");
         container.appendChild(clone);
       });
       return container;
@@ -563,12 +563,13 @@
           offset: getOffset(node, rootEl)
         };
       });
-      var changed = sortableChanged(multiFrom, multiTo) || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
+      var ctxChanged = sortableChanged(multiFrom, multiTo);
+      var changed = ctxChanged || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
       var params = _objectSpread2(_objectSpread2({}, _emits()), {}, {
         changed: changed,
         event: event
       });
-      if (sortableChanged(multiFrom, multiTo)) {
+      if (ctxChanged) {
         multiFrom.sortable._dispatchEvent('onDrop', params);
       }
       multiTo.sortable._dispatchEvent('onDrop', params);
@@ -768,13 +769,11 @@
       if (this.helper) return;
       var fallbackOnBody = options.fallbackOnBody,
         ghostClass = options.ghostClass,
-        _options$ghostStyle = options.ghostStyle,
-        ghostStyle = _options$ghostStyle === void 0 ? {} : _options$ghostStyle;
+        ghostStyle = options.ghostStyle;
       var helperContainer = fallbackOnBody ? document.body : container;
       this.helper = element.cloneNode(true);
       toggleClass(this.helper, ghostClass, true);
       var helperStyle = _objectSpread2({
-        'box-sizing': 'border-box',
         top: rect.top,
         left: rect.left,
         width: rect.width,
@@ -782,7 +781,8 @@
         position: 'fixed',
         opacity: '0.8',
         'z-index': 100000,
-        'pointer-events': 'none'
+        'pointer-events': 'none',
+        'box-sizing': 'border-box'
       }, ghostStyle);
       for (var key in helperStyle) {
         css(this.helper, key, helperStyle[key]);
@@ -949,7 +949,7 @@
   Sortable.prototype = {
     constructor: Sortable,
     /**
-     * Manually clear all the state of the component, using this method the component will not be draggable
+     * Destroy
      */
     destroy: function destroy() {
       this._dispatchEvent('destroy', this);
@@ -962,7 +962,7 @@
       this.el = null;
     },
     /**
-     * Get or set the option value, depending on whether the `value` is passed in
+     * Get/Set option
      */
     option: function option(key, value) {
       var options = this.options;
@@ -977,27 +977,29 @@
     },
     _onDrag: function _onDrag( /** Event|TouchEvent */evt) {
       if (this.options.disabled || !this.options.group.pull) return;
-      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return; // only left button and enabled
 
+      // only left button and enabled
+      if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return;
       var _getEvent = getEvent(evt),
         touch = _getEvent.touch,
         event = _getEvent.event,
         target = _getEvent.target;
+      if (target === this.el) return;
 
       // Safari ignores further event handling after mousedown
       if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
-      if (target === this.el) return;
       var _this$options = this.options,
         draggable = _this$options.draggable,
         handle = _this$options.handle;
       if (typeof handle === 'function' && !handle(evt)) return;
       if (typeof handle === 'string' && !matches(target, handle)) return;
       if (typeof draggable === 'function') {
-        // The function type must return an HTMLElement if used to specifies the drag el
+        // The function type must return an HTMLElement if used to specifies the drag element
         var element = draggable(evt);
         if (!element) return;
-        // set drag element
-        if (isHTMLElement(element)) dragEl = element;
+        if (isHTMLElement(element)) {
+          dragEl = element;
+        }
       } else {
         // String use as 'TagName' or '.class' or '#id'
         dragEl = closest(target, draggable, this.el, false);
@@ -1099,6 +1101,8 @@
         var element = isMultiple ? this.multiplayer.getHelper() : dragEl;
         helper.init(from.rect, element, this.el, this.options);
         Sortable.helper = helper.node;
+
+        // Hide the drag element and show the cloned dom element
         visible(dragEl, false);
         dragEl.parentNode.insertBefore(cloneEl, dragEl);
         toggleClass(cloneEl, this.options.chosenClass, true);
@@ -1107,8 +1111,7 @@
     },
     _nearestSortable: function _nearestSortable( /** Event|TouchEvent */evt) {
       this._preventEvent(evt);
-      if (!downEvent || !dragEl) return;
-      if (!_positionChanged(evt)) return;
+      if (!downEvent || !dragEl || !_positionChanged(evt)) return;
       var _getEvent2 = getEvent(evt),
         event = _getEvent2.event,
         target = _getEvent2.target;
@@ -1118,7 +1121,6 @@
       helper.move(event.clientX - downEvent.clientX, event.clientY - downEvent.clientY);
       this._autoScroll(target);
       if (nearest) {
-        rootEl = nearest;
         nearest[expando]._onMove(event, target);
       }
     },
@@ -1134,10 +1136,11 @@
       }
     },
     _onMove: function _onMove( /** Event|TouchEvent */event, target) {
+      if (!this._allowPut()) return;
       this._dispatchEvent('onMove', _objectSpread2(_objectSpread2({}, _emits()), {}, {
         event: event
       }));
-      if (!this._allowPut()) return;
+      rootEl = this.el;
       dropEl = closest(target, this.options.draggable, rootEl, false);
       if (dropEl) {
         if (dropEl === lastDropEl) return;
@@ -1209,12 +1212,12 @@
       }));
 
       // the top value is compared first, and the left is compared if the top value is the same
-      var offset = getOffset(cloneEl, rootEl);
+      var fromOffset = getOffset(cloneEl, rootEl);
       var nextEl = null;
-      if (offset.top === to.offset.top) {
-        nextEl = offset.left < to.offset.left ? dropEl.nextSibling : dropEl;
+      if (fromOffset.top === to.offset.top) {
+        nextEl = fromOffset.left < to.offset.left ? dropEl.nextSibling : dropEl;
       } else {
-        nextEl = offset.top < to.offset.top ? dropEl.nextSibling : dropEl;
+        nextEl = fromOffset.top < to.offset.top ? dropEl.nextSibling : dropEl;
       }
       parentEl.insertBefore(cloneEl, nextEl);
       this.animator.animate();
@@ -1240,19 +1243,21 @@
       }
       from.group = downEvent.group;
       from.sortable = downEvent.sortable;
+
+      // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
+      to.rect = getRect(cloneEl);
+      to.offset = getOffset(cloneEl, rootEl);
       if (isMultiple) {
         this.multiplayer.onDrop(evt, dragEl, rootEl, downEvent, _emits);
       } else {
-        // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
-        to.rect = getRect(cloneEl);
-        to.offset = getOffset(cloneEl, rootEl);
         if (to.node === cloneEl) to.node = dragEl;
-        var changed = sortableChanged(from, to) || offsetChanged(from.offset, to.offset);
+        var ctxChanged = sortableChanged(from, to);
+        var changed = ctxChanged || offsetChanged(from.offset, to.offset);
         var params = _objectSpread2(_objectSpread2({}, _emits()), {}, {
           changed: changed,
           event: evt
         });
-        if (sortableChanged(from, to)) {
+        if (ctxChanged) {
           from.sortable._dispatchEvent('onDrop', params);
         }
         to.sortable._dispatchEvent('onDrop', params);
@@ -1296,6 +1301,10 @@
     }
   };
   Sortable.prototype.utils = {
+    on: on,
+    off: off,
+    css: css,
+    closest: closest,
     getRect: getRect,
     getOffset: getOffset
   };
