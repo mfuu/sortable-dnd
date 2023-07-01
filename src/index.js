@@ -202,7 +202,7 @@ Sortable.prototype = {
   constructor: Sortable,
 
   /**
-   * Manually clear all the state of the component, using this method the component will not be draggable
+   * Destroy
    */
   destroy: function () {
     this._dispatchEvent('destroy', this);
@@ -219,7 +219,7 @@ Sortable.prototype = {
   },
 
   /**
-   * Get or set the option value, depending on whether the `value` is passed in
+   * Get/Set option
    */
   option: function (key, value) {
     let options = this.options;
@@ -235,13 +235,16 @@ Sortable.prototype = {
 
   _onDrag: function (/** Event|TouchEvent */ evt) {
     if (this.options.disabled || !this.options.group.pull) return;
-    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return; // only left button and enabled
+
+    // only left button and enabled
+    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return;
 
     const { touch, event, target } = getEvent(evt);
 
+    if (target === this.el) return;
+
     // Safari ignores further event handling after mousedown
     if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
-    if (target === this.el) return;
 
     const { draggable, handle } = this.options;
 
@@ -249,11 +252,14 @@ Sortable.prototype = {
     if (typeof handle === 'string' && !matches(target, handle)) return;
 
     if (typeof draggable === 'function') {
-      // The function type must return an HTMLElement if used to specifies the drag el
+      // The function type must return an HTMLElement if used to specifies the drag element
       const element = draggable(evt);
+
       if (!element) return;
-      // set drag element
-      if (isHTMLElement(element)) dragEl = element;
+
+      if (isHTMLElement(element)) {
+        dragEl = element;
+      }
     } else {
       // String use as 'TagName' or '.class' or '#id'
       dragEl = closest(target, draggable, this.el, false);
@@ -369,6 +375,7 @@ Sortable.prototype = {
       helper.init(from.rect, element, this.el, this.options);
       Sortable.helper = helper.node;
 
+      // Hide the drag element and show the cloned dom element
       visible(dragEl, false);
       dragEl.parentNode.insertBefore(cloneEl, dragEl);
       toggleClass(cloneEl, this.options.chosenClass, true);
@@ -379,8 +386,7 @@ Sortable.prototype = {
 
   _nearestSortable: function (/** Event|TouchEvent */ evt) {
     this._preventEvent(evt);
-    if (!downEvent || !dragEl) return;
-    if (!_positionChanged(evt)) return;
+    if (!downEvent || !dragEl || !_positionChanged(evt)) return;
 
     const { event, target } = getEvent(evt);
     const nearest = _detectNearestSortable(event.clientX, event.clientY);
@@ -392,7 +398,6 @@ Sortable.prototype = {
     this._autoScroll(target);
 
     if (nearest) {
-      rootEl = nearest;
       nearest[expando]._onMove(event, target);
     }
   },
@@ -410,10 +415,11 @@ Sortable.prototype = {
   },
 
   _onMove: function (/** Event|TouchEvent */ event, target) {
-    this._dispatchEvent('onMove', { ..._emits(), event });
-
     if (!this._allowPut()) return;
 
+    this._dispatchEvent('onMove', { ..._emits(), event });
+
+    rootEl = this.el;
     dropEl = closest(target, this.options.draggable, rootEl, false);
 
     if (dropEl) {
@@ -450,6 +456,7 @@ Sortable.prototype = {
     this.animator.collect(null, target, parentEl, cloneEl);
 
     isMultiple && this.multiplayer.onChange(cloneEl, this);
+
     to = {
       sortable: this,
       group: parentEl,
@@ -492,12 +499,12 @@ Sortable.prototype = {
     this._dispatchEvent('onChange', { ..._emits(), event });
 
     // the top value is compared first, and the left is compared if the top value is the same
-    const offset = getOffset(cloneEl, rootEl);
+    const fromOffset = getOffset(cloneEl, rootEl);
     let nextEl = null;
-    if (offset.top === to.offset.top) {
-      nextEl = offset.left < to.offset.left ? dropEl.nextSibling : dropEl;
+    if (fromOffset.top === to.offset.top) {
+      nextEl = fromOffset.left < to.offset.left ? dropEl.nextSibling : dropEl;
     } else {
-      nextEl = offset.top < to.offset.top ? dropEl.nextSibling : dropEl;
+      nextEl = fromOffset.top < to.offset.top ? dropEl.nextSibling : dropEl;
     }
 
     parentEl.insertBefore(cloneEl, nextEl);
@@ -531,18 +538,20 @@ Sortable.prototype = {
     from.group = downEvent.group;
     from.sortable = downEvent.sortable;
 
+    // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
+    to.rect = getRect(cloneEl);
+    to.offset = getOffset(cloneEl, rootEl);
+
     if (isMultiple) {
       this.multiplayer.onDrop(evt, dragEl, rootEl, downEvent, _emits);
     } else {
-      // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
-      to.rect = getRect(cloneEl);
-      to.offset = getOffset(cloneEl, rootEl);
       if (to.node === cloneEl) to.node = dragEl;
 
-      const changed = sortableChanged(from, to) || offsetChanged(from.offset, to.offset);
+      const ctxChanged = sortableChanged(from, to);
+      const changed = ctxChanged || offsetChanged(from.offset, to.offset);
       const params = { ..._emits(), changed, event: evt };
 
-      if (sortableChanged(from, to)) {
+      if (ctxChanged) {
         from.sortable._dispatchEvent('onDrop', params);
       }
       to.sortable._dispatchEvent('onDrop', params);
@@ -599,8 +608,12 @@ Sortable.prototype = {
 };
 
 Sortable.prototype.utils = {
-  getRect,
-  getOffset,
+  on: on,
+  off: off,
+  css: css,
+  closest: closest,
+  getRect: getRect,
+  getOffset: getOffset,
 };
 
 /**

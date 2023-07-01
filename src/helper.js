@@ -26,14 +26,13 @@ Helper.prototype = {
   init(rect, element, container, options) {
     if (this.helper) return;
 
-    const { fallbackOnBody, ghostClass, ghostStyle = {} } = options;
+    const { fallbackOnBody, ghostClass, ghostStyle } = options;
     const helperContainer = fallbackOnBody ? document.body : container;
 
     this.helper = element.cloneNode(true);
     toggleClass(this.helper, ghostClass, true);
 
     const helperStyle = {
-      'box-sizing': 'border-box',
       top: rect.top,
       left: rect.left,
       width: rect.width,
@@ -42,6 +41,7 @@ Helper.prototype = {
       opacity: '0.8',
       'z-index': 100000,
       'pointer-events': 'none',
+      'box-sizing': 'border-box',
       ...ghostStyle,
     };
 

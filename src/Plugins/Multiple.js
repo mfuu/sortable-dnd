@@ -49,8 +49,8 @@ Multiple.prototype = {
         z-index: ${index};
         left: 0;
         top: 0;
-        width: 100%;
-        height: 100%;
+        bottom: 0;
+        right: 0;
       `;
       container.appendChild(clone);
     });
@@ -135,10 +135,11 @@ Multiple.prototype = {
       return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
     });
 
-    const changed =
-      sortableChanged(multiFrom, multiTo) || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
+    const ctxChanged = sortableChanged(multiFrom, multiTo);
+    const changed = ctxChanged || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
     const params = { ..._emits(), changed, event };
-    if (sortableChanged(multiFrom, multiTo)) {
+
+    if (ctxChanged) {
       multiFrom.sortable._dispatchEvent('onDrop', params);
     }
     multiTo.sortable._dispatchEvent('onDrop', params);
