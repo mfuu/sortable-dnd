@@ -1,135 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <title>Sortable</title>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="./css/sortable.css">
-  <title>Sortable</title>
-  <script src="https://cdn.jsdelivr.net/npm/sortable-dnd/dist/sortable-dnd.min.js"></script>
+  <link rel="stylesheet" href="./css/prism-one-light.min.css"></link>
+  <script src="./js/sentences.js"></script>
+  <script src="./js/sortable.js"></script>
+  <script src="https://unpkg.com/sortable-dnd/dist/sortable-dnd.min.js"></script>
+  <script src="https://unpkg.com/prismjs/prism.js"></script>
+  <script src="https://unpkg.com/mockjs/dist/mock.js"></script>
 </head>
 <body>
-  <div class="tabs-list flex-center">
-    <ul>
-      <li class="tabs-title current">vertical</li>
-      <li class="tabs-title">horizontal</li>
-      <li class="tabs-title">flex</li>
-      <li class="tabs-title">handle</li>
-      <li class="tabs-title">group</li>
-      <li class="tabs-title">multiple</li>
-      <!-- <li class="tabs-title">nested</li> -->
-    </ul>
+  <!-- tab -->
+  <div class="tabs">
+    <button class="tabs-item" onclick="tabClick(this, 'byhandle')">handle</button>
+    <button class="tabs-item" onclick="tabClick(this, 'horizontal')">horizontal</button>
+    <button class="tabs-item" onclick="tabClick(this, 'group')">group</button>
+    <button class="tabs-item" onclick="tabClick(this, 'multiple')">multiple</button>
+    <button class="tabs-item" onclick="tabClick(this, 'grid')">grid</button>
+    <script>
+      function tabClick(node, key) {
+        const tabs = document.querySelectorAll('.tabs-item');
+        const contents = document.querySelectorAll('.content-item');
+        let index = -1;
+        for(let i = 0; i < tabs.length; i++) {
+          tabs[i].classList.remove('active-tab');
+          contents[i].style.display = 'none';
+          if (contents[i].classList.contains(key)) {
+            index = i;
+          }
+        }
+        node.classList.add('active-tab');
+        contents[index].style.display = 'block';
+      }
+    </script>
   </div>
-  <div class="tabs-content">
-    <div class="tabs-item" style="height: auto;">
-      <div class="highlight flex-center">
-        <code style="white-space: pre-wrap;">
+  <!-- container -->
+  <div class="content">
+    <div class="content-item byhandle">
+      <pre class="flex justify-content-center">
+        <code class="language-js">
           new Sortable(
             document.getElementById('group'),
             {
-              animation: 150,
-              onDrag: () => {},
-              onDrop: () => {}
+              handle: ".handle",
+              chosenClass: "chosen",
+              selectedClass: "selected",
             }
           )
         </code>
-      </div>
-      <ul id="verticalGroup" class="vertical-group"></ul>
+      </pre>
+      <ul id="byhandle" class="list"></ul>
+      <script>
+        initSortable('byhandle', { handle: ".handle" });
+      </script>
     </div>
-    <div class="tabs-item">
-      <div class="highlight flex-center">
-        <code style="white-space: pre-wrap;">
+
+    <div class="content-item horizontal">
+      <pre class="flex justify-content-center">
+        <code class="language-js">
           new Sortable(
             document.getElementById('group'),
             {
-              animation: 150,
-              onDrag: () => {},
-              onDrop: () => {}
+              chosenClass: "chosen",
+              selectedClass: "selected",
             }
           )
         </code>
-      </div>
-      <ul id="horizontalGroup" class="horizontal-group"></ul>
+      </pre>
+      <ul id="horizontal" class="list horizontal-list"></ul>
+      <script>
+        initSortable('horizontal');
+      </script>
     </div>
-    <div class="tabs-item">
-      <div class="highlight flex-center">
-        <code style="white-space: pre-wrap;">
-          new Sortable(
-            document.getElementById('group'),
-            {
-              animation: 150,
-              onDrag: () => {},
-              onDrop: () => {}
-            }
-          )
-        </code>
-      </div>
-      <ul id="flexGroup" class="flex-group"></ul>
-    </div>
-    <div class="tabs-item">
-      <div class="highlight flex-center">
-        <code style="white-space: pre-wrap;">
-          new Sortable(
-            document.getElementById('group'),
-            {
-              animation: 150,
-              handle: '.drag',
-              onDrag: () => {},
-              onDrop: () => {}
-            }
-          )
-        </code>
-      </div>
-      <ul id="handleGroup" class="handle-group"></ul>
-    </div>
-    <div class="tabs-item">
-      <div class="highlight flex-center">
-        <code style="white-space: pre-wrap;">
+
+    <div class="content-item group">
+      <pre class="flex justify-content-center">
+        <code class="language-js">
           new Sortable(
             document.getElementById('group1'),
             {
               group: { name: 'group', put: true, pull: true },
-              animation: 150,
-              fallbackOnBody: true,
-              onDrag: () => {},
-              onDrop: () => {}
+              chosenClass: "chosen",
+              selectedClass: "selected",
             }
           );
+
           new Sortable(
             document.getElementById('group2'),
             {
               group: { name: 'group', put: true, pull: true },
-              animation: 150,
-              fallbackOnBody: true,
-              onDrag: () => {},
-              onDrop: () => {}
+              chosenClass: "chosen",
+              selectedClass: "selected",
             }
           )
+
+          ...
         </code>
+      </pre>
+      <div class="group-list flex justify-content-center">
+        <ul id="group1" class="list"></ul>
+        <ul id="group2" class="list"></ul>
+        <ul id="group3" class="list"></ul>
+        <ul id="group4" class="list"></ul>
+        <ul id="group5" class="list"></ul>
       </div>
-      <div class="group flex">
-        <ul id="group1" class="group-item"></ul>
-        <ul id="group2" class="group-item"></ul>
-      </div>
+      <script>
+        initSortable('group1', { group: { name: 'group', put: true, pull: true } });
+        initSortable('group2', { group: { name: 'group', put: true, pull: true } });
+        initSortable('group3', { group: { name: 'group', put: true, pull: true } });
+        initSortable('group4', { group: { name: 'group', put: true, pull: true } });
+        initSortable('group5', { group: { name: 'group', put: true, pull: true } });
+      </script>
     </div>
-    <div class="tabs-item">
-      <div class="highlight flex-center">
-        <code style="white-space: pre-wrap;">
+
+    <div class="content-item multiple">
+      <pre class="flex justify-content-center">
+        <code class="language-js">
           new Sortable(
             document.getElementById('group'),
             {
-              animation: 150,
-              multiple: true,
+              multiple: true, // mouse click to selected item
               chosenClass: 'chosen',
               selectedClass: 'selected',
-              onDrag: () => {},
-              onDrop: () => {}
             }
           )
         </code>
-      </div>
-      <ul id="multiGroup" class="flex-group"></ul>
+      </pre>
+      <ul id="multiple" class="list"></ul>
+      <script>
+        initSortable('multiple', { multiple: true });
+      </script>
     </div>
+
+    <div class="content-item grid">
+      <pre class="flex justify-content-center">
+        <code class="language-js">
+          new Sortable(
+            document.getElementById('group'),
+            {
+              chosenClass: "chosen",
+              selectedClass: "selected",
+            }
+          )
+        </code>
+      </pre>
+      <ul id="grid" class="list grid-list"></ul>
+      <script>
+        initSortable('grid');
+      </script>
+    </div>
+
     <!-- <div id="nested" class="row">
       <h4 class="col-12">嵌套排序例子</h4>
       <p class="col-12">注意: 当开启嵌套排序动画的时候, 建议将 <code>fallbackOnBody</code> 选项设置为true。</p>
@@ -165,30 +189,7 @@
   </div>
 
   <script>
-    var lis = document.querySelectorAll('.tabs-title');
-    var items = document.querySelectorAll('.tabs-item')
-    for (var i = 0; i < lis.length; i++) {
-        // 1.给每一个标题li添加自定义属性
-        lis[i].index = i
-        // 2.绑定事件
-        lis[i].onclick = function () {
-            for (var i = 0; i < lis.length; i++) {
-                lis[i].classList.remove('current')
-                items[i].style.height = '0'
-            }
-            this.classList.add('current')
-            var index = this.index
-            items[index].style.height = 'auto'
-        }
-    }
+    tabClick(document.querySelectorAll('.tabs-item')[0], 'byhandle');
   </script>
-
-  <script src="./js/flex.js"></script>
-  <script src="./js/handle.js"></script>
-  <script src="./js/horizontal.js"></script>
-  <script src="./js/vertical.js"></script>
-  <script src="./js/group.js"></script>
-  <script src="./js/multiple.js"></script>
-  <!-- <script src=".//js//nested.js"></script> -->
 </body>
 </html>
