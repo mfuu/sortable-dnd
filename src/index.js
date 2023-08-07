@@ -13,6 +13,7 @@ import {
   lastChild,
   getOffset,
   _nextTick,
+  getDataKey,
   toggleClass,
   isHTMLElement,
   offsetChanged,
@@ -23,6 +24,7 @@ import { Edge, Safari, IE11OrLess } from './utils.js';
 import Multiple, { getMultiDiffer } from './Plugins/Multiple.js';
 import AutoScroll from './Plugins/AutoScroll.js';
 import Animation from './Plugins/Animation.js';
+import Virtual from './Plugins/Virtual.js';
 import Helper from './helper.js';
 
 const FromTo = {
@@ -137,6 +139,13 @@ function Sortable(el, options) {
   const defaults = {
     disabled: false,
 
+    dataSource: [],
+    dataKey: '',
+    keeps: 30,
+    size: null,
+    direction: 'vertical',
+    virtualScroller: null,
+
     group: '',
     animation: 150,
 
@@ -144,11 +153,6 @@ function Sortable(el, options) {
 
     draggable: null,
     handle: null,
-
-    onDrag: null,
-    onMove: null,
-    onDrop: null,
-    onChange: null,
 
     autoScroll: true,
     scrollThreshold: 55,
@@ -196,6 +200,11 @@ function Sortable(el, options) {
 
   this.multiplayer = new Multiple(this.options);
   this.animator = new Animation(this.options);
+
+  if (this.options.virtualScroller) {
+    on(this.options.virtualScroller, 'scroll', this._onScroll);
+    this.virtual = new Virtual(this.options, this._updateRange);
+  }
 }
 
 Sortable.prototype = {
@@ -205,17 +214,24 @@ Sortable.prototype = {
    * Destroy
    */
   destroy: function () {
-    this._dispatchEvent('destroy', this);
+    this._dispatchEvent('onDestroy', this);
     this.el[expando] = null;
 
     for (let i = 0; i < events.start.length; i++) {
       off(this.el, events.start[i], this._onDrag);
+    }
+    if (this.options.virtualScroller) {
+      this.virtual.destroy();
+      this.virtual = null;
+      off(this.options.virtualScroller, 'scroll', this._onScroll);
     }
 
     this._clearState();
 
     sortables.splice(sortables.indexOf(this.el), 1);
     this.el = null;
+    this.animator = null;
+    this.multiplayer = null;
   },
 
   /**
@@ -231,6 +247,16 @@ Sortable.prototype = {
         _prepareGroup(options);
       }
     }
+  },
+
+  _updateRange: function ({ start, end, front, behind }) {
+    const style = `padding: ${front}px 0 ${behind}px`;
+    this._dispatchEvent('rangeUpdate', { start, end, style });
+  },
+
+  _onScroll: function (e) {
+    const offset = e.target.scrollTop;
+    this.virtual.handleScroll(offset);
   },
 
   _onDrag: function (/** Event|TouchEvent */ evt) {
@@ -402,6 +428,14 @@ Sortable.prototype = {
     }
   },
 
+  _autoScroll: function (target) {
+    const scrollEl = getParentAutoScrollElement(target, true);
+    const { autoScroll, scrollThreshold } = this.options;
+    if (autoScroll) {
+      autoScroller.update(scrollEl, scrollThreshold, downEvent, moveEvent);
+    }
+  },
+
   _allowPut: function () {
     if (downEvent.sortable.el === this.el) {
       return true;
@@ -437,14 +471,6 @@ Sortable.prototype = {
       }
     } else if (dropEl) {
       this._onChange(event);
-    }
-  },
-
-  _autoScroll: function (target) {
-    const scrollEl = getParentAutoScrollElement(target, true);
-    const { autoScroll, scrollThreshold } = this.options;
-    if (autoScroll) {
-      autoScroller.update(scrollEl, scrollThreshold, downEvent, moveEvent);
     }
   },
 
@@ -607,7 +633,7 @@ Sortable.prototype = {
   },
 };
 
-Sortable.prototype.utils = {
+Sortable.utils = {
   on: on,
   off: off,
   css: css,

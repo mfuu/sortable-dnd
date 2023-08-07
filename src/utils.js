@@ -400,17 +400,6 @@ export function matches(el, selector) {
   return false;
 }
 
-/**
- * Check whether the front and rear positions are consistent
- */
-export function offsetChanged(o1, o2) {
-  return o1.top !== o2.top || o1.left !== o2.left;
-}
-
-export function sortByOffset(o1, o2) {
-  return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
-}
-
 export function css(el, prop, val) {
   let style = el && el.style;
   if (style) {
@@ -428,6 +417,23 @@ export function css(el, prop, val) {
       style[prop] = val + (typeof val === 'string' ? '' : 'px');
     }
   }
+}
+
+/**
+ * Check whether the front and rear positions are consistent
+ */
+export function offsetChanged(o1, o2) {
+  return o1.top !== o2.top || o1.left !== o2.left;
+}
+
+export function sortByOffset(o1, o2) {
+  return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
+}
+
+export function getDataKey(item, dataKey) {
+  return (
+    !Array.isArray(dataKey) ? dataKey.replace(/\[/g, '.').replace(/\]/g, '.').split('.') : dataKey
+  ).reduce((o, k) => (o || {})[k], item);
 }
 
 export function sortableChanged(from, to) {
