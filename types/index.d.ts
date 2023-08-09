@@ -1,3 +1,34 @@
+export type DOMOffset = {
+  height: Number;
+  width: Number;
+  top: Number;
+  left: Number;
+};
+
+export type DOMRect = DOMOffset & {
+  bottom: Number;
+  right: Number;
+};
+
+export type Group = {
+  name: String;
+  put: Boolean;
+  pull: Boolean;
+};
+
+export type Range = {
+  start: Number;
+  end: Number;
+  padFront: Number;
+  padBehind: Number;
+}
+
+export type ScrollState = {
+  offset: Number;
+  top: Boolean;
+  bottom: Boolean;
+}
+
 type SortableState = {
   sortable: Sortable;
   group: HTMLElement;
@@ -12,29 +43,13 @@ type MultiNode = {
   rect: DOMRect;
 };
 
-export type Group = {
-  name: String;
-  put: Boolean;
-  pull: Boolean;
-};
-
-export type DOMOffset = {
-  height: Number;
-  width: Number;
-  top: Number;
-  left: Number;
-};
-
-export type DOMRect = DOMOffset & {
-  bottom: Number;
-  right: Number;
-};
-
 export type EventType = Event & (TouchEvent | MouseEvent);
 
 export type FromTo = SortableState & { nodes?: MultiNode[] };
 
 export type Select = SortableState & { event: EventType };
+
+export type Direction = 'vertical' | 'horizontal';
 
 export type Options = {
   /**
@@ -74,13 +89,61 @@ export type Options = {
   multiple?: Boolean;
 
   /**
+   * Support for virtual lists if set to `true`.
+   * @defaults `false`
+   */
+  virtual?: Boolean;
+
+  /**
+   * Virtual list scrolling element.
+   * @defaults `null`
+   */
+  scroller?: HTMLElement;
+
+  /**
+   * Virtual list data source.
+   * @defaults `[]`
+   */
+  dataSource?: any[];
+
+  /**
+   * The unique key of each piece of data in `dataSource`, in the form of `a.b.c`.
+   * @defaults `' '`
+   */
+  dataKey?: String;
+
+  /**
+   * The number of lines rendered by the virtual scroll.
+   * @defaults `30`
+   */
+  keeps?: Number;
+
+  /**
+   * The estimated height of each piece of data.
+   * @defaults `null`
+   */
+  size?: Number;
+
+  /**
+   * Top height value to be ignored.
+   * @defaults `0`
+   */
+  headerSize?: Number;
+
+  /**
+   * `vertical/horizontal`, scroll direction.
+   * @defaults `vertical`
+   */
+  direction?: Direction;
+
+  /**
    * Speed of the animation (in ms) while moving the items.
    * @defaults `150`
    */
   animation?: Number;
 
   /**
-   * Disables the sortable if set to true.
+   * Disables the sortable if set to `true`.
    * @defaults `false`
    */
   disabled?: Boolean;
@@ -190,14 +253,24 @@ export type Options = {
    * The callback function when element is unselected.
    */
   onDeselect?: (params: Select) => void;
+
+  /**
+   * The callback function when the virtual list is scrolled.
+   */
+  onScroll?: (params: ScrollState) => void;
+
+  /**
+   * The callback function when the rendering parameters of the virtual list change.
+   */
+  onUpdate?: (params: Range) => void;
 };
 
 declare class Sortable {
   /**
-   * @param ParentElement The Parent which holds the draggable element(s).
+   * @param element The Parent which holds the draggable element(s).
    * @param options Options to customise the behavior of the drag animations.
    */
-  constructor(ParentElement: HTMLElement, options?: Options);
+  constructor(element: HTMLElement, options?: Options);
 
   /**
    * Manually clear all the state of the component, using this method the component will not be draggable.

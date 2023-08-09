@@ -139,12 +139,15 @@ function Sortable(el, options) {
   const defaults = {
     disabled: false,
 
+    virtual: false,
+    scroller: null,
+
     dataSource: [],
     dataKey: '',
     keeps: 30,
     size: null,
+    headerSize: 0,
     direction: 'vertical',
-    virtualScroller: null,
 
     group: '',
     animation: 150,
@@ -200,11 +203,7 @@ function Sortable(el, options) {
 
   this.multiplayer = new Multiple(this.options);
   this.animator = new Animation(this.options);
-
-  if (this.options.virtualScroller) {
-    on(this.options.virtualScroller, 'scroll', this._onScroll);
-    this.virtual = new Virtual(this.options, this._updateRange);
-  }
+  this.virtual = new Virtual(this);
 }
 
 Sortable.prototype = {
@@ -215,21 +214,20 @@ Sortable.prototype = {
    */
   destroy: function () {
     this._dispatchEvent('onDestroy', this);
+
     this.el[expando] = null;
 
     for (let i = 0; i < events.start.length; i++) {
       off(this.el, events.start[i], this._onDrag);
     }
-    if (this.options.virtualScroller) {
-      this.virtual.destroy();
-      this.virtual = null;
-      off(this.options.virtualScroller, 'scroll', this._onScroll);
-    }
-
-    this._clearState();
 
     sortables.splice(sortables.indexOf(this.el), 1);
+
+    this.virtual.destroy();
+    this._clearState();
+
     this.el = null;
+    this.virtual = null;
     this.animator = null;
     this.multiplayer = null;
   },
@@ -246,17 +244,8 @@ Sortable.prototype = {
       if (key === 'group') {
         _prepareGroup(options);
       }
+      this.virtual.updateOptions(key, value);
     }
-  },
-
-  _updateRange: function ({ start, end, front, behind }) {
-    const style = `padding: ${front}px 0 ${behind}px`;
-    this._dispatchEvent('rangeUpdate', { start, end, style });
-  },
-
-  _onScroll: function (e) {
-    const offset = e.target.scrollTop;
-    this.virtual.handleScroll(offset);
   },
 
   _onDrag: function (/** Event|TouchEvent */ evt) {
@@ -640,6 +629,7 @@ Sortable.utils = {
   closest: closest,
   getRect: getRect,
   getOffset: getOffset,
+  getDataKey: getDataKey,
 };
 
 /**

@@ -38,6 +38,10 @@ Multiple.prototype = {
     );
   },
 
+  getSelected() {
+    return this.options.multiple ? selectedElements[this.groupName] : [];
+  },
+
   getHelper() {
     const container = document.createElement('div');
     selectedElements[this.groupName].forEach((node, index) => {
