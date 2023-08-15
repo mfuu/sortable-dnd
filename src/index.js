@@ -13,7 +13,6 @@ import {
   lastChild,
   getOffset,
   _nextTick,
-  getDataKey,
   toggleClass,
   isHTMLElement,
   offsetChanged,
@@ -142,8 +141,7 @@ function Sortable(el, options) {
     virtual: false,
     scroller: null,
 
-    dataSource: [],
-    dataKey: '',
+    dataKeys: '',
     keeps: 30,
     size: null,
     headerSize: 0,
@@ -209,9 +207,7 @@ function Sortable(el, options) {
 Sortable.prototype = {
   constructor: Sortable,
 
-  /**
-   * Destroy
-   */
+  /** Destroy */
   destroy: function () {
     this._dispatchEvent('onDestroy', this);
 
@@ -232,9 +228,7 @@ Sortable.prototype = {
     this.multiplayer = null;
   },
 
-  /**
-   * Get/Set option
-   */
+  /** Get/Set option */
   option: function (key, value) {
     let options = this.options;
     if (value === void 0) {
@@ -244,8 +238,13 @@ Sortable.prototype = {
       if (key === 'group') {
         _prepareGroup(options);
       }
-      this.virtual.updateOptions(key, value);
+      this.virtual.updateOption(key, value);
     }
+  },
+
+  /** Get the selected elements in the list */
+  getSelects: function () {
+    return this.multiplayer.getSelectedElements();
   },
 
   _onDrag: function (/** Event|TouchEvent */ evt) {
@@ -629,7 +628,6 @@ Sortable.utils = {
   closest: closest,
   getRect: getRect,
   getOffset: getOffset,
-  getDataKey: getDataKey,
 };
 
 /**

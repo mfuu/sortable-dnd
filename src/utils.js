@@ -430,12 +430,6 @@ export function sortByOffset(o1, o2) {
   return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
 }
 
-export function getDataKey(item, dataKey) {
-  return (
-    !Array.isArray(dataKey) ? dataKey.replace(/\[/g, '.').replace(/\]/g, '.').split('.') : dataKey
-  ).reduce((o, k) => (o || {})[k], item);
-}
-
 export function sortableChanged(from, to) {
   return from.sortable.el !== to.sortable.el;
 }

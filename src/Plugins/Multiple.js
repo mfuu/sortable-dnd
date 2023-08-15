@@ -38,8 +38,8 @@ Multiple.prototype = {
     );
   },
 
-  getSelected() {
-    return this.options.multiple ? selectedElements[this.groupName] : [];
+  getSelectedElements() {
+    return selectedElements[this.groupName] || [];
   },
 
   getHelper() {

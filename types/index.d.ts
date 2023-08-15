@@ -101,16 +101,10 @@ export type Options = {
   scroller?: HTMLElement;
 
   /**
-   * Virtual list data source.
+   * The unique key values of all items in the list.
    * @defaults `[]`
    */
-  dataSource?: any[];
-
-  /**
-   * The unique key of each piece of data in `dataSource`, in the form of `a.b.c`.
-   * @defaults `' '`
-   */
-  dataKey?: String;
+  dataKeys?: any[];
 
   /**
    * The number of lines rendered by the virtual scroll.
@@ -283,6 +277,11 @@ declare class Sortable {
    * @param value option value
    */
   option(key: string, value: any): any;
+
+  /**
+   * Get the selected elements in the list.
+   */
+  getSelects(): HTMLElement[];
 
   /**
    * Get the Sortable instance of an element

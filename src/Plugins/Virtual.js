@@ -1,4 +1,4 @@
-import { on, off, getDataKey, isHTMLElement } from '../utils';
+import { on, off, isHTMLElement } from '../utils';
 
 const CACLTYPE = {
   DOWN: 'DOWN',
@@ -34,11 +34,9 @@ function Virtual(sortable) {
   this.calcType = CACLTYPE.INIT;
   this.calcSize = { average: 0, total: 0, fixed: 0 };
 
-  this.range = { start: 0, end: 0, padFront: 0, padBehind: 0 };
+  this.range = { start: 0, end: 0, front: 0, behind: 0 };
 
   this.buffer = Math.round(this.options.keeps / 3);
-
-  this.uniqueKeys = this._getUniqueKeys();
   this.isHorizontal = this.options.direction !== 'vertical';
 
   // Bind all private methods
@@ -95,23 +93,24 @@ Virtual.prototype = {
       return 0;
     }
 
-    let offset = this.options.headerSize;
+    const { headerSize, dataKeys } = this.options;
+
+    let offset = headerSize;
     for (let i = 0; i < index; i++) {
-      const size = this.sizes.get(this.uniqueKeys[i]);
+      const size = this.sizes.get(dataKeys[i]);
       offset = offset + (typeof size === 'number' ? size : this._getItemSize());
     }
 
     return offset;
   },
 
-  updateOptions(key, value) {
+  updateOption(key, value) {
     if (this.options && key in this.options) {
       this.options[key] = value;
 
-      if (key === 'dataSource') {
-        this.uniqueKeys = this._getUniqueKeys();
+      if (key === 'dataKeys') {
         this.sizes.forEach((v, k) => {
-          if (!this.uniqueKeys.includes(k)) {
+          if (!value.includes(k)) {
             this.sizes.delete(k);
           }
         });
@@ -223,7 +222,7 @@ Virtual.prototype = {
     }
 
     let low = 0;
-    let high = this.uniqueKeys.length;
+    let high = this.options.dataKeys.length;
     let middle = 0;
     let middleOffset = 0;
 
@@ -244,7 +243,7 @@ Virtual.prototype = {
 
   _checkIfUpdate(start, end) {
     const keeps = this.options.keeps;
-    const total = this.uniqueKeys.length;
+    const total = this.options.dataKeys.length;
 
     if (total <= keeps) {
       start = 0;
@@ -261,8 +260,8 @@ Virtual.prototype = {
   _handleUpdate(start, end) {
     this.range.start = start;
     this.range.end = end;
-    this.range.padFront = this._getPadFront();
-    this.range.padBehind = this._getPadBehind();
+    this.range.front = this._getPadFront();
+    this.range.behind = this._getPadBehind();
 
     this.sortable._dispatchEvent('onUpdate', { ...this.range });
   },
@@ -292,21 +291,12 @@ Virtual.prototype = {
   },
 
   _getLastIndex() {
-    const { keeps } = this.options;
-    return this.uniqueKeys.length > 0 ? this.uniqueKeys.length - 1 : keeps - 1;
+    const { keeps, dataKeys } = this.options;
+    return dataKeys.length > 0 ? dataKeys.length - 1 : keeps - 1;
   },
 
   _getItemSize() {
     return this.isFixed() ? this.calcSize.fixed : this.calcSize.average || this.options.size;
-  },
-
-  _getUniqueKeys() {
-    let uniqueKeys = [];
-    const { dataKey, dataSource } = this.options;
-    for (let i = 0; i < dataSource.length; i++) {
-      uniqueKeys.push(getDataKey(dataSource[i], dataKey));
-    }
-    return uniqueKeys;
   },
 };
 
