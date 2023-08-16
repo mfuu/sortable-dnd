@@ -16,7 +16,7 @@ Animation.prototype = {
 
     children.slice(start, end + 1).forEach((node) => {
       if (css(node, 'display') === 'none') return;
-      if (node === except || node === Sortable.helper) return;
+      if (node === except || node === Sortable.ghost) return;
       this.animations.push({ node, rect: getRect(node) });
     });
   },

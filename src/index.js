@@ -243,7 +243,7 @@ Sortable.prototype = {
   },
 
   /** Get the selected elements in the list */
-  getSelects: function () {
+  getSelectedElements: function () {
     return this.multiplayer.getSelectedElements();
   },
 
@@ -282,6 +282,7 @@ Sortable.prototype = {
     // No dragging is allowed when there is no dragging element
     if (!dragEl || dragEl.animated) return;
 
+    Sortable.dragged = dragEl;
     cloneEl = dragEl.cloneNode(true);
     this._prepareStart(touch, event);
   },
@@ -387,7 +388,7 @@ Sortable.prototype = {
       // Init in the move event to prevent conflict with the click event
       const element = isMultiple ? this.multiplayer.getHelper() : dragEl;
       helper.init(from.rect, element, this.el, this.options);
-      Sortable.helper = helper.node;
+      Sortable.ghost = helper.node;
 
       // Hide the drag element and show the cloned dom element
       visible(dragEl, false);
@@ -601,7 +602,8 @@ Sortable.prototype = {
       isMultiple =
       lastDropEl =
       dragStartTimer =
-      Sortable.helper =
+      Sortable.ghost =
+      Sortable.dragged =
         null;
     lastPosition = { x: 0, y: 0 };
     from = to = { ...FromTo };
@@ -626,8 +628,7 @@ Sortable.utils = {
   off: off,
   css: css,
   closest: closest,
-  getRect: getRect,
-  getOffset: getOffset,
+  toggleClass: toggleClass,
 };
 
 /**

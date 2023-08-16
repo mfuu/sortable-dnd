@@ -60,16 +60,8 @@ Virtual.prototype = {
     off(this.options.scroller, 'scroll', this._handleScroll);
   },
 
-  isFront() {
-    return this.direction === DIRECTION.FRONT;
-  },
-
-  isBehind() {
-    return this.direction === DIRECTION.BEHIND;
-  },
-
-  isFixed() {
-    return this.calcType === CACLTYPE.FIXED;
+  getSize(dataKey) {
+    return this.sizes.get(dataKey);
   },
 
   getOffset() {
@@ -84,24 +76,33 @@ Virtual.prototype = {
     return this.options.scroller[this.isHorizontal ? 'scrollWidth' : 'scrollHeight'];
   },
 
-  getItemSize(node) {
-    return node[this.isHorizontal ? 'offsetWidth' : 'offsetHeight'];
+  scrollToOffset(offset) {
+    const scrollKey = this.isHorizontal ? 'scrollLeft' : 'scrollTop';
+    this.options.scroller[scrollKey] = offset;
   },
 
-  getOffsetByIndex(index) {
-    if (!index) {
-      return 0;
+  scrollToIndex(index) {
+    if (index >= this.options.dataKeys.length - 1) {
+      this.scrollToBottom();
+    } else {
+      const indexOffset = this._getOffsetByIndex(index);
+      this.scrollToOffset(indexOffset);
     }
+  },
 
-    const { headerSize, dataKeys } = this.options;
+  scrollToBottom() {
+    const scrollSize = this.getScrollSize();
+    this.scrollToOffset(scrollSize);
 
-    let offset = headerSize;
-    for (let i = 0; i < index; i++) {
-      const size = this.sizes.get(dataKeys[i]);
-      offset = offset + (typeof size === 'number' ? size : this._getItemSize());
-    }
-
-    return offset;
+    // if the bottom is not reached, execute the scroll method again
+    setTimeout(() => {
+      const offset = this.getOffset();
+      const clientSize = this.getClientSize();
+      const scrollSize = this.getScrollSize();
+      if (offset + clientSize + 1 < scrollSize) {
+        this.scrollToBottom();
+      }
+    }, 5);
   },
 
   updateOption(key, value) {
@@ -120,9 +121,9 @@ Virtual.prototype = {
 
   updateRange() {
     let start = this.range.start;
-    if (this.isFront()) {
+    if (this._isFront()) {
       start -= LEADING_BUFFER;
-    } else if (this.isBehind()) {
+    } else if (this._isBehind()) {
       start += LEADING_BUFFER;
     }
 
@@ -139,12 +140,12 @@ Virtual.prototype = {
         const node = mutationsList[i].addedNodes[0];
         if (!node) continue;
         const dataKey = node.dataset.key;
-        const size = this.getItemSize(node);
+        const size = this._getItemSize(node);
         this._handleItemSizeChange(dataKey, size);
       }
       if (this.renderState === CACLTYPE.INIT) {
-        this.updateRange();
         this.renderState = CACLTYPE.DOWN;
+        this.updateRange();
       }
     });
 
@@ -157,7 +158,7 @@ Virtual.prototype = {
     if (this.calcType === CACLTYPE.INIT) {
       this.calcType = CACLTYPE.FIXED;
       this.calcSize.fixed = size;
-    } else if (this.isFixed() && this.calcSize.fixed !== size) {
+    } else if (this._isFixed() && this.calcSize.fixed !== size) {
       this.calcType = CACLTYPE.DYNAMIC;
       this.calcSize.fixed = undefined;
     }
@@ -183,11 +184,11 @@ Virtual.prototype = {
 
     const params = { offset, top: false, bottom: false };
 
-    if (this.isFront()) {
+    if (this._isFront()) {
       params.top = offset <= 0;
       this._handleScrollFront();
-    } else if (this.isBehind()) {
-      params.bottom = clientSize + offset >= scrollSize;
+    } else if (this._isBehind()) {
+      params.bottom = clientSize + offset + 1 >= scrollSize;
       this._handleScrollBehind();
     }
 
@@ -217,7 +218,7 @@ Virtual.prototype = {
       return 0;
     }
 
-    if (this.isFixed()) {
+    if (this._isFixed()) {
       return Math.floor(offset / this.calcSize.fixed);
     }
 
@@ -228,7 +229,7 @@ Virtual.prototype = {
 
     while (low <= high) {
       middle = low + Math.floor((high - low) / 2);
-      middleOffset = this.getOffsetByIndex(middle);
+      middleOffset = this._getOffsetByIndex(middle);
 
       if (middleOffset === offset) {
         return middle;
@@ -263,15 +264,16 @@ Virtual.prototype = {
     this.range.front = this._getPadFront();
     this.range.behind = this._getPadBehind();
 
-    this.sortable._dispatchEvent('onUpdate', { ...this.range });
+    const eventName = this.renderState === CACLTYPE.INIT ? 'onCreate' : 'onUpdate';
+    this.sortable._dispatchEvent(eventName, { ...this.range });
   },
 
   _getPadFront() {
     const start = this.range.start;
-    if (this.isFixed()) {
+    if (this._isFixed()) {
       return this.calcSize.fixed * start;
     } else {
-      return this.getOffsetByIndex(start);
+      return this._getOffsetByIndex(start);
     }
   },
 
@@ -279,11 +281,27 @@ Virtual.prototype = {
     const end = this.range.end;
     const last = this._getLastIndex();
 
-    if (this.isFixed()) {
+    if (this._isFixed()) {
       return (last - end) * this.calcSize.fixed;
     }
 
-    return (last - end) * this._getItemSize();
+    return (last - end) * this._getEstimateSize();
+  },
+
+  _getOffsetByIndex(index) {
+    if (!index) {
+      return 0;
+    }
+
+    const { headerSize, dataKeys } = this.options;
+
+    let offset = headerSize;
+    for (let i = 0; i < index; i++) {
+      const size = this.sizes.get(dataKeys[i]);
+      offset = offset + (typeof size === 'number' ? size : this._getEstimateSize());
+    }
+
+    return offset;
   },
 
   _getEndByStart(start) {
@@ -295,8 +313,24 @@ Virtual.prototype = {
     return dataKeys.length > 0 ? dataKeys.length - 1 : keeps - 1;
   },
 
-  _getItemSize() {
-    return this.isFixed() ? this.calcSize.fixed : this.calcSize.average || this.options.size;
+  _getItemSize(node) {
+    return node[this.isHorizontal ? 'offsetWidth' : 'offsetHeight'];
+  },
+
+  _getEstimateSize() {
+    return this._isFixed() ? this.calcSize.fixed : this.calcSize.average || this.options.size;
+  },
+
+  _isFront() {
+    return this.direction === DIRECTION.FRONT;
+  },
+
+  _isBehind() {
+    return this.direction === DIRECTION.BEHIND;
+  },
+
+  _isFixed() {
+    return this.calcType === CACLTYPE.FIXED;
   },
 };
 
