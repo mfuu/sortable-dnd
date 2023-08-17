@@ -132,7 +132,6 @@ function Sortable(el, options) {
   el[expando] = this;
 
   this.el = el;
-  this.ownerDocument = el.ownerDocument;
   this.options = options = Object.assign({}, options);
 
   const defaults = {
@@ -141,7 +140,7 @@ function Sortable(el, options) {
     virtual: false,
     scroller: null,
 
-    dataKeys: '',
+    dataKeys: [],
     keeps: 30,
     size: null,
     headerSize: 0,
@@ -222,10 +221,7 @@ Sortable.prototype = {
     this.virtual.destroy();
     this._clearState();
 
-    this.el = null;
-    this.virtual = null;
-    this.animator = null;
-    this.multiplayer = null;
+    this.el = this.virtual = this.animator = this.multiplayer = null;
   },
 
   /** Get/Set option */
@@ -301,13 +297,7 @@ Sortable.prototype = {
     // get the position of the dragEl
     const rect = getRect(dragEl);
     const offset = getOffset(dragEl, this.el);
-    from = {
-      sortable: this,
-      group: parentEl,
-      node: dragEl,
-      rect,
-      offset,
-    };
+    from = { sortable: this, group: parentEl, node: dragEl, rect, offset };
     to.group = parentEl;
     to.sortable = this;
 
@@ -323,10 +313,10 @@ Sortable.prototype = {
     const { delay, delayOnTouchOnly } = this.options;
     if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
       for (let i = 0; i < events.end.length; i++) {
-        on(this.ownerDocument, events.end[i], this._cancelStart);
+        on(this.el.ownerDocument, events.end[i], this._cancelStart);
       }
       for (let i = 0; i < events.move.length; i++) {
-        on(this.ownerDocument, events.move[i], this._delayMoveHandler);
+        on(this.el.ownerDocument, events.move[i], this._delayMoveHandler);
       }
 
       dragStartTimer = setTimeout(() => this._onStart(touch), delay);
@@ -351,10 +341,10 @@ Sortable.prototype = {
     clearTimeout(dragStartTimer);
 
     for (let i = 0; i < events.end.length; i++) {
-      off(this.ownerDocument, events.end[i], this._cancelStart);
+      off(this.el.ownerDocument, events.end[i], this._cancelStart);
     }
     for (let i = 0; i < events.move.length; i++) {
-      off(this.ownerDocument, events.move[i], this._delayMoveHandler);
+      off(this.el.ownerDocument, events.move[i], this._delayMoveHandler);
     }
   },
 
@@ -448,7 +438,7 @@ Sortable.prototype = {
     if (dropEl) {
       if (dropEl === lastDropEl) return;
       lastDropEl = dropEl;
-      if (dropEl === cloneEl) return;
+      if (dropEl === cloneEl || dropEl === dragEl) return;
       if (dropEl.animated || containes(dropEl, cloneEl)) return;
     }
 

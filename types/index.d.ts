@@ -372,9 +372,19 @@ declare namespace Sortable {
 
   interface Virtual {
     /**
-     * Update the range value.
+     * Recalculate the range. The `onUpdate` will be triggered after the calculation is completed.
      */
     updateRange(): void;
+
+    /**
+     * Current scrolling direction is top/left.
+     */
+    isFront(): Boolean;
+
+    /**
+     * Current scrolling direction is down/right.
+     */
+    isBehind(): Boolean;
 
     /**
      * Git item size by data-key.
