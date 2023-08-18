@@ -1,3 +1,5 @@
+# sortable-dnd
+
 [![npm](https://img.shields.io/npm/v/sortable-dnd.svg)](https://www.npmjs.com/package/sortable-dnd)  [![npm](https://img.shields.io/npm/dm/sortable-dnd.svg)](https://npm-stat.com/charts.html?package=sortable-dnd)  [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
 
@@ -7,6 +9,11 @@ A JS Library for Drag and Drop, supports Sortable and Draggable
 ### [Live Demo](https://mfuu.github.io/sortable-dnd/)
 
 ## Usage
+
+**Install**
+```node
+npm install sortable-dnd --save
+```
 
 **HTML**
 ```html
@@ -33,7 +40,6 @@ import Sortable from 'sortable-dnd'
 var sortable = new Sortable(
   document.getElementById('group'),
   {
-    chosenClass: 'chosen',
     draggable: (e) => e.target.tagName === 'LI' ? true : false, // use function
     // draggable: 'li' // use tagName 
     // draggable: '.item' // use class
@@ -43,118 +49,10 @@ var sortable = new Sortable(
     // handle: 'I', // use tagName
     // handle: '.handle', // use class
     // handle: '#handle', // use id
-    onDrag: ({ from, event }) => {
-      // code
-    },
-    onMove: ({ from, event }) => {
-      // code
-    },
-    onDrop: ({ from, to, changed, event }) => {
-      // code
-    },
-    onAdd: ({ from, to, event }) => {
-      // code
-    },
-    onRemove: ({ from, to, event }) => {
-      // code
-    },
-    onChange: ({ from, to, event }) => {
-      // code
-    },
-    onSelect: (params) => {
-      // code
-    },
-    onDeselect: (params) => {
-      // code
-    }
+    chosenClass: 'chosen',
   }
 )
 ```
-
-## Virtual-list
-
-**HTML**
-```html
-<div id="scroller" class="scroller">
-  <ul id="container" class="container"></ul>
-</div>
-```
-
-**JavaScript**
-```js
-const scroller = document.getElementById("scroller");
-const container = document.getElementById("container");
-
-let sortable = new Sortable(container, {
-  // virtual options
-  scroller: scroller,
-  virtual: true,
-  keeps: 15,
-  dataKeys: getDataKeys(),
-  // common options
-  chosenClass: 'chosen',
-  selectedClass: 'selected',
-  onDrag: ({ from }) => {
-    // get the drag item's key by `from.node.dataset.key`
-    fromItemKey = from.node.dataset.key;
-  },
-  onDrop: ({ to, changed }) => {
-    if (!changed) return;
-    // executed only `changed === true`
-    // You should change the value of the source list in this method, something like:
-    `
-    let fromIndex = list.findIndex((item) => item["id"] == fromItemKey);
-    let fromItem = list[fromIndex];
-    let toItemKey = to.node.dataset.key;
-    let toIndex = list.findIndex((item) => item["id"] == toItemKey);
-    list.splice(fromIndex, 1);
-    list.splice(toIndex, 0, fromItem);
-    `
-    // update the `dataKeys` if the source list changed
-    `
-    sortable.option('dataKeys', getDataKeys());
-    `
-  },
-  onCreate: (range) => {
-    render(range);
-  },
-  onUpdate: (range) => {
-    const children = Array.from(container.children);
-    for (let i = 0; i < children.length; i++) {
-      // the ghost element can not be removed
-      if (children[i] !== Sortable.ghost) {
-        container.removeChild(children[i]);
-      }
-    }
-    render(range);
-  },
-});
-
-function getDataKeys() {
-  return list.map((item) => item["id"]);
-}
-
-function render(range) {
-  // render items by yourself
-  for (let i = range.start; i < range.end; i++) {
-    if (list[i]["id"] == fromItemKey) {
-      continue;
-    }
-    let li = document.createElement('li');
-    li.classList.add('list-item');
-    li.setAttribute('data-key', list[i]["id"]);
-    li.innerHTML = `<p>${list[i].desc}</p>`;
-    container.append(li);
-  }
-}
-```
-
-## Methods
-
-| **Method**   | **Description** |
-|--------------|--------------|
-| `destroy()`  | Manually clear all the state of the component, using this method the component will not be draggable |
-| `option(key, value?)` | Get or set the option value, depending on whether the `value` is passed in |
 
 
 ## Options
@@ -168,14 +66,14 @@ function render(range) {
 | `group`           | `String/Object`   | `-`         | string: 'name' or object: `{ name: 'group', put: true/false, pull: true/false }` |
 | `multiple`        | `Boolean`         | `false`     | Enable multiple drag |
 | `animation`       | `Number`          | `150`       | Animation speed moving items when sorting |
-| `onDrag`          | `Function`        | `-`         | The callback function when the drag is started |
-| `onMove`          | `Function`        | `-`         | The callback function when the dragged element is moving |
-| `onDrop`          | `Function`        | `-`         | The callback function when the drag is completed |
-| `onAdd`           | `Function`        | `-`         | The callback function when element is dropped into the list from another list |
-| `onRemove`        | `Function`        | `-`         | The callback function when element is removed from the list into another list |
-| `onChange`        | `Function`        | `-`         | The callback function when the dragged element changes position in the list |
-| `onSelect`        | `Function`        | `-`         | The callback function when element is selected |
-| `onDeselect`      | `Function`        | `-`         | The callback function when element is unselected |
+| `onDrag`          | `Function`        | `-`         | Triggered when drag is started |
+| `onMove`          | `Function`        | `-`         | Triggered when the dragged element is moving |
+| `onDrop`          | `Function`        | `-`         | Triggered when drag is completed |
+| `onAdd`           | `Function`        | `-`         | Triggered when the element is dropped into the list from another |
+| `onRemove`        | `Function`        | `-`         | Triggered when the element is removed from the list into another |
+| `onChange`        | `Function`        | `-`         | Triggered when the dragged element changes position in the list |
+| `onSelect`        | `Function`        | `-`         | Triggered when the element is selected |
+| `onDeselect`      | `Function`        | `-`         | Triggered when the element is unselected |
 
 
 **Virtual options**
@@ -189,6 +87,9 @@ function render(range) {
 | `size`            | `Number`          | `-`         | The estimated height of each piece of data |
 | `headerSize`      | `Number`          | `0`         | Top height value to be ignored |
 | `direction`       | `String`          | `vertical`  | `vertical/horizontal`, scroll direction |
+| `onScroll`        | `Function`        | `-`         | Triggered when the virtual list is scrolled |
+| `onCreate`        | `Function`        | `-`         | Triggered when the virual list created |
+| `onUpdate`        | `Function`        | `-`         | Triggered when the rendering parameters of the virtual list changed |
 
 
 **Others**
@@ -207,3 +108,51 @@ function render(range) {
 | `fallbackOnBody`  | `Boolean`         | `false`     | Appends the cloned DOM Element into the Document's Body |
 | `stopPropagation` | `Boolean`         | `false`     | The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases |
 | `swapOnDrop`      | `Boolean`         | `true`      | When the value is false, the dragged element will return to the starting position of the drag |
+
+
+## Methods
+
+```js
+var sortable = new Sortable(el);
+
+sortable.destroy() // Manually clear all the state of the component, using this method the component will not be draggable
+
+sortable.option(key, value?) // Get or set the option value, depending on whether the `value` is passed in
+
+sortable.getSelectedElements() // Get the selected elements in the list, the return value is available in the case of `multiple`
+
+sortable.virtual {
+  updateRange() // Recalculate the range. The `onUpdate` will be triggered after the calculation is completed
+  isFront() // Current scrolling direction is top/left
+  isBehind() // Current scrolling direction is down/right
+  getSize(dataKey: String | Number) // Git item size by data-key
+  getOffset() // Get the current scroll height/width
+  getClientSize() // Get client viewport size
+  getScrollSize() // Get the current scrolling distance
+  scrollToBottom() // Scroll to bottom of list
+  scrollToOffset(offset: Number) // Scroll to the specified offset
+  scrollToIndex(index: Number) // Scroll to the specified index position
+}
+```
+
+**Static methods & properties**
+
+```ts
+import Sortable from 'sortable-dnd';
+
+Sortable.create(el: HTMLElement, options: Options) // Create new instance
+
+Sortable.get(el: HTMLElement) // Get the Sortable instance of an element
+
+Sortable.dragged // The element being dragged
+
+Sortable.ghost // The ghost element
+
+Sortable.utils {
+  on(el:HTMLElement, event:String, fn:Function) // attach an event handler function
+  off(el:HTMLElement, event:String, fn:Function) // remove an event handler
+  css(el:HTMLElement, prop:String, value:String) // set one CSS properties
+  closest(element: HTMLElement, selector: string, context: HTMLElement, includeContext: Boolean) // For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
+  toggleClass(element: HTMLElement, name: string, state: boolean) // Add or remove one classes from each element
+}
+```

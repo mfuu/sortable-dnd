@@ -277,7 +277,7 @@ Virtual.prototype = {
     this.range.behind = this._getPadBehind();
 
     const padding = this.isHorizontal
-      ? `0px ${this.range.front} 0px ${this.range.behind}`
+      ? `0px ${this.range.behind}px 0px ${this.range.front}px`
       : `${this.range.front}px 0px ${this.range.behind}px`;
     css(this.sortable.el, 'padding', padding);
 

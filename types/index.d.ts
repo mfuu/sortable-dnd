@@ -11,23 +11,27 @@ declare class Sortable {
    */
   constructor(element: HTMLElement, options?: Sortable.Options);
 
-  /** The element being dragged. */
+  /**
+   * The element being dragged.
+   */
   static dragged: HTMLElement | null;
 
-  /** The ghost element.*/
+  /**
+   * The ghost element.
+   */
   static ghost: HTMLElement | null;
 
   static utils: Sortable.Utils;
 
   /**
-   * Create sortable instance
+   * Create sortable instance.
    * @param el
    * @param options
    */
   static create(el: HTMLElement, options: Options): void;
 
   /**
-   * Get the Sortable instance of an element
+   * Get the Sortable instance of an element.
    * @param el
    */
   static get(el: HTMLElement): Sortable | undefined;
@@ -143,7 +147,7 @@ declare namespace Sortable {
     group?: String | Group;
 
     /**
-     * Enable multi-drag
+     * Enable multi-drag.
      * @defaults `false`
      */
     multiple?: Boolean;
@@ -269,64 +273,64 @@ declare namespace Sortable {
     ghostClass?: String;
 
     /**
-     * The callback function when the drag is started.
+     * Triggered when the drag is started.
      */
     onDrag?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
     /**
-     * The callback function when the dragged element is moving.
+     * Triggered when the dragged element is moving.
      */
     onMove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
     /**
-     * The callback function when the drag is completed.
+     * Triggered when the drag is completed.
      */
     onDrop?: (params: { from: FromTo; to: FromTo; event: EventType; changed: Boolean }) => void;
 
     /**
-     * The callback function when element is dropped into the current list from another list.
+     * Triggered when element is dropped into the current list from another.
      */
     onAdd?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
     /**
-     * The callback function when element is removed from the current list into another list.
+     * Triggered when element is removed from the current list into another.
      */
     onRemove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
     /**
-     * The callback function when the dragged element changes position in the current list.
+     * Triggered when the dragged element changes position in the current list.
      */
     onChange?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
 
     /**
-     * The callback function when element is selected.
+     * Triggered when element is selected.
      */
     onSelect?: (params: Select) => void;
 
     /**
-     * The callback function when element is unselected.
+     * Triggered when element is unselected.
      */
     onDeselect?: (params: Select) => void;
 
     /**
-     * The callback function when the virtual list is scrolled.
+     * Triggered when the virtual list is scrolled.
      */
     onScroll?: (params: ScrollState) => void;
 
     /**
-     * The callback function when the virual list created.
+     * Triggered when the virual list created.
      */
     onCreate?: (params: Range) => void;
 
     /**
-     * The callback function when the rendering parameters of the virtual list change.
+     * Triggered when the rendering parameters of the virtual list change.
      */
     onUpdate?: (params: Range) => void;
   }
 
   interface Utils {
     /**
-     * Attach an event handler function
+     * Attach an event handler function.
      * @param element an HTMLElement.
      * @param event an Event context.
      * @param fn
@@ -334,7 +338,7 @@ declare namespace Sortable {
     on(element: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
 
     /**
-     * Remove an event handler function
+     * Remove an event handler function.
      * @param element an HTMLElement.
      * @param event an Event context.
      * @param fn a callback.
@@ -358,11 +362,17 @@ declare namespace Sortable {
      * @param element an HTMLElement.
      * @param selector an element seletor.
      * @param context a specific element's context.
+     * @param includeContext whether to add `context` to comparison
      */
-    closest(element: HTMLElement, selector: string, context?: HTMLElement): HTMLElement | null;
+    closest(
+      element: HTMLElement,
+      selector: string,
+      context: HTMLElement,
+      includeContext: Boolean
+    ): HTMLElement | null;
 
     /**
-     * Add or remove one classes from each element
+     * Add or remove one classes from each element.
      * @param element an HTMLElement.
      * @param name a class name.
      * @param state a class's state.
@@ -398,7 +408,7 @@ declare namespace Sortable {
     getOffset(): Number;
 
     /**
-     * Get client viewport size
+     * Get client viewport size.
      */
     getClientSize(): Number;
 
@@ -408,7 +418,7 @@ declare namespace Sortable {
     getScrollSize(): Number;
 
     /**
-     * Scroll to bottom of list
+     * Scroll to bottom of list.
      */
     scrollToBottom(): void;
 
