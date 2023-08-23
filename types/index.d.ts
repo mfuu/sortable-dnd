@@ -335,7 +335,7 @@ declare namespace Sortable {
      * @param event an Event context.
      * @param fn
      */
-    on(element: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
+    on(element: HTMLElement, event: String, fn: EventListenerOrEventListenerObject): void;
 
     /**
      * Remove an event handler function.
@@ -343,7 +343,7 @@ declare namespace Sortable {
      * @param event an Event context.
      * @param fn a callback.
      */
-    off(element: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
+    off(element: HTMLElement, event: String, fn: EventListenerOrEventListenerObject): void;
 
     /**
      * Set one CSS property.
@@ -366,7 +366,7 @@ declare namespace Sortable {
      */
     closest(
       element: HTMLElement,
-      selector: string,
+      selector: String,
       context: HTMLElement,
       includeContext: Boolean
     ): HTMLElement | null;
@@ -377,7 +377,7 @@ declare namespace Sortable {
      * @param name a class name.
      * @param state a class's state.
      */
-    toggleClass(element: HTMLElement, name: string, state: boolean): void;
+    toggleClass(element: HTMLElement, name: String, state: Boolean): void;
   }
 
   interface Virtual {
