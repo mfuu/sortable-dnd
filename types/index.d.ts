@@ -79,6 +79,7 @@ declare namespace Sortable {
   export interface Range {
     start: Number;
     end: Number;
+    size: Number;
     padFront: Number;
     padBehind: Number;
   }

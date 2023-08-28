@@ -8,6 +8,7 @@ const CACLTYPE = {
 };
 
 const DIRECTION = {
+  FIXED: 'FIXED',
   FRONT: 'FRONT',
   BEHIND: 'BEHIND',
 };
@@ -34,7 +35,7 @@ function Virtual(sortable) {
   this.calcType = CACLTYPE.INIT;
   this.calcSize = { average: 0, total: 0, fixed: 0 };
 
-  this.range = { start: 0, end: 0, front: 0, behind: 0 };
+  this.range = { start: 0, end: 0, size: 0, front: 0, behind: 0 };
 
   this.buffer = Math.round(this.options.keeps / 3);
   this.isHorizontal = this.options.direction !== 'vertical';
@@ -99,8 +100,8 @@ Virtual.prototype = {
   },
 
   scrollToBottom() {
-    const scrollSize = this.getScrollSize();
-    this.scrollToOffset(scrollSize);
+    const bottomOffset = this.getScrollSize();
+    this.scrollToOffset(bottomOffset);
 
     // if the bottom is not reached, execute the scroll method again
     setTimeout(() => {
@@ -152,6 +153,7 @@ Virtual.prototype = {
         const node = mutationsList[i].addedNodes[0];
         if (!node) continue;
         const dataKey = node.dataset.key;
+        if (!dataKey) continue;
         const size = this._getItemSize(node);
         this._handleItemResized(dataKey, size);
       }
@@ -191,7 +193,12 @@ Virtual.prototype = {
       return;
     }
 
-    this.direction = offset < this.offset || offset === 0 ? DIRECTION.FRONT : DIRECTION.BEHIND;
+    if (this.offset === offset) {
+      this.direction = DIRECTION.FIXED;
+    } else {
+      this.direction = offset < this.offset ? DIRECTION.FRONT : DIRECTION.BEHIND;
+    }
+
     this.offset = offset;
 
     const params = { offset, top: false, bottom: false };
@@ -275,11 +282,7 @@ Virtual.prototype = {
     this.range.end = end;
     this.range.front = this._getPadFront();
     this.range.behind = this._getPadBehind();
-
-    const padding = this.isHorizontal
-      ? `0px ${this.range.behind}px 0px ${this.range.front}px`
-      : `${this.range.front}px 0px ${this.range.behind}px`;
-    css(this.sortable.el, 'padding', padding);
+    this.range.size = this._getRenderSize() + this.range.front + this.range.behind;
 
     const eventName = this.renderState === CACLTYPE.INIT ? 'onCreate' : 'onUpdate';
     this.sortable._dispatchEvent(eventName, { ...this.range });
@@ -303,6 +306,19 @@ Virtual.prototype = {
     }
 
     return (last - end) * this._getEstimateSize();
+  },
+
+  _getRenderSize() {
+    const { dataKeys } = this.options;
+
+    let offset = 0;
+
+    for (let i = this.range.start; i <= this.range.end; i++) {
+      const size = this.sizes.get(dataKeys[i]);
+      offset = offset + (typeof size === 'number' ? size : this._getEstimateSize());
+    }
+
+    return offset;
   },
 
   _getOffsetByIndex(index) {
