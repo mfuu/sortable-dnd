@@ -79,9 +79,9 @@ declare namespace Sortable {
   export interface Range {
     start: Number;
     end: Number;
-    size: Number;
-    padFront: Number;
-    padBehind: Number;
+    front: Number;
+    behind: Number;
+    render: Number;
   }
 
   export interface ScrollState {
@@ -383,7 +383,7 @@ declare namespace Sortable {
 
   interface Virtual {
     /**
-     * Recalculate the range. The `onUpdate` will be triggered after the calculation is completed.
+     * Recalculate the range. The callback function `onUpdate` will be triggered after the calculation is completed.
      */
     updateRange(): void;
 

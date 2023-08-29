@@ -1,4 +1,4 @@
-import { on, off, css, isHTMLElement } from '../utils';
+import { on, off, isHTMLElement } from '../utils';
 
 const CACLTYPE = {
   DOWN: 'DOWN',
@@ -17,10 +17,11 @@ const LEADING_BUFFER = 2;
 
 function Virtual(sortable) {
   if (!sortable.options.virtual) return;
-  if (!isHTMLElement(sortable.options.scroller)) {
-    throw `Sortable: \`scroller\` must be an HTMLElement, not ${{}.toString.call(
-      sortable.options.scroller
-    )}`;
+
+  const { scroller } = sortable.options;
+
+  if (!isHTMLElement(scroller)) {
+    throw `Sortable: \`scroller\` must be an HTMLElement, not ${{}.toString.call(scroller)}`;
   }
 
   this.sortable = sortable;
@@ -35,10 +36,9 @@ function Virtual(sortable) {
   this.calcType = CACLTYPE.INIT;
   this.calcSize = { average: 0, total: 0, fixed: 0 };
 
-  this.range = { start: 0, end: 0, size: 0, front: 0, behind: 0 };
+  this.range = { start: 0, end: 0, render: 0, front: 0, behind: 0 };
 
   this.buffer = Math.round(this.options.keeps / 3);
-  this.isHorizontal = this.options.direction !== 'vertical';
 
   // Bind all private methods
   for (let fn in this) {
@@ -47,9 +47,9 @@ function Virtual(sortable) {
     }
   }
 
-  on(this.options.scroller, 'scroll', this._handleScroll);
+  on(scroller, 'scroll', this._onScroll);
 
-  this._observe();
+  this._onObserve();
   this.updateRange();
 }
 
@@ -58,7 +58,7 @@ Virtual.prototype = {
 
   destroy() {
     this.mutationObserver.disconnect();
-    off(this.options.scroller, 'scroll', this._handleScroll);
+    off(this.options.scroller, 'scroll', this._onScroll);
   },
 
   isFront() {
@@ -74,19 +74,19 @@ Virtual.prototype = {
   },
 
   getOffset() {
-    return this.options.scroller[this.isHorizontal ? 'scrollLeft' : 'scrollTop'];
+    return this.options.scroller[this._isHorizontal() ? 'scrollLeft' : 'scrollTop'];
   },
 
   getClientSize() {
-    return this.options.scroller[this.isHorizontal ? 'clientWidth' : 'clientHeight'];
+    return this.options.scroller[this._isHorizontal() ? 'clientWidth' : 'clientHeight'];
   },
 
   getScrollSize() {
-    return this.options.scroller[this.isHorizontal ? 'scrollWidth' : 'scrollHeight'];
+    return this.options.scroller[this._isHorizontal() ? 'scrollWidth' : 'scrollHeight'];
   },
 
   scrollToOffset(offset) {
-    const scrollKey = this.isHorizontal ? 'scrollLeft' : 'scrollTop';
+    const scrollKey = this._isHorizontal() ? 'scrollLeft' : 'scrollTop';
     this.options.scroller[scrollKey] = offset;
   },
 
@@ -124,7 +124,7 @@ Virtual.prototype = {
 
     start = Math.max(start, 0);
 
-    this._handleUpdate(start, this._getEndByStart(start));
+    this._onUpdate(start, this._getEndByStart(start));
   },
 
   updateOption(key, value) {
@@ -141,11 +141,7 @@ Virtual.prototype = {
     }
   },
 
-  _isFixed() {
-    return this.calcType === CACLTYPE.FIXED;
-  },
-
-  _observe() {
+  _onObserve() {
     const config = { attributes: false, childList: true, subtree: true };
 
     this.mutationObserver = new MutationObserver((mutationsList) => {
@@ -155,7 +151,7 @@ Virtual.prototype = {
         const dataKey = node.dataset.key;
         if (!dataKey) continue;
         const size = this._getItemSize(node);
-        this._handleItemResized(dataKey, size);
+        this._onItemResized(dataKey, size);
       }
       if (this.renderState === CACLTYPE.INIT) {
         this.renderState = CACLTYPE.DOWN;
@@ -166,7 +162,7 @@ Virtual.prototype = {
     this.mutationObserver.observe(this.sortable.el, config);
   },
 
-  _handleItemResized(key, size) {
+  _onItemResized(key, size) {
     this.sizes.set(key, size);
 
     if (this.calcType === CACLTYPE.INIT) {
@@ -183,7 +179,7 @@ Virtual.prototype = {
     }
   },
 
-  _handleScroll() {
+  _onScroll() {
     const offset = this.getOffset();
     const clientSize = this.getClientSize();
     const scrollSize = this.getScrollSize();
@@ -204,17 +200,17 @@ Virtual.prototype = {
     const params = { offset, top: false, bottom: false };
 
     if (this.isFront()) {
-      params.top = offset <= 0;
-      this._handleScrollFront();
+      params.top = !!this.options.dataKeys.length && offset <= 0;
+      this._onScrollFront();
     } else if (this.isBehind()) {
       params.bottom = clientSize + offset + 1 >= scrollSize;
-      this._handleScrollBehind();
+      this._onScrollBehind();
     }
 
     this.sortable._dispatchEvent('onScroll', params);
   },
 
-  _handleScrollFront() {
+  _onScrollFront() {
     const scrolls = this._getScrollItems();
     if (scrolls > this.range.start) {
       return;
@@ -223,7 +219,7 @@ Virtual.prototype = {
     this._checkIfUpdate(start, this._getEndByStart(start));
   },
 
-  _handleScrollBehind() {
+  _onScrollBehind() {
     const scrolls = this._getScrollItems();
     if (scrolls < this.range.start + this.buffer) {
       return;
@@ -273,16 +269,16 @@ Virtual.prototype = {
     }
 
     if (this.range.start !== start) {
-      this._handleUpdate(start, end);
+      this._onUpdate(start, end);
     }
   },
 
-  _handleUpdate(start, end) {
+  _onUpdate(start, end) {
     this.range.start = start;
     this.range.end = end;
     this.range.front = this._getPadFront();
     this.range.behind = this._getPadBehind();
-    this.range.size = this._getRenderSize() + this.range.front + this.range.behind;
+    this.range.render = this._getOffsetByRange(start, end + 1);
 
     const eventName = this.renderState === CACLTYPE.INIT ? 'onCreate' : 'onUpdate';
     this.sortable._dispatchEvent(eventName, { ...this.range });
@@ -308,30 +304,25 @@ Virtual.prototype = {
     return (last - end) * this._getEstimateSize();
   },
 
-  _getRenderSize() {
-    const { dataKeys } = this.options;
-
-    let offset = 0;
-
-    for (let i = this.range.start; i <= this.range.end; i++) {
-      const size = this.sizes.get(dataKeys[i]);
-      offset = offset + (typeof size === 'number' ? size : this._getEstimateSize());
-    }
-
-    return offset;
-  },
-
   _getOffsetByIndex(index) {
     if (!index) {
       return 0;
     }
 
-    const { headerSize, dataKeys } = this.options;
+    const { headerSize } = this.options;
+    const offset = this._getOffsetByRange(0, index);
 
-    let offset = headerSize;
-    for (let i = 0; i < index; i++) {
+    return headerSize + offset;
+  },
+
+  _getOffsetByRange(start, end) {
+    const { dataKeys } = this.options;
+    const estimateSize = this._getEstimateSize();
+
+    let offset = 0;
+    for (let i = start; i < end; i++) {
       const size = this.sizes.get(dataKeys[i]);
-      offset = offset + (typeof size === 'number' ? size : this._getEstimateSize());
+      offset = offset + (size || estimateSize);
     }
 
     return offset;
@@ -347,11 +338,19 @@ Virtual.prototype = {
   },
 
   _getItemSize(node) {
-    return node[this.isHorizontal ? 'offsetWidth' : 'offsetHeight'];
+    return node[this._isHorizontal() ? 'offsetWidth' : 'offsetHeight'];
   },
 
   _getEstimateSize() {
     return this._isFixed() ? this.calcSize.fixed : this.calcSize.average || this.options.size;
+  },
+
+  _isFixed() {
+    return this.calcType === CACLTYPE.FIXED;
+  },
+
+  _isHorizontal() {
+    return this.options.direction !== 'vertical';
   },
 };
 
