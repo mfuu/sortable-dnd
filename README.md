@@ -75,15 +75,6 @@ new Sortable(element, {
   fallbackOnBody: false, // Appends the ghost element into the document's body
   swapOnDrop: true, // When the value is false, the dragged element will return to the starting position of the drag
 
-  // virtual list options
-  virtual: false, // Support for virtual lists if set to `true`
-  scroller: null, // Virtual list scrolling element
-  dataKeys: [], // The unique key values of all items in the list
-  keeps: 30, // The number of lines rendered by the virtual scroll
-  size: null, // The estimated height of each piece of data
-  headerSize: 0, // Top height value to be ignored
-  direction: 'vertical', // `vertical/horizontal`, scroll direction
-
   // callback functions
   onDrag: ({ from, event }) => {
     // Triggered when drag is started
@@ -109,8 +100,29 @@ new Sortable(element, {
   onDeselect: (params) => {
     // Triggered when an element is unselected by clicking the mouse
   },
+})
+```
 
-  // virtual list callback functions
+**Virtual List Options**
+
+```js
+new Sortable(element, {
+  ...
+  
+  virtual: false, // Support for virtual lists if set to `true`
+  scroller: null, // Virtual list scrolling element
+  dataKeys: [], // The unique key values of all items in the list
+  keeps: 30, // The number of lines rendered by the virtual scroll
+  size: null, // The estimated height of each piece of data
+  headerSize: 0, // Top height value to be ignored
+  direction: 'vertical', // `vertical/horizontal`, scroll direction
+
+  onCreate: (range) => {
+    // Triggered when the virual list created
+  },
+  onUpdate: (range) => {
+    // Triggered when the rendering parameters of the virtual list changed
+  },
   onScroll: ({ offset, top, bottom }) => {
     // Triggered when the virtual list scroller is scrolled
     if (top === true) {
@@ -120,12 +132,6 @@ new Sortable(element, {
       // scrolled to the bottom of list
     }
   },
-  onCreate: (range) => {
-    // Triggered when the virual list created
-  },
-  onUpdate: (range) => {
-    // Triggered when the rendering parameters of the virtual list changed
-  }
 })
 ```
 
@@ -134,45 +140,45 @@ new Sortable(element, {
 
 ```js
 var sortable = new Sortable(el);
-
-sortable.destroy() // Manually clear all the state of the component, using this method the component will not be draggable
-
-sortable.option(key, value?) // Get or set the option value, depending on whether the `value` is passed in
-
-sortable.getSelectedElements() // Get the selected elements in the list, the return value is available in the case of `multiple`
-
-sortable.virtual {
-  updateRange(), // Recalculate the range. The `onUpdate` will be triggered after the calculation is completed
-  isFront(), // Current scrolling direction is top/left
-  isBehind(), // Current scrolling direction is down/right
-  getSize(dataKey: String | Number), // Git item size by data-key
-  getOffset(), // Get the current scroll height/width
-  getClientSize(), // Get client viewport size
-  getScrollSize(), // Get the current scrolling distance
-  scrollToBottom(), // Scroll to bottom of list
-  scrollToOffset(offset: Number), // Scroll to the specified offset
-  scrollToIndex(index: Number), // Scroll to the specified index position
-}
 ```
 
-**Static methods & properties**
+```js
+sortable.destroy(); // Manually clear all the state of the component, using this method the component will not be draggable
+
+sortable.option(key, value?); // Get or set the option value, depending on whether the `value` is passed in
+
+sortable.getSelectedElements(); // Get the selected elements in the list, the return value is available in the case of `multiple`
+
+sortable.virtual.updateRange(); // Recalculate the range. The `onUpdate` will be triggered after the calculation is completed
+sortable.virtual.isFront(); // Current scrolling direction is top/left
+sortable.virtual.isBehind(); // Current scrolling direction is down/right
+sortable.virtual.getSize(dataKey: String | Number); // Git item size by data-key
+sortable.virtual.getOffset(); // Get the current scroll height/width
+sortable.virtual.getClientSize(); // Get client viewport size
+sortable.virtual.getScrollSize(); // Get the current scrolling distance
+sortable.virtual.scrollToBottom(); // Scroll to bottom of list
+sortable.virtual.scrollToOffset(offset: Number); // Scroll to the specified offset
+sortable.virtual.scrollToIndex(index: Number); // Scroll to the specified index position
+```
+
+**Static Methods & Properties**
 
 ```js
 import Sortable from 'sortable-dnd';
+```
 
-Sortable.create(el: HTMLElement, options: Options) // Create new instance
+```js
+Sortable.create(el: HTMLElement, options: Options); // Create new instance
 
-Sortable.get(el: HTMLElement) // Get the Sortable instance of an element
+Sortable.get(el: HTMLElement); // Get the Sortable instance of an element
 
-Sortable.dragged // The element being dragged
+Sortable.dragged; // The element being dragged
 
-Sortable.ghost // The ghost element
+Sortable.ghost; // The ghost element
 
-Sortable.utils {
-  on(el: HTMLElement, event: String, fn: Function), // attach an event handler function
-  off(el: HTMLElement, event: String, fn: Function), // remove an event handler
-  css(el: HTMLElement, prop: String, value: String), // set one CSS properties
-  closest(element: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean), // For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
-  toggleClass(element: HTMLElement, name: String, state: Boolean), // Add or remove one classes from each element
-}
+Sortable.utils.on(el: HTMLElement, event: String, fn: Function); // attach an event handler function
+Sortable.utils.off(el: HTMLElement, event: String, fn: Function); // remove an event handler
+Sortable.utils.css(el: HTMLElement, prop: String, value: String); // set one CSS properties
+Sortable.utils.closest(element: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean); // For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
+Sortable.utils.toggleClass(element: HTMLElement, name: String, state: Boolean); // Add or remove one classes from each element
 ```
