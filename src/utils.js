@@ -420,6 +420,19 @@ export function css(el, prop, val) {
 }
 
 /**
+ * Check if the mouse pointer is within an element
+ */
+export function within(event, element, rect) {
+  rect = rect || getRect(element);
+  return (
+    event.clientX <= rect.right &&
+    event.clientX >= rect.left &&
+    event.clientY >= rect.top &&
+    event.clientY <= rect.bottom
+  );
+}
+
+/**
  * Check whether the front and rear positions are consistent
  */
 export function offsetChanged(o1, o2) {

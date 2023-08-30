@@ -43,13 +43,13 @@ AutoScroll.prototype = {
 
     const { clientX, clientY } = evt;
     const { top, right, bottom, left, height, width } = rect;
-    const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
 
     if (clientY < top || clientX > right || clientY > bottom || clientX < left) {
       return;
     }
 
     const { scrollThreshold, scrollSpeed } = this.options;
+    const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
 
     // check direction
     const toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;

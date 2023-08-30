@@ -2,6 +2,7 @@ import {
   on,
   off,
   css,
+  within,
   events,
   visible,
   expando,
@@ -40,6 +41,7 @@ let rootEl,
   dragEl,
   dropEl,
   cloneEl,
+  parentEl,
   downEvent,
   moveEvent,
   isMultiple,
@@ -285,11 +287,11 @@ Sortable.prototype = {
   },
 
   _prepareStart: function (touch, event) {
-    const parentEl = dragEl.parentNode;
+    parentEl = dragEl.parentNode;
 
     downEvent = event;
     downEvent.sortable = this;
-    downEvent.group = dragEl.parentNode;
+    downEvent.group = parentEl;
 
     isMultiple = this.options.multiple && this.multiplayer.allowDrag(dragEl);
 
@@ -433,6 +435,8 @@ Sortable.prototype = {
 
     this._dispatchEvent('onMove', { ..._emits(), event });
 
+    if (within(event, parentEl) && target === parentEl) return;
+
     rootEl = this.el;
     dropEl = closest(target, this.options.draggable, rootEl, false);
 
@@ -456,9 +460,9 @@ Sortable.prototype = {
 
   _onInsert: function (/** Event|TouchEvent */ event, insertToLast) {
     const target = insertToLast ? cloneEl : dropEl;
-    const parentEl = insertToLast ? rootEl : dropEl.parentNode;
+    parentEl = insertToLast ? rootEl : dropEl.parentNode;
 
-    from.sortable.animator.collect(cloneEl, null, cloneEl.parentNode, cloneEl);
+    from.sortable.animator.collect(cloneEl, null, from.group, cloneEl);
     this.animator.collect(null, target, parentEl, cloneEl);
 
     isMultiple && this.multiplayer.onChange(cloneEl, this);
@@ -489,7 +493,7 @@ Sortable.prototype = {
   },
 
   _onChange: function (/** Event|TouchEvent */ event) {
-    const parentEl = dropEl.parentNode;
+    parentEl = dropEl.parentNode;
 
     this.animator.collect(cloneEl, dropEl, parentEl);
 
@@ -538,7 +542,7 @@ Sortable.prototype = {
 
   _onEnd: function (/** Event|TouchEvent */ evt) {
     if (this.options.swapOnDrop) {
-      cloneEl.parentNode.insertBefore(dragEl, cloneEl);
+      parentEl.insertBefore(dragEl, cloneEl);
     }
 
     from.group = downEvent.group;
@@ -564,7 +568,7 @@ Sortable.prototype = {
     }
 
     visible(dragEl, true);
-    cloneEl.parentNode.removeChild(cloneEl);
+    parentEl.removeChild(cloneEl);
     Safari && css(document.body, 'user-select', '');
   },
 
@@ -588,6 +592,7 @@ Sortable.prototype = {
     dragEl =
       dropEl =
       cloneEl =
+      parentEl =
       downEvent =
       moveEvent =
       isMultiple =
