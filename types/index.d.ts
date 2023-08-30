@@ -90,6 +90,11 @@ declare namespace Sortable {
     bottom: Boolean;
   }
 
+  export interface ScrollSpeed {
+    x: Number;
+    y: Number;
+  }
+
   interface SortableState {
     sortable: Sortable;
     group: HTMLElement;
@@ -218,6 +223,12 @@ declare namespace Sortable {
      * @defaults `25`
      */
     scrollThreshold?: Number;
+
+    /**
+     * Horizontal/Vertical scrolling speed (px)
+     * @defaults `{ x: 10, y: 10 }`
+     */
+    scrollSpeed?: ScrollSpeed;
 
     /**
      * Time in milliseconds to define when the sorting should start.

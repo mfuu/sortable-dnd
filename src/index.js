@@ -45,8 +45,7 @@ let rootEl,
   isMultiple,
   lastDropEl,
   dragStartTimer,
-  helper = new Helper(),
-  autoScroller = new AutoScroll();
+  helper = new Helper();
 
 let from = { ...FromTo };
 let to = { ...FromTo };
@@ -156,6 +155,7 @@ function Sortable(el, options) {
 
     autoScroll: true,
     scrollThreshold: 55,
+    scrollSpeed: { x: 10, y: 10 },
 
     delay: 0,
     delayOnTouchOnly: false,
@@ -198,6 +198,7 @@ function Sortable(el, options) {
 
   sortables.push(el);
 
+  this.autoScroller = new AutoScroll(this.options);
   this.multiplayer = new Multiple(this.options);
   this.animator = new Animation(this.options);
   this.virtual = new Virtual(this);
@@ -409,9 +410,9 @@ Sortable.prototype = {
 
   _autoScroll: function (target) {
     const scrollEl = getParentAutoScrollElement(target, true);
-    const { autoScroll, scrollThreshold } = this.options;
+    const { autoScroll } = this.options;
     if (autoScroll) {
-      autoScroller.update(scrollEl, scrollThreshold, downEvent, moveEvent);
+      this.autoScroller.update(scrollEl, downEvent, moveEvent);
     }
   },
 
@@ -524,7 +525,7 @@ Sortable.prototype = {
     this._unbindDropEvents();
     this._preventEvent(evt);
     this._cancelStart();
-    autoScroller.clear();
+    this.autoScroller.clear();
 
     if (dragEl && downEvent && moveEvent) {
       this._onEnd(evt);

@@ -11,9 +11,9 @@ if (!window.cancelAnimationFrame) {
   };
 }
 
-function AutoScroll() {
+function AutoScroll(options) {
+  this.options = options;
   this.autoScrollAnimationFrame = null;
-  this.speed = { x: 10, y: 10 };
 }
 
 AutoScroll.prototype = {
@@ -25,30 +25,31 @@ AutoScroll.prototype = {
     this.autoScrollAnimationFrame = null;
   },
 
-  update(scrollEl, scrollThreshold, downEvent, moveEvent) {
+  update(scrollEl, downEvent, moveEvent) {
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = requestAnimationFrame(() => {
       if (downEvent && moveEvent) {
-        this.autoScroll(scrollEl, scrollThreshold, moveEvent);
+        this.autoScroll(scrollEl, moveEvent);
       }
-      this.update(scrollEl, scrollThreshold, downEvent, moveEvent);
+      this.update(scrollEl, downEvent, moveEvent);
     });
   },
 
-  autoScroll(scrollEl, scrollThreshold, evt) {
-    if (!scrollEl) return;
-    const { clientX, clientY } = evt;
-    if (clientX === void 0 || clientY === void 0) return;
+  autoScroll(scrollEl, evt) {
+    if (!scrollEl || evt.clientX === void 0 || evt.clientY === void 0) return;
 
     const rect = getRect(scrollEl);
     if (!rect) return;
 
-    const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
+    const { clientX, clientY } = evt;
     const { top, right, bottom, left, height, width } = rect;
+    const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
 
     if (clientY < top || clientX > right || clientY > bottom || clientX < left) {
       return;
     }
+
+    const { scrollThreshold, scrollSpeed } = this.options;
 
     // check direction
     const toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
@@ -62,16 +63,16 @@ AutoScroll.prototype = {
       scrolly = 0;
 
     if (toLeft) {
-      scrollx = Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * this.speed.x);
+      scrollx = Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * scrollSpeed.x);
     }
     if (toRight) {
-      scrollx = Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * this.speed.x);
+      scrollx = Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * scrollSpeed.x);
     }
     if (toTop) {
-      scrolly = Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * this.speed.y);
+      scrolly = Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * scrollSpeed.y);
     }
     if (toBottom) {
-      scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * this.speed.y);
+      scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * scrollSpeed.y);
     }
 
     if (scrolly) {
