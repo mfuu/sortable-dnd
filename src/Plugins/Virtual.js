@@ -16,6 +16,9 @@ const DIRECTION = {
 const LEADING_BUFFER = 2;
 
 function Virtual(sortable) {
+  this.sortable = sortable;
+  this.options = sortable.options;
+
   if (!sortable.options.virtual) return;
 
   const { scroller } = sortable.options;
@@ -24,20 +27,13 @@ function Virtual(sortable) {
     throw `Sortable: \`scroller\` must be an HTMLElement, not ${{}.toString.call(scroller)}`;
   }
 
-  this.sortable = sortable;
-  this.options = sortable.options;
-
   this.offset = 0;
   this.direction = '';
   this.sizes = new Map(); // store item size
-
   this.renderState = CACLTYPE.INIT;
-
   this.calcType = CACLTYPE.INIT;
   this.calcSize = { average: 0, total: 0, fixed: 0 };
-
   this.range = { start: 0, end: 0, render: 0, front: 0, behind: 0 };
-
   this.buffer = Math.round(this.options.keeps / 3);
 
   // Bind all private methods
@@ -350,7 +346,7 @@ Virtual.prototype = {
   },
 
   _isHorizontal() {
-    return this.options.direction !== 'vertical';
+    return this.sortable.getDirection() !== 'vertical';
   },
 };
 

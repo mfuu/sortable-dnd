@@ -12,6 +12,11 @@ declare class Sortable {
   constructor(element: HTMLElement, options?: Sortable.Options);
 
   /**
+   * Active Sortable instance.
+   */
+  static active: Sortable | null;
+
+  /**
    * The element being dragged.
    */
   static dragged: HTMLElement | null;

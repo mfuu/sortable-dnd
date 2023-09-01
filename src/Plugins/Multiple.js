@@ -6,7 +6,6 @@ import {
   toggleClass,
   sortByOffset,
   offsetChanged,
-  sortableChanged,
 } from '../utils';
 
 const multiFromTo = { sortable: null, nodes: [] };
@@ -119,7 +118,7 @@ Multiple.prototype = {
     });
   },
 
-  onDrop(event, dragEl, rootEl, downEvent, _emits) {
+  onDrop(event, dragEl, rootEl, downEvent, getEmits) {
     multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
     const index = selectedElements[this.groupName].indexOf(dragEl);
@@ -139,11 +138,11 @@ Multiple.prototype = {
       return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
     });
 
-    const ctxChanged = sortableChanged(multiFrom, multiTo);
-    const changed = ctxChanged || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
-    const params = { ..._emits(), changed, event };
+    const sortableChanged = multiFrom.sortable.el !== multiTo.sortable.el;
+    const changed = sortableChanged || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
+    const params = { ...getEmits(), changed, event };
 
-    if (ctxChanged) {
+    if (sortableChanged) {
       multiFrom.sortable._dispatchEvent('onDrop', params);
     }
     multiTo.sortable._dispatchEvent('onDrop', params);

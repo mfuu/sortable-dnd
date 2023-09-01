@@ -1,3 +1,5 @@
+import Sortable from './index.js';
+
 const captureMode = {
   capture: false,
   passive: false,
@@ -359,6 +361,87 @@ export function lastChild(el, helper, selector) {
 }
 
 /**
+ * Gets nth child of el, ignoring hidden children, sortable's elements (does not ignore clone if it's visible)
+ * and non-draggable elements
+ * @param  {HTMLElement} el       The parent element
+ * @param  {Number} childNum      The index of the child
+ * @param  {Object} draggable     Sortable's draggable option
+ * @return {HTMLElement}          The child at index childNum, or null if not found
+ */
+export function getChild(el, childNum, draggable, includeDragEl) {
+  let currentChild = 0,
+    i = 0,
+    children = el.children;
+
+  while (i < children.length) {
+    if (
+      children[i].style.display !== 'none' &&
+      children[i] !== Sortable.ghost &&
+      (includeDragEl || children[i] !== Sortable.dragged) &&
+      closest(children[i], draggable, el, false)
+    ) {
+      if (currentChild === childNum) {
+        return children[i];
+      }
+      currentChild++;
+    }
+
+    i++;
+  }
+  return null;
+}
+
+// https://github.com/SortableJS/Sortable/blob/c5a882267542456d75b16d000dc1b603a907613a/src/Sortable.js#L161
+export function detectDirection(el, draggable) {
+  let elCSS = css(el),
+    elWidth =
+      parseInt(elCSS.width) -
+      parseInt(elCSS.paddingLeft) -
+      parseInt(elCSS.paddingRight) -
+      parseInt(elCSS.borderLeftWidth) -
+      parseInt(elCSS.borderRightWidth),
+    child1 = getChild(el, 0, draggable),
+    child2 = getChild(el, 1, draggable),
+    child1CSS = child1 && css(child1),
+    child2CSS = child2 && css(child2),
+    child1Width =
+      child1CSS &&
+      parseInt(child1CSS.marginLeft) + parseInt(child1CSS.marginRight) + getRect(child1).width,
+    child2Width =
+      child2CSS &&
+      parseInt(child2CSS.marginLeft) + parseInt(child2CSS.marginRight) + getRect(child2).width,
+    CSSFloatProperty = Edge || IE11OrLess ? 'cssFloat' : 'float';
+
+  if (elCSS.display === 'flex') {
+    return elCSS.flexDirection === 'column' || elCSS.flexDirection === 'column-reverse'
+      ? 'vertical'
+      : 'horizontal';
+  }
+
+  if (elCSS.display === 'grid') {
+    return elCSS.gridTemplateColumns.split(' ').length <= 1 ? 'vertical' : 'horizontal';
+  }
+
+  if (child1 && child1CSS.float && child1CSS.float !== 'none') {
+    let touchingSideChild2 = child1CSS.float === 'left' ? 'left' : 'right';
+
+    return child2 && (child2CSS.clear === 'both' || child2CSS.clear === touchingSideChild2)
+      ? 'vertical'
+      : 'horizontal';
+  }
+
+  return child1 &&
+    (child1CSS.display === 'block' ||
+      child1CSS.display === 'flex' ||
+      child1CSS.display === 'table' ||
+      child1CSS.display === 'grid' ||
+      (child1Width >= elWidth && elCSS[CSSFloatProperty] === 'none') ||
+      (child2 && elCSS[CSSFloatProperty] === 'none' && child1Width + child2Width > elWidth))
+    ? 'vertical'
+    : 'horizontal';
+}
+
+/**
  * add or remove element's class
  */
 export function toggleClass(el, name, state) {
@@ -440,11 +523,7 @@ export function offsetChanged(o1, o2) {
 }
 
 export function sortByOffset(o1, o2) {
-  return o1.top == o2.top ? o1.left - o2.left : o1.top - o2.top;
-}
-
-export function sortableChanged(from, to) {
-  return from.sortable.el !== to.sortable.el;
+  return o1.top === o2.top ? o1.left - o2.left : o1.top - o2.top;
 }
 
 export function visible(el, visible) {
