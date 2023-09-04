@@ -212,7 +212,7 @@ Sortable.prototype = {
 
     sortables.splice(sortables.indexOf(this.el), 1);
 
-    this.virtual.destroy();
+    this.virtual._destroy();
     this._clearState();
 
     this.el = this.virtual = this.animator = this.multiplayer = null;
@@ -229,6 +229,10 @@ Sortable.prototype = {
       }
       this.virtual.updateOption(key, value);
     }
+  },
+
+  getNodeSize: function (node) {
+    return node[this.getDirection() === 'vertical' ? 'offsetHeight' : 'offsetWidth'];
   },
 
   getDirection: function () {
@@ -443,8 +447,8 @@ Sortable.prototype = {
       vertical = this.getDirection() === 'vertical',
       mouseOnAxis = vertical ? moveEvent.clientY : moveEvent.clientX,
       hoverArea =
-        mouseOnAxis > (vertical ? rect.top : rect.left) &&
-        mouseOnAxis < (vertical ? rect.bottom : rect.right) - this.virtual._getItemSize(dropEl) / 2
+        mouseOnAxis >= (vertical ? rect.top : rect.left) &&
+        mouseOnAxis < (vertical ? rect.bottom : rect.right) - this.getNodeSize(dropEl) / 2
           ? -1
           : 1;
 

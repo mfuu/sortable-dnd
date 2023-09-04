@@ -19,22 +19,17 @@ function Virtual(sortable) {
   this.sortable = sortable;
   this.options = sortable.options;
 
-  if (!sortable.options.virtual) return;
-
-  const { scroller } = sortable.options;
-
-  if (!isHTMLElement(scroller)) {
-    throw `Sortable: \`scroller\` must be an HTMLElement, not ${{}.toString.call(scroller)}`;
-  }
-
   this.offset = 0;
   this.direction = '';
-  this.sizes = new Map(); // store item size
+
+  this.sizes = new Map();
+  this.mutationObserver = null;
+  this.buffer = Math.round(this.options.keeps / 3);
+
   this.renderState = CACLTYPE.INIT;
   this.calcType = CACLTYPE.INIT;
   this.calcSize = { average: 0, total: 0, fixed: 0 };
   this.range = { start: 0, end: 0, render: 0, front: 0, behind: 0 };
-  this.buffer = Math.round(this.options.keeps / 3);
 
   // Bind all private methods
   for (let fn in this) {
@@ -43,19 +38,13 @@ function Virtual(sortable) {
     }
   }
 
-  on(scroller, 'scroll', this._onScroll);
-
-  this._onObserve();
-  this.updateRange();
+  if (this.options.virtual) {
+    this._init();
+  }
 }
 
 Virtual.prototype = {
   constructor: Virtual,
-
-  destroy() {
-    this.mutationObserver.disconnect();
-    off(this.options.scroller, 'scroll', this._onScroll);
-  },
 
   isFront() {
     return this.direction === DIRECTION.FRONT;
@@ -124,37 +113,64 @@ Virtual.prototype = {
   },
 
   updateOption(key, value) {
-    if (this.options && key in this.options) {
-      this.options[key] = value;
+    if (!(this.options && key in this.options)) {
+      return;
+    }
+    const _options = Object.assign({}, this.options);
 
-      if (key === 'dataKeys') {
-        this.sizes.forEach((v, k) => {
-          if (!value.includes(k)) {
-            this.sizes.delete(k);
-          }
-        });
-      }
+    this.options[key] = value;
+
+    if (key === 'virtual') {
+      // delete the oberver if virtual set to false
+      value ? this._init() : this._destroy();
+    }
+    if (key === 'scroller') {
+      // update the scroll listener on node
+      off(_options.scroller, 'scroll', this._onScroll);
+      on(value, 'scroll', this._onScroll);
+    }
+    if (key === 'dataKeys') {
+      // delete useless sizes
+      this.sizes.forEach((v, k) => {
+        if (!value.includes(k)) {
+          this.sizes.delete(k);
+        }
+      });
     }
   },
 
-  _onObserve() {
-    const config = { attributes: false, childList: true, subtree: true };
+  _init() {
+    if (isHTMLElement(this.options.scroller)) {
+      on(this.options.scroller, 'scroll', this._onScroll);
+    }
+    this._observe();
+    this.updateRange();
+  },
 
+  _destroy() {
+    if (isHTMLElement(this.options.scroller)) {
+      off(this.options.scroller, 'scroll', this._onScroll);
+    }
+    this.mutationObserver.disconnect();
+    this.mutationObserver = null;
+  },
+
+  _observe() {
     this.mutationObserver = new MutationObserver((mutationsList) => {
       for (let i = 0; i < mutationsList.length; i++) {
         const node = mutationsList[i].addedNodes[0];
-        if (!node) continue;
-        const dataKey = node.dataset.key;
-        if (!dataKey) continue;
-        const size = this._getItemSize(node);
-        this._onItemResized(dataKey, size);
+        if (!node || !node.dataset.key) {
+          continue;
+        }
+        const size = this.sortable.getNodeSize(node);
+        this._onItemResized(node.dataset.key, size);
       }
       if (this.renderState === CACLTYPE.INIT) {
         this.renderState = CACLTYPE.DOWN;
         this.updateRange();
       }
     });
-
+    const config = { attributes: false, childList: true, subtree: true };
     this.mutationObserver.observe(this.sortable.el, config);
   },
 
@@ -331,10 +347,6 @@ Virtual.prototype = {
   _getLastIndex() {
     const { keeps, dataKeys } = this.options;
     return dataKeys.length > 0 ? dataKeys.length - 1 : keeps - 1;
-  },
-
-  _getItemSize(node) {
-    return node[this._isHorizontal() ? 'offsetWidth' : 'offsetHeight'];
   },
 
   _getEstimateSize() {

@@ -122,7 +122,10 @@ declare namespace Sortable {
     event: EventType;
   }
 
-  export type Direction = 'vertical' | 'horizontal';
+  export type Direction =
+    | 'vertical'
+    | 'horizontal'
+    | ((sortable: Sortable, dragEl: HTMLElement, event: EventType) => String);
 
   export type EventType = Event & (TouchEvent | MouseEvent);
 
@@ -200,8 +203,8 @@ declare namespace Sortable {
     headerSize?: Number;
 
     /**
-     * `vertical/horizontal`, scroll direction.
-     * @defaults `vertical`
+     * `vertical/horizontal` | `Function`. By default, the direction is automatically determined.
+     * @defaults ``
      */
     direction?: Direction;
 
