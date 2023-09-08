@@ -201,9 +201,8 @@ function Sortable(el, options) {
 Sortable.prototype = {
   constructor: Sortable,
 
-  destroy: function () {
+  destroy() {
     this._dispatchEvent('onDestroy', this);
-
     this.el[expando] = null;
 
     for (let i = 0; i < events.start.length; i++) {
@@ -211,15 +210,15 @@ Sortable.prototype = {
     }
 
     sortables.splice(sortables.indexOf(this.el), 1);
-
     this.virtual._destroy();
     this._clearState();
 
     this.el = this.virtual = this.animator = this.multiplayer = null;
   },
 
-  option: function (key, value) {
+  option(key, value) {
     let options = this.options;
+    let lastOptions = Object.assign({}, options);
     if (value === void 0) {
       return options[key];
     } else {
@@ -227,21 +226,21 @@ Sortable.prototype = {
       if (key === 'group') {
         _prepareGroup(options);
       }
-      this.virtual.updateOption(key, value);
+      this.virtual._onOptionUpdated(key, value, lastOptions);
     }
   },
 
-  getNodeSize: function (node) {
+  getNodeSize(node) {
     return node[this.getDirection() === 'vertical' ? 'offsetHeight' : 'offsetWidth'];
   },
 
-  getDirection: function () {
+  getDirection() {
     return typeof this.options.direction === 'function'
       ? this.options.direction.call(this, dragEl, moveEvent)
       : this.options.direction;
   },
 
-  getSelectedElements: function () {
+  getSelectedElements() {
     return this.multiplayer.getSelectedElements();
   },
 
@@ -291,12 +290,12 @@ Sortable.prototype = {
     downEvent.group = parentEl;
 
     isMultiple = this.options.multiple && this.multiplayer.allowDrag(dragEl);
-
     isMultiple && this.multiplayer.onDrag(this.el, this);
 
     // get the position of the dragEl
     const rect = getRect(dragEl);
     const offset = getOffset(dragEl, this.el);
+
     from = { sortable: this, group: parentEl, node: dragEl, rect, offset };
     to.group = parentEl;
     to.sortable = this;
@@ -415,8 +414,7 @@ Sortable.prototype = {
 
   _autoScroll: function (target) {
     const scrollEl = getParentAutoScrollElement(target, true);
-    const { autoScroll } = this.options;
-    if (autoScroll) {
+    if (this.options.autoScroll) {
       this.autoScroller.update(scrollEl, downEvent, moveEvent);
     }
   },
@@ -494,7 +492,6 @@ Sortable.prototype = {
 
     from.sortable.animator.collect(cloneEl, null, from.group, cloneEl);
     this.animator.collect(null, target, parentEl, cloneEl);
-
     isMultiple && this.multiplayer.onChange(cloneEl, this);
 
     to = {
@@ -526,8 +523,8 @@ Sortable.prototype = {
     parentEl = dropEl.parentNode;
 
     this.animator.collect(cloneEl, dropEl, parentEl);
-
     isMultiple && this.multiplayer.onChange(cloneEl, this);
+
     to = {
       sortable: this,
       group: parentEl,

@@ -1,5 +1,5 @@
-import { css, getRect, setTransform, setTransitionDuration } from '../utils.js';
 import Sortable from '../index.js';
+import { css, getRect, setTransform, setTransitionDuration } from '../utils.js';
 
 function Animation(options) {
   this.options = options;
@@ -10,22 +10,23 @@ Animation.prototype = {
   collect(dragEl, dropEl, container, except) {
     if (!container) return;
     const children = Array.prototype.slice.call(container.children);
-    let { start, end } = this._getRange(children, dragEl, dropEl, except);
+    const { start, end } = this._getRange(children, dragEl, dropEl);
 
     this.animations.length = 0;
 
-    children.slice(start, end + 1).forEach((node) => {
-      if (css(node, 'display') === 'none') return;
-      if (node === except || node === Sortable.ghost) return;
-      this.animations.push({ node, rect: getRect(node) });
-    });
+    for (let i = start; i <= end; i++) {
+      const node = children[i];
+      if (css(node, 'display') === 'none') continue;
+      if (node === except || node === Sortable.ghost) continue;
+      this.animations.push({ node: node, rect: getRect(node) });
+    }
   },
 
   animate() {
-    this.animations.forEach((state) => {
-      const { node, rect } = state;
+    for (let i = 0, len = this.animations.length; i < len; i++) {
+      const { node, rect } = this.animations[i];
       this._excute(node, rect);
-    });
+    }
   },
 
   _excute(el, { left, top }) {

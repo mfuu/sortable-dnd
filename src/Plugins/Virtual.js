@@ -1,4 +1,5 @@
-import { on, off, isHTMLElement } from '../utils';
+import Sortable from '../index.js';
+import { on, off, css, isHTMLElement } from '../utils';
 
 const CACLTYPE = {
   DOWN: 'DOWN',
@@ -14,6 +15,8 @@ const DIRECTION = {
 };
 
 const LEADING_BUFFER = 2;
+
+const OBSERVE_CONFIG = { subtree: true, childList: true, attributes: false };
 
 function Virtual(sortable) {
   this.sortable = sortable;
@@ -99,6 +102,10 @@ Virtual.prototype = {
     }, 5);
   },
 
+  updateItemSize(key, size) {
+    this._onItemResized(key, size);
+  },
+
   updateRange() {
     let start = this.range.start;
     if (this.isFront()) {
@@ -110,33 +117,6 @@ Virtual.prototype = {
     start = Math.max(start, 0);
 
     this._onUpdate(start, this._getEndByStart(start));
-  },
-
-  updateOption(key, value) {
-    if (!(this.options && key in this.options)) {
-      return;
-    }
-    const _options = Object.assign({}, this.options);
-
-    this.options[key] = value;
-
-    if (key === 'virtual') {
-      // delete the oberver if virtual set to false
-      value ? this._init() : this._destroy();
-    }
-    if (key === 'scroller') {
-      // update the scroll listener on node
-      off(_options.scroller, 'scroll', this._onScroll);
-      on(value, 'scroll', this._onScroll);
-    }
-    if (key === 'dataKeys') {
-      // delete useless sizes
-      this.sizes.forEach((v, k) => {
-        if (!value.includes(k)) {
-          this.sizes.delete(k);
-        }
-      });
-    }
   },
 
   _init() {
@@ -156,10 +136,13 @@ Virtual.prototype = {
   },
 
   _observe() {
+    const MutationObserver =
+      window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
     this.mutationObserver = new MutationObserver((mutationsList) => {
-      for (let i = 0; i < mutationsList.length; i++) {
-        const node = mutationsList[i].addedNodes[0];
-        if (!node || !node.dataset.key) {
+      const children = mutationsList[0].target.children;
+      for (let i = 0, len = children.length; i < len; i++) {
+        const node = children[i];
+        if (!node.dataset.key || node === Sortable.ghost || css(node, 'display') === 'none') {
           continue;
         }
         const size = this.sortable.getNodeSize(node);
@@ -170,8 +153,33 @@ Virtual.prototype = {
         this.updateRange();
       }
     });
-    const config = { attributes: false, childList: true, subtree: true };
-    this.mutationObserver.observe(this.sortable.el, config);
+
+    this.mutationObserver.observe(this.sortable.el, OBSERVE_CONFIG);
+  },
+
+  _onOptionUpdated(key, value, lastOptions) {
+    // delete the oberver if virtual set to false
+    if (key === 'virtual') {
+      value ? this._init() : this._destroy();
+    }
+
+    // update the scroll listener on node
+    if (key === 'scroller') {
+      off(lastOptions.scroller, 'scroll', this._onScroll);
+
+      if (value && isHTMLElement(value)) {
+        on(value, 'scroll', this._onScroll);
+      }
+    }
+
+    // delete useless sizes
+    if (key === 'dataKeys') {
+      this.sizes.forEach((v, k) => {
+        if (!value.includes(k)) {
+          this.sizes.delete(k);
+        }
+      });
+    }
   },
 
   _onItemResized(key, size) {

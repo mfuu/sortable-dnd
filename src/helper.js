@@ -39,6 +39,7 @@ Helper.prototype = {
       height: rect.height,
       position: 'fixed',
       opacity: '0.8',
+      overflow: 'hidden',
       'z-index': 100000,
       'pointer-events': 'none',
       'box-sizing': 'border-box',

@@ -107,8 +107,6 @@ new Sortable(element, {
 
 ```js
 new Sortable(element, {
-  ...
-  
   virtual: false, // Support for virtual lists if set to `true`
   scroller: null, // Virtual list scrolling element
   dataKeys: [], // The unique key values of all items in the list
@@ -143,25 +141,54 @@ var sortable = new Sortable(el);
 ```
 
 ```js
-sortable.destroy(); // Manually clear all the state of the component, using this method the component will not be draggable
+// Manually clear all the state of the component, using this method the component will not be draggable
+sortable.destroy();
 
-sortable.option(key, value?); // Get or set the option value, depending on whether the `value` is passed in
+// Get or set the option value, depending on whether the `value` is passed in
+sortable.option(key, value?);
 
-sortable.getSelectedElements(); // Get the selected elements in the list, the return value is available in the case of `multiple`
-
-sortable.virtual.updateRange(); // Recalculate the range. The `onUpdate` will be triggered after the calculation is completed
-sortable.virtual.isFront(); // Current scrolling direction is top/left
-sortable.virtual.isBehind(); // Current scrolling direction is down/right
-sortable.virtual.getSize(dataKey: String | Number); // Git item size by data-key
-sortable.virtual.getOffset(); // Get the current scroll height/width
-sortable.virtual.getClientSize(); // Get client viewport size
-sortable.virtual.getScrollSize(); // Get the current scrolling distance
-sortable.virtual.scrollToBottom(); // Scroll to bottom of list
-sortable.virtual.scrollToOffset(offset: Number); // Scroll to the specified offset
-sortable.virtual.scrollToIndex(index: Number); // Scroll to the specified index position
+// Get the selected elements in the list, the return value is available in the case of `multiple`
+sortable.getSelectedElements();
 ```
 
-**Static Methods & Properties**
+**Virtual List Methods**
+
+```js
+// Recalculate the range. The `onUpdate` will be triggered after the calculation is completed
+sortable.virtual.updateRange();
+
+// Updates the size of a specified node
+sortable.virtual.updateItemSize();
+
+// Current scrolling direction is top/left
+sortable.virtual.isFront();
+
+// Current scrolling direction is down/right
+sortable.virtual.isBehind();
+
+// Git item size by data-key
+sortable.virtual.getSize(dataKey: String | Number);
+
+// Get the current scroll height/width
+sortable.virtual.getOffset();
+
+// Get client viewport size
+sortable.virtual.getClientSize();
+
+// Get the current scrolling distance
+sortable.virtual.getScrollSize();
+
+// Scroll to bottom of list
+sortable.virtual.scrollToBottom();
+
+// Scroll to the specified offset
+sortable.virtual.scrollToOffset(offset: Number);
+
+// Scroll to the specified index position
+sortable.virtual.scrollToIndex(index: Number);
+```
+
+## Static Methods & Properties
 
 ```js
 import Sortable from 'sortable-dnd';
@@ -175,10 +202,23 @@ Sortable.get(el: HTMLElement); // Get the Sortable instance of an element
 Sortable.dragged; // The element being dragged
 
 Sortable.ghost; // The ghost element
+```
 
-Sortable.utils.on(el: HTMLElement, event: String, fn: Function); // attach an event handler function
-Sortable.utils.off(el: HTMLElement, event: String, fn: Function); // remove an event handler
-Sortable.utils.css(el: HTMLElement, prop: String, value: String); // set one CSS properties
-Sortable.utils.closest(element: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean); // For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
-Sortable.utils.toggleClass(element: HTMLElement, name: String, state: Boolean); // Add or remove one classes from each element
+**Utils**
+ 
+```js
+// attach an event handler function
+Sortable.utils.on(el: HTMLElement, event: String, fn: Function);
+
+// remove an event handler
+Sortable.utils.off(el: HTMLElement, event: String, fn: Function);
+
+// set one CSS properties
+Sortable.utils.css(el: HTMLElement, prop: String, value: String);
+
+// For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
+Sortable.utils.closest(element: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean);
+
+// Add or remove one classes from each element
+Sortable.utils.toggleClass(element: HTMLElement, name: String, state: Boolean);
 ```

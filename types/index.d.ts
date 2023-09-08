@@ -407,6 +407,13 @@ declare namespace Sortable {
     updateRange(): void;
 
     /**
+     * Updates the size of a specified node
+     * @param key data-key
+     * @param size node size
+     */
+    updateItemSize(key: String | Number, size: Number) :void;
+
+    /**
      * Current scrolling direction is top/left.
      */
     isFront(): Boolean;

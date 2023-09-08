@@ -25,10 +25,6 @@ export const FireFox = userAgent(/firefox/i);
 export const Safari = userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgent(/android/i);
 export const IOS = userAgent(/iP(ad|od|hone)/i);
 export const ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
-
-/**
- * detect passive event support
- */
 export const supportPassive = (function () {
   // https://github.com/Modernizr/Modernizr/issues/1894
   let supportPassive = false;
@@ -136,7 +132,7 @@ export function getEvent(evt) {
 }
 
 /**
- * get element's offetTop in given parent node
+ * get element's offet in given parent node
  */
 export function getOffset(el, parentEl) {
   let offset = {
@@ -190,11 +186,7 @@ export function getParentAutoScrollElement(el, includeSelf) {
 export function getWindowScrollingElement() {
   let scrollingElement = document.scrollingElement;
 
-  if (scrollingElement) {
-    return scrollingElement;
-  } else {
-    return document.documentElement;
-  }
+  return scrollingElement || document.documentElement;
 }
 
 /**
@@ -312,7 +304,7 @@ export function closest(el, selector, ctx, includeCTX) {
         if (index > -1) return children[index];
 
         // When the dom cannot be found directly in children, need to look down
-        for (let i = 0; i < children.length; i++) {
+        for (let i = 0, len = children.length; i < len; i++) {
           if (containes(el, children[i])) return children[i];
         }
       } else if (
@@ -361,16 +353,12 @@ export function lastChild(el, helper, selector) {
 }
 
 /**
- * Gets nth child of el, ignoring hidden children, sortable's elements (does not ignore clone if it's visible)
- * and non-draggable elements
- * @param  {HTMLElement} el       The parent element
- * @param  {Number} childNum      The index of the child
- * @param  {Object} draggable     Sortable's draggable option
+ * Gets nth child of el, ignoring hidden children, sortable's elements (does not ignore clone if it's visible) and non-draggable elements
  * @return {HTMLElement}          The child at index childNum, or null if not found
  */
 export function getChild(el, childNum, draggable, includeDragEl) {
-  let currentChild = 0,
-    i = 0,
+  let i = 0,
+    currentChild = 0,
     children = el.children;
 
   while (i < children.length) {
@@ -459,7 +447,6 @@ export function toggleClass(el, name, state) {
 
 /**
  * Check if a DOM element matches a given selector
- * @returns
  */
 export function matches(el, selector) {
   if (!selector) return;
