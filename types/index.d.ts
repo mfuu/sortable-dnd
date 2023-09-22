@@ -33,7 +33,7 @@ declare class Sortable {
    * @param el
    * @param options
    */
-  static create(el: HTMLElement, options: Options): void;
+  static create(el: HTMLElement, options: Options): Sortable;
 
   /**
    * Get the Sortable instance of an element.
@@ -50,14 +50,14 @@ declare class Sortable {
   option<K extends keyof Sortable.Options>(name: K): Sortable.Options[K];
 
   /**
-   * Get the selected elements in the list.
-   */
-  getSelectedElements(): HTMLElement[];
-
-  /**
    * Removes the sortable functionality completely.
    */
   destroy(): void;
+
+  /**
+   * Get the selected elements in the list.
+   */
+  getSelectedElements(): HTMLElement[];
 }
 
 declare namespace Sortable {
@@ -233,7 +233,7 @@ declare namespace Sortable {
     scrollThreshold?: Number;
 
     /**
-     * Horizontal/Vertical scrolling speed (px)
+     * Vertical&Horizontal scrolling speed (px)
      * @defaults `{ x: 10, y: 10 }`
      */
     scrollSpeed?: ScrollSpeed;
@@ -366,7 +366,7 @@ declare namespace Sortable {
     off(element: HTMLElement, event: String, fn: EventListenerOrEventListenerObject): void;
 
     /**
-     * Set one CSS property.
+     * Get/Set one CSS property.
      * @param element an HTMLElement.
      * @param prop a property key.
      * @param value a property value.
@@ -374,8 +374,15 @@ declare namespace Sortable {
     css<K extends keyof CSSStyleDeclaration>(
       element: HTMLElement,
       prop: K,
-      value: CSSStyleDeclaration[K]
+      value?: CSSStyleDeclaration[K]
     ): void;
+
+    /**
+     * Returns the index of an element within its parent for a selected set of elements
+     * @param element an HTMLElement.
+     * @param selector an element seletor.
+     */
+    index(element: HTMLElement, selector?: String): Number;
 
     /**
      * For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
@@ -390,6 +397,13 @@ declare namespace Sortable {
       context: HTMLElement,
       includeContext: Boolean
     ): HTMLElement | null;
+
+    /**
+     * Get element's offet in given parentNode
+     * @param element an HTMLElement.
+     * @param parentEl a specific element's context.
+     */
+    getOffset(element: HTMLElement, parentEl: HTMLElement): DOMOffset;
 
     /**
      * Add or remove one classes from each element.
@@ -411,7 +425,7 @@ declare namespace Sortable {
      * @param key data-key
      * @param size node size
      */
-    updateItemSize(key: String | Number, size: Number) :void;
+    updateItemSize(key: String | Number, size: Number): void;
 
     /**
      * Current scrolling direction is top/left.

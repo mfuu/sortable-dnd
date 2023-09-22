@@ -2,10 +2,9 @@ import {
   on,
   off,
   css,
+  index,
   within,
   events,
-  visible,
-  expando,
   matches,
   closest,
   getRect,
@@ -16,8 +15,9 @@ import {
   _nextTick,
   toggleClass,
   sortByOffset,
-  isHTMLElement,
   offsetChanged,
+  isHTMLElement,
+  toggleVisible,
   detectDirection,
   getParentAutoScrollElement,
 } from './utils.js';
@@ -27,6 +27,8 @@ import AutoScroll from './Plugins/AutoScroll.js';
 import Animation from './Plugins/Animation.js';
 import Virtual from './Plugins/Virtual.js';
 import Helper from './helper.js';
+
+const expando = 'Sortable' + Date.now();
 
 const FromTo = {
   sortable: null,
@@ -201,6 +203,7 @@ function Sortable(el, options) {
 Sortable.prototype = {
   constructor: Sortable,
 
+  // ========================================= Public Methods =========================================
   destroy() {
     this._dispatchEvent('onDestroy', this);
     this.el[expando] = null;
@@ -244,6 +247,7 @@ Sortable.prototype = {
     return this.multiplayer.getSelectedElements();
   },
 
+  // ========================================= Properties =========================================
   _onDrag: function (/** Event|TouchEvent */ evt) {
     if (this.options.disabled || !this.options.group.pull) return;
 
@@ -384,7 +388,7 @@ Sortable.prototype = {
     Sortable.ghost = helper.node;
 
     // Hide the drag element and show the cloned dom element
-    visible(dragEl, false);
+    toggleVisible(dragEl, false);
     dragEl.parentNode.insertBefore(cloneEl, dragEl);
     toggleClass(cloneEl, this.options.chosenClass, true);
 
@@ -586,7 +590,7 @@ Sortable.prototype = {
       to.sortable._dispatchEvent('onDrop', params);
     }
 
-    visible(dragEl, true);
+    toggleVisible(dragEl, true);
     parentEl.removeChild(cloneEl);
     Safari && css(document.body, 'user-select', '');
   },
@@ -647,15 +651,15 @@ Sortable.utils = {
   on: on,
   off: off,
   css: css,
+  index: index,
   closest: closest,
+  getOffset: getOffset,
   toggleClass: toggleClass,
   detectDirection: detectDirection,
 };
 
 /**
  * Get the Sortable instance of an element
- * @param  {HTMLElement} element The element
- * @return {Sortable|undefined} The instance of Sortable
  */
 Sortable.get = function (element) {
   return element[expando];
@@ -663,8 +667,6 @@ Sortable.get = function (element) {
 
 /**
  * Create sortable instance
- * @param {HTMLElement} el
- * @param {Object} options
  */
 Sortable.create = function (el, options) {
   return new Sortable(el, options);

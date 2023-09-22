@@ -1,5 +1,5 @@
 import Sortable from '../index.js';
-import { on, off, css, isHTMLElement } from '../utils';
+import { on, off, css, isHTMLElement, getMutationObserver } from '../utils';
 
 const CACLTYPE = {
   DOWN: 'DOWN',
@@ -17,6 +17,16 @@ const DIRECTION = {
 const LEADING_BUFFER = 2;
 
 const OBSERVE_CONFIG = { subtree: true, childList: true, attributes: false };
+
+const autoObserve = function () {
+  if (getMutationObserver()) {
+    return true;
+  }
+  console.warn(
+    `sortable-dnd: MutationObserver is not supported on this browser. You may have to call "updateItemSize" by yourself to update the node size.`
+  );
+  return false;
+};
 
 function Virtual(sortable) {
   this.sortable = sortable;
@@ -49,6 +59,7 @@ function Virtual(sortable) {
 Virtual.prototype = {
   constructor: Virtual,
 
+  // ========================================= Public Methods =========================================
   isFront() {
     return this.direction === DIRECTION.FRONT;
   },
@@ -119,11 +130,16 @@ Virtual.prototype = {
     this._onUpdate(start, this._getEndByStart(start));
   },
 
+  // ========================================= Properties =========================================
   _init() {
     if (isHTMLElement(this.options.scroller)) {
       on(this.options.scroller, 'scroll', this._onScroll);
     }
-    this._observe();
+
+    if (autoObserve()) {
+      this._observe();
+    }
+
     this.updateRange();
   },
 
@@ -136,8 +152,7 @@ Virtual.prototype = {
   },
 
   _observe() {
-    const MutationObserver =
-      window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+    const MutationObserver = getMutationObserver();
     this.mutationObserver = new MutationObserver((mutationsList) => {
       const children = mutationsList[0].target.children;
       for (let i = 0, len = children.length; i < len; i++) {
@@ -145,9 +160,11 @@ Virtual.prototype = {
         if (!node.dataset.key || node === Sortable.ghost || css(node, 'display') === 'none') {
           continue;
         }
+
         const size = this.sortable.getNodeSize(node);
         this._onItemResized(node.dataset.key, size);
       }
+
       if (this.renderState === CACLTYPE.INIT) {
         this.renderState = CACLTYPE.DOWN;
         this.updateRange();
@@ -192,6 +209,7 @@ Virtual.prototype = {
       this.calcType = CACLTYPE.DYNAMIC;
       this.calcSize.fixed = undefined;
     }
+
     // In the case of non-fixed heights, the average height and the total height are calculated
     if (this.calcType !== CACLTYPE.FIXED) {
       this.calcSize.total = [...this.sizes.values()].reduce((t, i) => t + i, 0);
@@ -235,6 +253,7 @@ Virtual.prototype = {
     if (scrolls > this.range.start) {
       return;
     }
+
     const start = Math.max(scrolls - this.buffer, 0);
     this._checkIfUpdate(start, this._getEndByStart(start));
   },
@@ -244,6 +263,7 @@ Virtual.prototype = {
     if (scrolls < this.range.start + this.buffer) {
       return;
     }
+
     this._checkIfUpdate(scrolls, this._getEndByStart(scrolls));
   },
 
@@ -306,11 +326,8 @@ Virtual.prototype = {
 
   _getPadFront() {
     const start = this.range.start;
-    if (this._isFixed()) {
-      return this.calcSize.fixed * start;
-    } else {
-      return this._getOffsetByIndex(start);
-    }
+
+    return this._isFixed() ? this.calcSize.fixed * start : this._getOffsetByIndex(start);
   },
 
   _getPadBehind() {

@@ -51,13 +51,14 @@ export const vendorPrefix = (function () {
     .join('')
     .match(/-(moz|webkit|ms)-/) ||
     (styles.OLink === '' && ['', 'o']))[1];
+  const dom = 'WebKit|Moz|MS|O'.match(new RegExp('(' + pre + ')', 'i'))[1];
 
-  switch (pre) {
-    case 'ms':
-      return 'ms';
-    default:
-      return pre && pre.length ? pre[0].toUpperCase() + pre.substr(1) : '';
-  }
+  return {
+    dom,
+    lowercase: pre,
+    css: '-' + pre + '-',
+    js: pre[0].toUpperCase() + pre.substr(1),
+  };
 })();
 
 /**
@@ -75,7 +76,7 @@ export function isHTMLElement(node) {
 }
 
 export function setTransition(el, transition) {
-  el.style[`${vendorPrefix}Transition`] = transition
+  el.style[`${vendorPrefix.css}transition`] = transition
     ? transition === 'none'
       ? 'none'
       : `${transition}`
@@ -83,11 +84,11 @@ export function setTransition(el, transition) {
 }
 
 export function setTransitionDuration(el, duration) {
-  el.style[`${vendorPrefix}TransitionDuration`] = duration == null ? '' : `${duration}ms`;
+  el.style[`${vendorPrefix.css}transition-duration`] = duration == null ? '' : `${duration}ms`;
 }
 
 export function setTransform(el, transform) {
-  el.style[`${vendorPrefix}Transform`] = transform ? `${transform}` : '';
+  el.style[`${vendorPrefix.css}transform`] = transform ? `${transform}` : '';
 }
 
 /**
@@ -184,9 +185,7 @@ export function getParentAutoScrollElement(el, includeSelf) {
 }
 
 export function getWindowScrollingElement() {
-  let scrollingElement = document.scrollingElement;
-
-  return scrollingElement || document.documentElement;
+  return document.scrollingElement || document.documentElement;
 }
 
 /**
@@ -353,6 +352,29 @@ export function lastChild(el, helper, selector) {
 }
 
 /**
+ * Returns the index of an element within its parent for a selected set of elements
+ */
+export function index(el, selector) {
+  let index = 0;
+
+  if (!el || !el.parentNode) {
+    return -1;
+  }
+
+  while ((el = el.previousElementSibling)) {
+    if (
+      el.nodeName.toUpperCase() !== 'TEMPLATE' &&
+      (!selector || matches(el, selector)) &&
+      css(el, 'display') !== 'none'
+    ) {
+      index++;
+    }
+  }
+
+  return index;
+}
+
+/**
  * Gets nth child of el, ignoring hidden children, sortable's elements (does not ignore clone if it's visible) and non-draggable elements
  * @return {HTMLElement}          The child at index childNum, or null if not found
  */
@@ -363,10 +385,10 @@ export function getChild(el, childNum, draggable, includeDragEl) {
 
   while (i < children.length) {
     if (
-      children[i].style.display !== 'none' &&
       children[i] !== Sortable.ghost &&
-      (includeDragEl || children[i] !== Sortable.dragged) &&
-      closest(children[i], draggable, el, false)
+      css(children[i], 'display') !== 'none' &&
+      closest(children[i], draggable, el, false) &&
+      (includeDragEl || children[i] !== Sortable.dragged)
     ) {
       if (currentChild === childNum) {
         return children[i];
@@ -445,6 +467,10 @@ export function toggleClass(el, name, state) {
   }
 }
 
+export function toggleVisible(el, visible) {
+  css(el, 'display', visible ? '' : 'none');
+}
+
 /**
  * Check if a DOM element matches a given selector
  */
@@ -502,6 +528,10 @@ export function within(event, element, rect) {
   );
 }
 
+export function getMutationObserver() {
+  return window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
+}
+
 /**
  * Check whether the front and rear positions are consistent
  */
@@ -513,16 +543,6 @@ export function sortByOffset(o1, o2) {
   return o1.top === o2.top ? o1.left - o2.left : o1.top - o2.top;
 }
 
-export function visible(el, visible) {
-  css(el, 'display', visible ? '' : 'none');
-}
-
 export function _nextTick(fn) {
   return setTimeout(fn, 0);
 }
-
-export function randomCode() {
-  return Number(Math.random().toString().slice(-3) + Date.now()).toString(32);
-}
-
-export const expando = 'Sortable' + Date.now();

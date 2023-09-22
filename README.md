@@ -70,6 +70,7 @@ new Sortable(element, {
   disabled: false, // Disables the sortable if set to true
   autoScroll: true, // Automatic scrolling when moving to the edge of the container
   scrollThreshold: 55, // Threshold to trigger autoscroll
+  scrollSpeed: { x: 10, y: 10 }, // Vertical&Horizontal scrolling speed (px)
   delay: 0, // Time in milliseconds to define when the sorting should start
   delayOnTouchOnly: false, // Only delay if user is using touch
   fallbackOnBody: false, // Appends the ghost element into the document's body
@@ -216,9 +217,15 @@ Sortable.utils.off(el: HTMLElement, event: String, fn: Function);
 // set one CSS properties
 Sortable.utils.css(el: HTMLElement, prop: String, value: String);
 
+// Returns the index of an element within its parent for a selected set of elements
+Sortable.utils.index(el: HTMLElement, selector: String);
+
 // For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
-Sortable.utils.closest(element: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean);
+Sortable.utils.closest(el: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean);
+
+// Get element's offet in given parentNode
+Sortable.utils.getOffset(element: HTMLElement, parentEl: HTMLElement);
 
 // Add or remove one classes from each element
-Sortable.utils.toggleClass(element: HTMLElement, name: String, state: Boolean);
+Sortable.utils.toggleClass(el: HTMLElement, name: String, state: Boolean);
 ```

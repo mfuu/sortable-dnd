@@ -1,11 +1,10 @@
 import {
-  visible,
   getRect,
   getOffset,
-  randomCode,
   toggleClass,
   sortByOffset,
   offsetChanged,
+  toggleVisible,
 } from '../utils';
 
 const multiFromTo = { sortable: null, nodes: [] };
@@ -18,6 +17,10 @@ export const getMultiDiffer = function () {
   return { from: { ...multiFrom }, to: { ...multiTo } };
 };
 
+export const randomCode = function () {
+  return Number(Math.random().toString().slice(-3) + Date.now()).toString(32);
+};
+
 function Multiple(options) {
   this.options = options || {};
   this.groupName = options.group.name || 'group_' + randomCode();
@@ -26,7 +29,6 @@ function Multiple(options) {
 Multiple.prototype = {
   /**
    * Indicates whether the multi-drag mode is used
-   * @returns {boolean}
    */
   allowDrag(dragEl) {
     return (
@@ -102,7 +104,7 @@ Multiple.prototype = {
 
     selectedElements[this.groupName].forEach((node) => {
       if (node == dragEl) return;
-      visible(node, false);
+      toggleVisible(node, false);
     });
 
     sortable.animator.animate();
@@ -124,7 +126,7 @@ Multiple.prototype = {
     const index = selectedElements[this.groupName].indexOf(dragEl);
 
     selectedElements[this.groupName].forEach((node, i) => {
-      visible(node, true);
+      toggleVisible(node, true);
       if (i < index) {
         dragEl.parentNode.insertBefore(node, dragEl);
       } else {
