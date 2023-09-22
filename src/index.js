@@ -467,27 +467,27 @@ Sortable.prototype = {
 
     this._dispatchEvent('onMove', { ..._emits(), event });
 
-    if (within(event, parentEl) && target === parentEl) return;
-
     rootEl = this.el;
     dropEl = closest(target, this.options.draggable, rootEl, false);
 
-    if (dropEl) {
-      if (!this._allowSwap()) return;
-      lastDropEl = dropEl;
-      if (dropEl.animated || dropEl === cloneEl || dropEl === dragEl) return;
-      if (containes(dropEl, cloneEl)) return;
+    // insert to last
+    if (rootEl !== from.sortable.el && (target === rootEl || !lastChild(rootEl, helper.node))) {
+      lastDropEl = null;
+      this._onInsert(event, true);
+      return;
+    }
+
+    if (!dropEl || !this._allowSwap()) return;
+    if (dropEl.animated || dropEl === cloneEl || dropEl === dragEl || containes(dropEl, cloneEl)) {
+      return;
     }
 
     if (rootEl !== from.sortable.el) {
-      if (target === rootEl || !lastChild(rootEl, helper.node)) {
-        this._onInsert(event, true);
-      } else if (dropEl) {
-        this._onInsert(event, false);
-      }
-    } else if (dropEl) {
+      this._onInsert(event, false);
+    } else if (!(within(event, parentEl) && target === parentEl)) {
       this._onChange(event);
     }
+    lastDropEl = dropEl;
   },
 
   _onInsert: function (/** Event|TouchEvent */ event, insertToLast) {
