@@ -152,10 +152,10 @@ Multiple.prototype = {
     multiTo.sortable.animator.animate();
   },
 
-  _offsetChanged(ns1, ns2) {
-    return !!ns1.find((o2) => {
-      let o1 = ns2.find((n) => n.node === o2.node);
-      return offsetChanged(o1.offset, o2.offset);
+  _offsetChanged(froms, tos) {
+    return !!froms.find((from) => {
+      const to = tos.find((t) => t.node === from.node);
+      return offsetChanged(from.offset, to.offset);
     });
   },
 };

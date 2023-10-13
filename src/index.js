@@ -301,6 +301,7 @@ Sortable.prototype = {
     const offset = getOffset(dragEl, this.el);
 
     from = { sortable: this, group: parentEl, node: dragEl, rect, offset };
+    to.node = dragEl;
     to.group = parentEl;
     to.sortable = this;
 
@@ -574,12 +575,11 @@ Sortable.prototype = {
     // re-acquire the offset and rect values of the dragged element as the value after the drag is completed
     to.rect = getRect(cloneEl);
     to.offset = getOffset(cloneEl, rootEl);
+    if (to.node === cloneEl) to.node = dragEl;
 
     if (isMultiple) {
       this.multiplayer.onDrop(evt, dragEl, rootEl, downEvent, _emits);
     } else {
-      if (to.node === cloneEl) to.node = dragEl;
-
       const sortableChanged = from.sortable.el !== to.sortable.el;
       const changed = sortableChanged || offsetChanged(from.offset, to.offset);
       const params = { ..._emits(), changed, event: evt };

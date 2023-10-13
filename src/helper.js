@@ -42,7 +42,6 @@ Helper.prototype = {
       overflow: 'hidden',
       'z-index': 100000,
       'pointer-events': 'none',
-      'box-sizing': 'border-box',
       ...ghostStyle,
     };
 

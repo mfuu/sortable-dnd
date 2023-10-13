@@ -533,14 +533,22 @@ export function getMutationObserver() {
 }
 
 /**
- * Check whether the front and rear positions are consistent
+ * Check whether the front and rear positions are consistent, ignore front and rear height width changes
  */
-export function offsetChanged(o1, o2) {
-  return o1.top !== o2.top || o1.left !== o2.left;
+export function offsetChanged(before, after) {
+  const diffW = Math.abs(before.width - after.width);
+  const diffH = Math.abs(before.height - after.height);
+  function inRange(from, to, diff) {
+    if (from === to) return true;
+    return from >= to - diff && from <= to + diff;
+  }
+  const xChanged = !inRange(before.left, after.left, diffW);
+  const yChanged = !inRange(before.top, after.top, diffH);
+  return xChanged || yChanged;
 }
 
-export function sortByOffset(o1, o2) {
-  return o1.top === o2.top ? o1.left - o2.left : o1.top - o2.top;
+export function sortByOffset(before, after) {
+  return before.top === after.top ? before.left - after.left : before.top - after.top;
 }
 
 export function _nextTick(fn) {
