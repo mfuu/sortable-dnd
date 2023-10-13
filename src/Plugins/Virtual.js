@@ -1,5 +1,5 @@
 import Sortable from '../index.js';
-import { on, off, css, isHTMLElement, getMutationObserver } from '../utils';
+import { on, off, css, isHTMLElement, getMutationObserver, isDocument } from '../utils';
 
 const CACLTYPE = {
   DOWN: 'DOWN',
@@ -28,6 +28,10 @@ const autoObserve = function () {
   return false;
 };
 
+const getScroller = function (scroller) {
+  return isDocument(scroller) ? scroller.documentElement || scroller.body : scroller;
+};
+
 function Virtual(sortable) {
   this.sortable = sortable;
   this.options = sortable.options;
@@ -51,9 +55,7 @@ function Virtual(sortable) {
     }
   }
 
-  if (this.options.virtual) {
-    this._init();
-  }
+  this.options.virtual && this._init();
 }
 
 Virtual.prototype = {
@@ -73,20 +75,23 @@ Virtual.prototype = {
   },
 
   getOffset() {
-    return this.options.scroller[this._isHorizontal() ? 'scrollLeft' : 'scrollTop'];
+    const scrollOffset = this._isHorizontal() ? 'scrollLeft' : 'scrollTop';
+    return getScroller(this.options.scroller)[scrollOffset];
   },
 
   getClientSize() {
-    return this.options.scroller[this._isHorizontal() ? 'clientWidth' : 'clientHeight'];
+    const clientSizeKey = this._isHorizontal() ? 'clientWidth' : 'clientHeight';
+    return getScroller(this.options.scroller)[clientSizeKey];
   },
 
   getScrollSize() {
-    return this.options.scroller[this._isHorizontal() ? 'scrollWidth' : 'scrollHeight'];
+    const scrollSizeKey = this._isHorizontal() ? 'scrollWidth' : 'scrollHeight';
+    return getScroller(this.options.scroller)[scrollSizeKey];
   },
 
   scrollToOffset(offset) {
     const scrollKey = this._isHorizontal() ? 'scrollLeft' : 'scrollTop';
-    this.options.scroller[scrollKey] = offset;
+    getScroller(this.options.scroller)[scrollKey] = offset;
   },
 
   scrollToIndex(index) {
@@ -137,7 +142,7 @@ Virtual.prototype = {
     }
 
     if (autoObserve()) {
-      this._observe();
+      this._sizeObserve();
     }
 
     this.updateRange();
@@ -151,7 +156,7 @@ Virtual.prototype = {
     this.mutationObserver = null;
   },
 
-  _observe() {
+  _sizeObserve() {
     const MutationObserver = getMutationObserver();
     this.mutationObserver = new MutationObserver((mutationsList) => {
       const children = mutationsList[0].target.children;

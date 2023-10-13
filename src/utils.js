@@ -64,15 +64,20 @@ export const vendorPrefix = (function () {
 /**
  * check if is HTMLElement
  */
-export function isHTMLElement(node) {
-  if (!node) return false;
+export function isHTMLElement(el) {
+  if (!el) return false;
   let ctx = document.createElement('div');
   try {
-    ctx.appendChild(node.cloneNode(true));
-    return node.nodeType == 1 ? true : false;
+    ctx.appendChild(el.cloneNode(true));
+    return el.nodeType == 1 ? true : false;
   } catch (e) {
-    return node == window || node == document;
+    return el == window || el == document;
   }
+}
+
+export function isDocument(el) {
+  if (!el) return false;
+  return el instanceof Document && el.nodeType === 9;
 }
 
 export function setTransition(el, transition) {
