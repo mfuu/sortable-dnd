@@ -18,6 +18,7 @@ import {
   offsetChanged,
   isHTMLElement,
   toggleVisible,
+  preventDefault,
   detectDirection,
   getParentAutoScrollElement,
 } from './utils.js';
@@ -48,6 +49,7 @@ let rootEl,
   moveEvent,
   isMultiple,
   lastDropEl,
+  listenerNode,
   lastHoverArea,
   dragStartTimer,
   sortables = [],
@@ -166,7 +168,6 @@ function Sortable(el, options) {
     selectedClass: '',
     swapOnDrop: true,
     fallbackOnBody: false,
-    stopPropagation: false,
     supportTouch: 'ontouchstart' in window,
     emptyInsertThreshold: 5,
   };
@@ -283,11 +284,8 @@ Sortable.prototype = {
 
     Sortable.dragged = dragEl;
     cloneEl = dragEl.cloneNode(true);
-    this._prepareStart(touch, event);
-  },
-
-  _prepareStart: function (touch, event) {
     parentEl = dragEl.parentNode;
+    listenerNode = touch ? dragEl : document;
 
     downEvent = event;
     downEvent.sortable = this;
@@ -310,9 +308,9 @@ Sortable.prototype = {
       y: event.clientY - rect.top,
     };
 
-    on(document, 'touchend', this._onDrop);
-    on(document, 'touchcancel', this._onDrop);
-    on(document, 'mouseup', this._onDrop);
+    on(listenerNode, 'touchend', this._onDrop);
+    on(listenerNode, 'touchcancel', this._onDrop);
+    on(listenerNode, 'mouseup', this._onDrop);
 
     const { delay, delayOnTouchOnly } = this.options;
 
@@ -332,12 +330,10 @@ Sortable.prototype = {
   },
 
   _delayMoveHandler: function (evt) {
-    let touch = evt.touches ? evt.touches[0] : evt;
+    let e = evt.touches ? evt.touches[0] : evt;
     if (
-      Math.max(
-        Math.abs(touch.clientX - downEvent.clientX),
-        Math.abs(touch.clientY - downEvent.clientY)
-      ) >= Math.floor(this.options.touchStartThreshold / (window.devicePixelRatio || 1))
+      Math.max(Math.abs(e.clientX - downEvent.clientX), Math.abs(e.clientY - downEvent.clientY)) >=
+      Math.floor(this.options.touchStartThreshold / (window.devicePixelRatio || 1))
     ) {
       this._cancelStart();
     }
@@ -358,9 +354,9 @@ Sortable.prototype = {
     rootEl = this.el;
 
     if (touch) {
-      on(document, 'touchmove', this._nearestSortable);
+      on(listenerNode, 'touchmove', this._nearestSortable);
     } else {
-      on(document, 'mousemove', this._nearestSortable);
+      on(listenerNode, 'mousemove', this._nearestSortable);
     }
 
     // clear selection
@@ -381,7 +377,7 @@ Sortable.prototype = {
 
     this._dispatchEvent('onDrag', { ..._emits(), event: downEvent });
 
-    isMultiple && this.multiplayer.onTrulyStarted(dragEl, this);
+    isMultiple && this.multiplayer.onTrulyStarted(this);
 
     const element = isMultiple ? this.multiplayer.getHelper() : dragEl;
     helper.init(from.rect, element, this.el, this.options);
@@ -397,7 +393,7 @@ Sortable.prototype = {
   },
 
   _nearestSortable: function (/** Event|TouchEvent */ evt) {
-    this._preventEvent(evt);
+    preventDefault(evt);
     if (!downEvent || !dragEl || !_positionChanged(evt)) return;
 
     const { event, target } = getEvent(evt);
@@ -548,16 +544,16 @@ Sortable.prototype = {
   },
 
   _onDrop: function (/** Event|TouchEvent */ evt) {
+    preventDefault(evt);
     this._unbindMoveEvents();
     this._unbindDropEvents();
-    this._preventEvent(evt);
     this._cancelStart();
     this.autoScroller.clear();
 
     if (dragEl && downEvent && moveEvent) {
       this._onEnd(evt);
     } else if (this.options.multiple) {
-      this.multiplayer.select(evt, dragEl, rootEl, { ...from });
+      this.multiplayer.select(evt, rootEl, { ...from });
     }
 
     this._clearState();
@@ -578,7 +574,7 @@ Sortable.prototype = {
     if (to.node === cloneEl) to.node = dragEl;
 
     if (isMultiple) {
-      this.multiplayer.onDrop(evt, dragEl, rootEl, downEvent, _emits);
+      this.multiplayer.onDrop(evt, rootEl, downEvent, _emits);
     } else {
       const sortableChanged = from.sortable.el !== to.sortable.el;
       const changed = sortableChanged || offsetChanged(from.offset, to.offset);
@@ -593,17 +589,6 @@ Sortable.prototype = {
     toggleVisible(dragEl, true);
     parentEl.removeChild(cloneEl);
     Safari && css(document.body, 'user-select', '');
-  },
-
-  _preventEvent: function (/** Event|TouchEvent */ evt) {
-    evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
-    if (this.options.stopPropagation) {
-      if (evt && evt.stopPropagation) {
-        evt.stopPropagation();
-      } else {
-        window.event.cancelBubble = true;
-      }
-    }
   },
 
   _dispatchEvent: function (emit, params) {
@@ -623,6 +608,7 @@ Sortable.prototype = {
       moveEvent =
       isMultiple =
       lastDropEl =
+      listenerNode =
       lastHoverArea =
       dragStartTimer =
       Sortable.ghost =
@@ -636,13 +622,13 @@ Sortable.prototype = {
 
   _unbindMoveEvents: function () {
     for (let i = 0; i < events.move.length; i++) {
-      off(document, events.move[i], this._nearestSortable);
+      off(listenerNode, events.move[i], this._nearestSortable);
     }
   },
 
   _unbindDropEvents: function () {
     for (let i = 0; i < events.end.length; i++) {
-      off(document, events.end[i], this._onDrop);
+      off(listenerNode, events.end[i], this._onDrop);
     }
   },
 };

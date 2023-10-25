@@ -556,6 +556,10 @@ export function sortByOffset(before, after) {
   return before.top === after.top ? before.left - after.left : before.top - after.top;
 }
 
+export function preventDefault(evt) {
+  evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
+}
+
 export function _nextTick(fn) {
   return setTimeout(fn, 0);
 }

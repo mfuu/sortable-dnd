@@ -37,6 +37,7 @@ Helper.prototype = {
       left: rect.left,
       width: rect.width,
       height: rect.height,
+      maxHeight: rect.height,
       position: 'fixed',
       opacity: '0.8',
       overflow: 'hidden',

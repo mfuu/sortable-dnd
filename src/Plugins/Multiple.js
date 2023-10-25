@@ -1,3 +1,4 @@
+import Sortable from '../index.js';
 import {
   getRect,
   getOffset,
@@ -30,12 +31,12 @@ Multiple.prototype = {
   /**
    * Indicates whether the multi-drag mode is used
    */
-  allowDrag(dragEl) {
+  allowDrag() {
     return (
       this.options.multiple &&
       selectedElements[this.groupName] &&
       selectedElements[this.groupName].length &&
-      selectedElements[this.groupName].indexOf(dragEl) > -1
+      selectedElements[this.groupName].indexOf(Sortable.dragged) > -1
     );
   },
 
@@ -65,7 +66,8 @@ Multiple.prototype = {
   /**
    * Collecting Multi-Drag Elements
    */
-  select(event, dragEl, rootEl, from) {
+  select(event, rootEl, from) {
+    const dragEl = Sortable.dragged;
     if (!dragEl) return;
 
     if (!selectedElements[this.groupName]) {
@@ -99,7 +101,8 @@ Multiple.prototype = {
     multiTo.sortable = sortable;
   },
 
-  onTrulyStarted(dragEl, sortable) {
+  onTrulyStarted(sortable) {
+    const dragEl = Sortable.dragged;
     sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
     selectedElements[this.groupName].forEach((node) => {
@@ -120,7 +123,8 @@ Multiple.prototype = {
     });
   },
 
-  onDrop(event, dragEl, rootEl, downEvent, getEmits) {
+  onDrop(event, rootEl, downEvent, getEmits) {
+    const dragEl = Sortable.dragged;
     multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
     const index = selectedElements[this.groupName].indexOf(dragEl);
