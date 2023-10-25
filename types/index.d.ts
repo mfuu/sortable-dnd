@@ -257,12 +257,6 @@ declare namespace Sortable {
     fallbackOnBody?: Boolean;
 
     /**
-     * The `stopPropagation()` method of the Event interface prevents further propagation of the current event in the capturing and bubbling phases.
-     * @defualts `false`
-     */
-    stopPropagation?: Boolean;
-
-    /**
      * When the value is false, the dragged element will return to the starting position of the drag.
      * @defaults `true`
      */
