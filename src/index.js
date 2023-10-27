@@ -30,14 +30,7 @@ import Virtual from './Plugins/Virtual.js';
 import Helper from './helper.js';
 
 const expando = 'Sortable' + Date.now();
-
-const FromTo = {
-  sortable: null,
-  group: null,
-  node: null,
-  rect: {},
-  offset: {},
-};
+const FromTo = { sortable: null, group: null, node: null, rect: {}, offset: {} };
 
 let rootEl,
   dragEl,
@@ -138,15 +131,10 @@ function Sortable(el, options) {
 
   this.el = el;
   this.options = options = Object.assign({}, options);
+  this.plugins = [];
 
   const defaults = {
     disabled: false,
-    virtual: false,
-    scroller: null,
-    dataKeys: [],
-    keeps: 30,
-    size: null,
-    headerSize: 0,
     group: '',
     animation: 150,
     multiple: false,
@@ -198,40 +186,46 @@ function Sortable(el, options) {
   this.autoScroller = new AutoScroll(this.options);
   this.multiplayer = new Multiple(this.options);
   this.animator = new Animation(this.options);
-  this.virtual = new Virtual(this);
 }
 
 Sortable.prototype = {
   constructor: Sortable,
 
   // ========================================= Public Methods =========================================
+  mount(plugin) {
+    plugin.Sortable = this;
+    plugin.init && plugin.init();
+
+    this.plugins.push(plugin);
+  },
+
   destroy() {
     this._dispatchEvent('onDestroy', this);
     this.el[expando] = null;
 
-    for (let i = 0; i < events.start.length; i++) {
-      off(this.el, events.start[i], this._onDrag);
-    }
+    events.start.forEach((event) => off(this.el, event, this._onDrag));
+    this.plugins.forEach((plugin) => plugin.destroy && plugin.destroy());
 
     sortables.splice(sortables.indexOf(this.el), 1);
-    this.virtual._destroy();
     this._clearState();
 
-    this.el = this.virtual = this.animator = this.multiplayer = null;
+    this.el = this.animator = this.multiplayer = this.plugins = null;
   },
 
   option(key, value) {
     let options = this.options;
-    let lastOptions = Object.assign({}, options);
     if (value === void 0) {
       return options[key];
-    } else {
-      options[key] = value;
-      if (key === 'group') {
-        _prepareGroup(options);
-      }
-      this.virtual._onOptionUpdated(key, value, lastOptions);
     }
+    // set option
+    options[key] = value;
+    if (key === 'group') {
+      _prepareGroup(options);
+    }
+  },
+
+  getSelectedElements() {
+    return this.multiplayer.getSelectedElements();
   },
 
   getNodeSize(node) {
@@ -242,10 +236,6 @@ Sortable.prototype = {
     return typeof this.options.direction === 'function'
       ? this.options.direction.call(this, dragEl, moveEvent)
       : this.options.direction;
-  },
-
-  getSelectedElements() {
-    return this.multiplayer.getSelectedElements();
   },
 
   // ========================================= Properties =========================================
@@ -316,16 +306,12 @@ Sortable.prototype = {
 
     // Delay is impossible for native DnD in Edge or IE
     if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
-      for (let i = 0; i < events.end.length; i++) {
-        on(this.el.ownerDocument, events.end[i], this._cancelStart);
-      }
-      for (let i = 0; i < events.move.length; i++) {
-        on(this.el.ownerDocument, events.move[i], this._delayMoveHandler);
-      }
+      events.move.forEach((event) => on(this.el.ownerDocument, event, this._delayMoveHandler));
+      events.end.forEach((event) => on(this.el.ownerDocument, event, this._cancelStart));
 
-      dragStartTimer = setTimeout(() => this._onStart(touch), delay);
+      dragStartTimer = setTimeout(() => this._prepareStart(touch), delay);
     } else {
-      this._onStart(touch);
+      this._prepareStart(touch);
     }
   },
 
@@ -342,15 +328,11 @@ Sortable.prototype = {
   _cancelStart: function () {
     clearTimeout(dragStartTimer);
 
-    for (let i = 0; i < events.end.length; i++) {
-      off(this.el.ownerDocument, events.end[i], this._cancelStart);
-    }
-    for (let i = 0; i < events.move.length; i++) {
-      off(this.el.ownerDocument, events.move[i], this._delayMoveHandler);
-    }
+    events.move.forEach((event) => off(this.el.ownerDocument, event, this._delayMoveHandler));
+    events.end.forEach((event) => off(this.el.ownerDocument, event, this._cancelStart));
   },
 
-  _onStart: function (/** TouchEvent */ touch) {
+  _prepareStart: function (/** TouchEvent */ touch) {
     rootEl = this.el;
 
     if (touch) {
@@ -372,7 +354,7 @@ Sortable.prototype = {
     } catch (error) {}
   },
 
-  _onTrulyStarted: function () {
+  _onStarted: function () {
     Sortable.active = this;
 
     this._dispatchEvent('onDrag', { ..._emits(), event: downEvent });
@@ -396,21 +378,18 @@ Sortable.prototype = {
     preventDefault(evt);
     if (!downEvent || !dragEl || !_positionChanged(evt)) return;
 
+    // Init in the move event to prevent conflict with the click event
+    !moveEvent && this._onStarted();
+
     const { event, target } = getEvent(evt);
 
-    // Init in the move event to prevent conflict with the click event
-    if (!moveEvent) {
-      this._onTrulyStarted();
-    }
     moveEvent = event;
 
     helper.move(event.clientX - downEvent.clientX, event.clientY - downEvent.clientY);
     this._autoScroll(target);
 
     const nearest = _detectNearestSortable(event.clientX, event.clientY);
-    if (nearest) {
-      nearest[expando]._onMove(event, target);
-    }
+    nearest && nearest[expando]._onMove(event, target);
   },
 
   _autoScroll: function (target) {
@@ -621,17 +600,15 @@ Sortable.prototype = {
   },
 
   _unbindMoveEvents: function () {
-    for (let i = 0; i < events.move.length; i++) {
-      off(listenerNode, events.move[i], this._nearestSortable);
-    }
+    events.move.forEach((event) => off(listenerNode, event, this._nearestSortable));
   },
 
   _unbindDropEvents: function () {
-    for (let i = 0; i < events.end.length; i++) {
-      off(listenerNode, events.end[i], this._onDrop);
-    }
+    events.end.forEach((event) => off(listenerNode, event, this._onDrop));
   },
 };
+
+Sortable.Virtual = Virtual;
 
 Sortable.utils = {
   on: on,

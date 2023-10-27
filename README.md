@@ -36,7 +36,7 @@ npm install sortable-dnd --save
 ```js
 import Sortable from 'sortable-dnd'
 
-var sortable = new Sortable(
+let sortable = new Sortable(
   document.getElementById('group'),
   {
     // draggable: 'li', // use tagName 
@@ -52,6 +52,26 @@ var sortable = new Sortable(
 )
 ```
 
+## Use Virtual
+```js
+import Sortable from 'sortable-dnd'
+
+let list = [
+  { id: 1, text: 'a' },
+  { id: 2, text: 'b' },
+  { id: 3, text: 'c' },
+  ...
+]
+
+let sortable = new Sortable(element);
+
+let virtual = new Sortable.Virtual({
+  scroller: document,
+  dataKeys: list.map(item => item.id)
+});
+
+sortable.mount(virtual);
+```
 
 ## Options
 
@@ -107,8 +127,7 @@ new Sortable(element, {
 **Virtual List Options**
 
 ```js
-new Sortable(element, {
-  virtual: false, // Support for virtual lists if set to `true`
+new Sortable.Virtual({
   scroller: null, // Virtual list scrolling element
   dataKeys: [], // The unique key values of all items in the list
   keeps: 30, // The number of lines rendered by the virtual scroll
@@ -117,10 +136,10 @@ new Sortable(element, {
   direction: 'vertical', // `vertical/horizontal`, scroll direction
 
   onCreate: (range) => {
-    // Triggered when the virual list created
+    // This event is triggered only once during `sortable.mount()`
   },
   onUpdate: (range) => {
-    // Triggered when the rendering parameters of the virtual list changed
+    // Triggered when the rendering params changed
   },
   onScroll: ({ offset, top, bottom }) => {
     // Triggered when the virtual list scroller is scrolled
@@ -138,10 +157,13 @@ new Sortable(element, {
 ## Methods
 
 ```js
-var sortable = new Sortable(el);
+let sortable = new Sortable(el);
 ```
 
 ```js
+// Mounting a plug-in
+sortable.mount(plugin);
+
 // Manually clear all the state of the component, using this method the component will not be draggable
 sortable.destroy();
 
@@ -155,38 +177,39 @@ sortable.getSelectedElements();
 **Virtual List Methods**
 
 ```js
+let virtual = new Sortable.Virtual();
+```
+
+```js
+// Get or set the option value, depending on whether the `value` is passed in
+virtual.option(key, value?);
+
 // Recalculate the range. The `onUpdate` will be triggered after the calculation is completed
-sortable.virtual.updateRange();
+virtual.updateRange();
 
 // Updates the size of a specified node
-sortable.virtual.updateItemSize();
-
-// Current scrolling direction is top/left
-sortable.virtual.isFront();
-
-// Current scrolling direction is down/right
-sortable.virtual.isBehind();
+virtual.updateItemSize();
 
 // Git item size by data-key
-sortable.virtual.getSize(dataKey: String | Number);
+virtual.getSize(dataKey: String | Number);
 
 // Get the current scroll height/width
-sortable.virtual.getOffset();
+virtual.getOffset();
 
 // Get client viewport size
-sortable.virtual.getClientSize();
+virtual.getClientSize();
 
 // Get the current scrolling distance
-sortable.virtual.getScrollSize();
+virtual.getScrollSize();
 
 // Scroll to bottom of list
-sortable.virtual.scrollToBottom();
+virtual.scrollToBottom();
 
 // Scroll to the specified offset
-sortable.virtual.scrollToOffset(offset: Number);
+virtual.scrollToOffset(offset: Number);
 
 // Scroll to the specified index position
-sortable.virtual.scrollToIndex(index: Number);
+virtual.scrollToIndex(index: Number);
 ```
 
 ## Static Methods & Properties

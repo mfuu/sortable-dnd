@@ -33,15 +33,16 @@ Helper.prototype = {
     toggleClass(this.helper, ghostClass, true);
 
     const helperStyle = {
+      position: 'fixed',
       top: rect.top,
       left: rect.left,
       width: rect.width,
       height: rect.height,
-      maxHeight: rect.height,
-      position: 'fixed',
+      minWidth: rect.width,
+      minHeight: rect.height,
       opacity: '0.8',
-      overflow: 'hidden',
       'z-index': 100000,
+      'box-sizing': 'border-box',
       'pointer-events': 'none',
       ...ghostStyle,
     };

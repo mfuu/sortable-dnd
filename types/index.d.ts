@@ -3,8 +3,6 @@ declare class Sortable {
 
   public options: Sortable.Options;
 
-  public virtual: Sortable.Virtual;
-
   /**
    * @param element The Parent which holds the draggable element(s).
    * @param options Options to customise the behavior of the drag animations.
@@ -26,6 +24,9 @@ declare class Sortable {
    */
   static ghost: HTMLElement | null;
 
+  /**
+   * Public Methods.
+   */
   static utils: Sortable.Utils;
 
   /**
@@ -42,7 +43,27 @@ declare class Sortable {
   static get(el: HTMLElement): Sortable | undefined;
 
   /**
-   * Get or set the option value, depending on whether the `value` is passed in
+   * Mounting a plug-in
+   * @param plugin plugin instance
+   * @example
+   * var list = [
+   *    { id: 1, text: 'a' },
+   *    { id: 2, text: 'b' },
+   *    { id: 3, text: 'c' },
+   *    ...
+   * ]
+   * var sortable = new Sortable(element);
+   * var virtual = new Sortable.Virtual({
+   *    scroller: document,
+   *    dataKeys: list.map(item => item.id),
+   * });
+   * 
+   * sortable.mount(virtual);
+   */
+  mount(plugin): void;
+
+  /**
+   * Get or set the option value, depending on whether the `value` is passed in.
    * @param name a Sortable.Options property.
    * @param value a value.
    */
@@ -55,7 +76,7 @@ declare class Sortable {
   destroy(): void;
 
   /**
-   * Get the selected elements in the list.
+   * Get the selected elements in the case of `multiple: true`.
    */
   getSelectedElements(): HTMLElement[];
 }
@@ -154,8 +175,8 @@ declare namespace Sortable {
     /**
      * Set value to allow drag between different lists.
      * @example
-     * String: '...'
-     * Object: { name: '...', put: true | false, pull: true | false }
+     * - String: '...'
+     * - Object: { name: '...', put: true | false, pull: true | false }
      * @defaults `' '`
      */
     group?: String | Group;
@@ -165,42 +186,6 @@ declare namespace Sortable {
      * @defaults `false`
      */
     multiple?: Boolean;
-
-    /**
-     * Support for virtual lists if set to `true`.
-     * @defaults `false`
-     */
-    virtual?: Boolean;
-
-    /**
-     * Virtual list scrolling element.
-     * @defaults `null`
-     */
-    scroller?: HTMLElement;
-
-    /**
-     * The unique key values of all items in the list.
-     * @defaults `[]`
-     */
-    dataKeys?: any[];
-
-    /**
-     * The number of lines rendered by the virtual scroll.
-     * @defaults `30`
-     */
-    keeps?: Number;
-
-    /**
-     * The estimated height of each piece of data.
-     * @defaults `null`
-     */
-    size?: Number;
-
-    /**
-     * Top height value to be ignored.
-     * @defaults `0`
-     */
-    headerSize?: Number;
 
     /**
      * `vertical/horizontal` | `Function`. By default, the direction is automatically determined.
@@ -325,24 +310,9 @@ declare namespace Sortable {
      * Triggered when element is unselected.
      */
     onDeselect?: (params: Select) => void;
-
-    /**
-     * Triggered when the virtual list is scrolled.
-     */
-    onScroll?: (params: ScrollState) => void;
-
-    /**
-     * Triggered when the virual list created.
-     */
-    onCreate?: (params: Range) => void;
-
-    /**
-     * Triggered when the rendering parameters of the virtual list change.
-     */
-    onUpdate?: (params: Range) => void;
   }
 
-  interface Utils {
+  export interface Utils {
     /**
      * Attach an event handler function.
      * @param element an HTMLElement.
@@ -408,7 +378,73 @@ declare namespace Sortable {
     toggleClass(element: HTMLElement, name: String, state: Boolean): void;
   }
 
-  interface Virtual {
+  export interface VirtualOptions {
+    /**
+     * Virtual list scrolling element.
+     * @defaults `null`
+     */
+    scroller?: HTMLElement;
+
+    /**
+     * The unique key values of all items in the list.
+     * @defaults `[]`
+     */
+    dataKeys?: any[];
+
+    /**
+     * The number of lines rendered by the virtual scroll.
+     * @defaults `30`
+     */
+    keeps?: Number;
+
+    /**
+     * The estimated height of each piece of data.
+     * @defaults `null`
+     */
+    size?: Number;
+
+    /**
+     * Top height value to be ignored.
+     * @defaults `0`
+     */
+    headerSize?: Number;
+
+    /**
+     * Specifying the scrolling direction of the virtual list.
+     * @defaults `vertical`
+     */
+    direction?: 'vertical' | 'horizontal';
+
+    /**
+     * Triggered when the virtual list is scrolled.
+     */
+    onScroll?: (params: ScrollState) => void;
+
+    /**
+     * Triggered when the virual list created.
+     */
+    onCreate?: (params: Range) => void;
+
+    /**
+     * Triggered when the rendering parameters of the virtual list change.
+     */
+    onUpdate?: (params: Range) => void;
+  }
+
+  export class Virtual {
+    /**
+     * @param options virtual list options
+     */
+    constructor(options: VirtualOptions);
+
+    /**
+     * Get or set the option value, depending on whether the `value` is passed in.
+     * @param name a Sortable.Options property.
+     * @param value a value.
+     */
+    option<K extends keyof VirtualOptions>(name: K, value: VirtualOptions[K]): void;
+    option<K extends keyof VirtualOptions>(name: K): VirtualOptions[K];
+
     /**
      * Recalculate the range. The callback function `onUpdate` will be triggered after the calculation is completed.
      */
@@ -420,16 +456,6 @@ declare namespace Sortable {
      * @param size node size
      */
     updateItemSize(key: String | Number, size: Number): void;
-
-    /**
-     * Current scrolling direction is top/left.
-     */
-    isFront(): Boolean;
-
-    /**
-     * Current scrolling direction is down/right.
-     */
-    isBehind(): Boolean;
 
     /**
      * Git item size by data-key.

@@ -2,7 +2,6 @@ import Sortable from '../index.js';
 import { on, off, css, isHTMLElement, getMutationObserver, isDocument } from '../utils';
 
 const CACLTYPE = {
-  DOWN: 'DOWN',
   INIT: 'INIT',
   FIXED: 'FIXED',
   DYNAMIC: 'DYNAMIC',
@@ -28,25 +27,34 @@ const autoObserve = function () {
   return false;
 };
 
-const getScroller = function (scroller) {
-  return isDocument(scroller) ? scroller.documentElement || scroller.body : scroller;
-};
+function Virtual(options) {
+  this.options = options = Object.assign({}, options);
 
-function Virtual(sortable) {
-  this.sortable = sortable;
-  this.options = sortable.options;
+  const defaults = {
+    scroller: null,
+    dataKeys: [],
+    keeps: 30,
+    size: null,
+    headerSize: 0,
+    direction: 'vertical',
+  };
 
-  this.offset = 0;
-  this.direction = '';
+  // Set default options
+  for (const name in defaults) {
+    !(name in this.options) && (this.options[name] = defaults[name]);
+  }
 
-  this.sizes = new Map();
-  this.mutationObserver = null;
-  this.buffer = Math.round(this.options.keeps / 3);
+  this._updateScroller();
 
-  this.renderState = CACLTYPE.INIT;
-  this.calcType = CACLTYPE.INIT;
-  this.calcSize = { average: 0, total: 0, fixed: 0 };
   this.range = { start: 0, end: 0, render: 0, front: 0, behind: 0 };
+  this.sizes = new Map();
+  this.offset = 0;
+  this.buffer = Math.round(this.options.keeps / 3);
+  this.calcSize = { average: 0, total: 0, fixed: 0 };
+  this.calcType = CACLTYPE.INIT;
+  this.rendered = false;
+  this.scrollDirection = '';
+  this.mutationObserver = null;
 
   // Bind all private methods
   for (let fn in this) {
@@ -54,44 +62,51 @@ function Virtual(sortable) {
       this[fn] = this[fn].bind(this);
     }
   }
-
-  this.options.virtual && this._init();
 }
 
 Virtual.prototype = {
   constructor: Virtual,
 
+  init() {
+    if (isHTMLElement(this.options.scroller)) {
+      on(this.options.scroller, 'scroll', this._onScroll);
+    }
+
+    autoObserve() && this._observe();
+    this.updateRange();
+  },
+
+  destroy() {
+    if (isHTMLElement(this.options.scroller)) {
+      off(this.options.scroller, 'scroll', this._onScroll);
+    }
+    this.mutationObserver.disconnect();
+    this.mutationObserver = null;
+  },
+
   // ========================================= Public Methods =========================================
-  isFront() {
-    return this.direction === DIRECTION.FRONT;
-  },
-
-  isBehind() {
-    return this.direction === DIRECTION.BEHIND;
-  },
-
   getSize(dataKey) {
     return this.sizes.get(dataKey);
   },
 
   getOffset() {
     const scrollOffset = this._isHorizontal() ? 'scrollLeft' : 'scrollTop';
-    return getScroller(this.options.scroller)[scrollOffset];
+    return this.scrollEl[scrollOffset];
   },
 
   getClientSize() {
     const clientSizeKey = this._isHorizontal() ? 'clientWidth' : 'clientHeight';
-    return getScroller(this.options.scroller)[clientSizeKey];
+    return this.scrollEl[clientSizeKey];
   },
 
   getScrollSize() {
     const scrollSizeKey = this._isHorizontal() ? 'scrollWidth' : 'scrollHeight';
-    return getScroller(this.options.scroller)[scrollSizeKey];
+    return this.scrollEl[scrollSizeKey];
   },
 
   scrollToOffset(offset) {
     const scrollKey = this._isHorizontal() ? 'scrollLeft' : 'scrollTop';
-    getScroller(this.options.scroller)[scrollKey] = offset;
+    this.scrollEl[scrollKey] = offset;
   },
 
   scrollToIndex(index) {
@@ -118,15 +133,37 @@ Virtual.prototype = {
     }, 5);
   },
 
+  option(key, value) {
+    if (value === void 0) return this.options[key];
+
+    // update the scroll listener on node
+    if (key === 'scroller') {
+      off(this.options.scroller, 'scroll', this._onScroll);
+
+      if (value && isHTMLElement(value)) {
+        on(value, 'scroll', this._onScroll);
+      }
+      this._updateScroller();
+    }
+    // delete useless sizes
+    if (key === 'dataKeys') {
+      this.sizes.forEach((v, k) => {
+        !value.includes(k) && this.sizes.delete(k);
+      });
+    }
+
+    this.options[key] = value;
+  },
+
   updateItemSize(key, size) {
     this._onItemResized(key, size);
   },
 
   updateRange() {
     let start = this.range.start;
-    if (this.isFront()) {
+    if (this._isFront()) {
       start -= LEADING_BUFFER;
-    } else if (this.isBehind()) {
+    } else if (this._isBehind()) {
       start += LEADING_BUFFER;
     }
 
@@ -136,27 +173,12 @@ Virtual.prototype = {
   },
 
   // ========================================= Properties =========================================
-  _init() {
-    if (isHTMLElement(this.options.scroller)) {
-      on(this.options.scroller, 'scroll', this._onScroll);
-    }
-
-    if (autoObserve()) {
-      this._sizeObserve();
-    }
-
-    this.updateRange();
+  _updateScroller() {
+    const scrollEl = this.options.scroller;
+    this.scrollEl = isDocument(scrollEl) ? scrollEl.documentElement || scrollEl.body : scrollEl;
   },
 
-  _destroy() {
-    if (isHTMLElement(this.options.scroller)) {
-      off(this.options.scroller, 'scroll', this._onScroll);
-    }
-    this.mutationObserver.disconnect();
-    this.mutationObserver = null;
-  },
-
-  _sizeObserve() {
+  _observe() {
     const MutationObserver = getMutationObserver();
     this.mutationObserver = new MutationObserver((mutationsList) => {
       const children = mutationsList[0].target.children;
@@ -165,43 +187,19 @@ Virtual.prototype = {
         if (!node.dataset.key || node === Sortable.ghost || css(node, 'display') === 'none') {
           continue;
         }
-
-        const size = this.sortable.getNodeSize(node);
-        this._onItemResized(node.dataset.key, size);
+        this._onItemResized(
+          node.dataset.key,
+          node[this._isHorizontal() ? 'offsetWidth' : 'offsetHeight']
+        );
       }
 
-      if (this.renderState === CACLTYPE.INIT) {
-        this.renderState = CACLTYPE.DOWN;
+      if (!this.rendered) {
+        this.rendered = true;
         this.updateRange();
       }
     });
 
-    this.mutationObserver.observe(this.sortable.el, OBSERVE_CONFIG);
-  },
-
-  _onOptionUpdated(key, value, lastOptions) {
-    // delete the oberver if virtual set to false
-    if (key === 'virtual') {
-      value ? this._init() : this._destroy();
-    }
-
-    // update the scroll listener on node
-    if (key === 'scroller') {
-      off(lastOptions.scroller, 'scroll', this._onScroll);
-
-      if (value && isHTMLElement(value)) {
-        on(value, 'scroll', this._onScroll);
-      }
-    }
-
-    // delete useless sizes
-    if (key === 'dataKeys') {
-      this.sizes.forEach((v, k) => {
-        if (!value.includes(k)) {
-          this.sizes.delete(k);
-        }
-      });
-    }
+    this.mutationObserver.observe(this.Sortable.el, OBSERVE_CONFIG);
   },
 
   _onItemResized(key, size) {
@@ -233,24 +231,24 @@ Virtual.prototype = {
     }
 
     if (this.offset === offset) {
-      this.direction = DIRECTION.FIXED;
+      this.scrollDirection = DIRECTION.FIXED;
     } else {
-      this.direction = offset < this.offset ? DIRECTION.FRONT : DIRECTION.BEHIND;
+      this.scrollDirection = offset < this.offset ? DIRECTION.FRONT : DIRECTION.BEHIND;
     }
 
     this.offset = offset;
 
     const params = { offset, top: false, bottom: false };
 
-    if (this.isFront()) {
+    if (this._isFront()) {
       params.top = !!this.options.dataKeys.length && offset <= 0;
       this._onScrollFront();
-    } else if (this.isBehind()) {
+    } else if (this._isBehind()) {
       params.bottom = clientSize + offset + 1 >= scrollSize;
       this._onScrollBehind();
     }
 
-    this.sortable._dispatchEvent('onScroll', params);
+    this._dispatchEvent('onScroll', params);
   },
 
   _onScrollFront() {
@@ -325,8 +323,8 @@ Virtual.prototype = {
     this.range.behind = this._getPadBehind();
     this.range.render = this._getOffsetByRange(start, end + 1);
 
-    const eventName = this.renderState === CACLTYPE.INIT ? 'onCreate' : 'onUpdate';
-    this.sortable._dispatchEvent(eventName, { ...this.range });
+    const eventName = this.rendered ? 'onUpdate' : 'onCreate';
+    this._dispatchEvent(eventName, { ...this.range });
   },
 
   _getPadFront() {
@@ -383,12 +381,27 @@ Virtual.prototype = {
     return this._isFixed() ? this.calcSize.fixed : this.calcSize.average || this.options.size;
   },
 
+  _isFront() {
+    return this.scrollDirection === DIRECTION.FRONT;
+  },
+
+  _isBehind() {
+    return this.scrollDirection === DIRECTION.BEHIND;
+  },
+
   _isFixed() {
     return this.calcType === CACLTYPE.FIXED;
   },
 
   _isHorizontal() {
-    return this.sortable.getDirection() !== 'vertical';
+    return this.options.direction !== 'vertical';
+  },
+
+  _dispatchEvent: function (emit, params) {
+    const callback = this.options[emit];
+    if (typeof callback === 'function') {
+      callback(params);
+    }
   },
 };
 
