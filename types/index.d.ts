@@ -46,14 +46,18 @@ declare class Sortable {
    * Mounting a plug-in
    * @param plugin plugin instance
    * @example
+   * import { Sortable, Virtual } from 'sortable-dnd'
+   * 
    * var list = [
    *    { id: 1, text: 'a' },
    *    { id: 2, text: 'b' },
    *    { id: 3, text: 'c' },
    *    ...
-   * ]
+   * ];
+   * 
    * var sortable = new Sortable(element);
-   * var virtual = new Sortable.Virtual({
+   * 
+   * var virtual = new Virtual({
    *    scroller: document,
    *    dataKeys: list.map(item => item.id),
    * });
@@ -61,6 +65,12 @@ declare class Sortable {
    * sortable.mount(virtual);
    */
   mount(plugin): void;
+
+  /**
+   * Unmount a plug-in
+   * @param plugin plugin instance
+   */
+  unmount(plugin): void;
 
   /**
    * Get or set the option value, depending on whether the `value` is passed in.
@@ -383,13 +393,19 @@ declare namespace Sortable {
      * Virtual list scrolling element.
      * @defaults `null`
      */
-    scroller?: HTMLElement;
+    scroller: HTMLElement;
 
     /**
      * The unique key values of all items in the list.
      * @defaults `[]`
      */
-    dataKeys?: any[];
+    dataKeys: any[];
+
+    /**
+     * HTML data attributes.
+     * @defaults `'data-key'`
+     */
+    dataKey?: String;
 
     /**
      * The number of lines rendered by the virtual scroll.
@@ -398,16 +414,16 @@ declare namespace Sortable {
     keeps?: Number;
 
     /**
-     * The estimated height of each piece of data.
+     * The estimated height / width of each piece of data.
      * @defaults `null`
      */
     size?: Number;
 
     /**
-     * Top height value to be ignored.
+     * Top / Left size to be ignored.
      * @defaults `0`
      */
-    headerSize?: Number;
+    ignoredSize?: Number;
 
     /**
      * Specifying the scrolling direction of the virtual list.
@@ -458,33 +474,33 @@ declare namespace Sortable {
     updateItemSize(key: String | Number, size: Number): void;
 
     /**
-     * Git item size by data-key.
-     * @param dataKey list item key.
+     * Git item size by `dataKey`.
+     * @param dataKey list item key
      */
     getSize(dataKey: String | Number): Number;
 
     /**
-     * Get the current scroll height/width.
+     * Get the current scroll size (scrollLeft / scrollTop).
      */
     getOffset(): Number;
 
     /**
-     * Get client viewport size.
+     * Get the scroll element's size (clientWidth / clientHeight).
      */
     getClientSize(): Number;
 
     /**
-     * Get the current scrolling distance.
+     * Get the current scrolling distance (scrollWidth / scrollHeight).
      */
     getScrollSize(): Number;
 
     /**
-     * Scroll to bottom of list.
+     * Scroll to the bottom of the current scroll element.
      */
     scrollToBottom(): void;
 
     /**
-     * Scroll to the specified offset.
+     * Scroll to the specified offset of the current scroll element.
      * @param offset
      */
     scrollToOffset(offset: Number): void;

@@ -54,18 +54,18 @@ let sortable = new Sortable(
 
 ## Use Virtual
 ```js
-import Sortable from 'sortable-dnd'
+import { Sortable, Virtual } from 'sortable-dnd'
 
 let list = [
   { id: 1, text: 'a' },
   { id: 2, text: 'b' },
   { id: 3, text: 'c' },
   ...
-]
+];
 
 let sortable = new Sortable(element);
 
-let virtual = new Sortable.Virtual({
+let virtual = new Virtual({
   scroller: document,
   dataKeys: list.map(item => item.id)
 });
@@ -130,6 +130,7 @@ new Sortable(element, {
 new Sortable.Virtual({
   scroller: null, // Virtual list scrolling element
   dataKeys: [], // The unique key values of all items in the list
+  dataKey: 'data-key', // HTML data attributes
   keeps: 30, // The number of lines rendered by the virtual scroll
   size: null, // The estimated height of each piece of data
   headerSize: 0, // Top height value to be ignored
@@ -164,6 +165,9 @@ let sortable = new Sortable(el);
 // Mounting a plug-in
 sortable.mount(plugin);
 
+// Unmount a plug-in
+sortable.unmount(plugin);
+
 // Manually clear all the state of the component, using this method the component will not be draggable
 sortable.destroy();
 
@@ -190,16 +194,16 @@ virtual.updateRange();
 // Updates the size of a specified node
 virtual.updateItemSize();
 
-// Git item size by data-key
+// Git item size by `dataKey`
 virtual.getSize(dataKey: String | Number);
 
-// Get the current scroll height/width
+// Get the current scroll size (scrollLeft / scrollTop)
 virtual.getOffset();
 
-// Get client viewport size
+// Get the scroll element's size (clientWidth / clientHeight)
 virtual.getClientSize();
 
-// Get the current scrolling distance
+// Get the current scrolling distance (scrollWidth / scrollHeight)
 virtual.getScrollSize();
 
 // Scroll to bottom of list

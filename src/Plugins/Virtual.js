@@ -31,11 +31,12 @@ function Virtual(options) {
   this.options = options = Object.assign({}, options);
 
   const defaults = {
-    scroller: null,
-    dataKeys: [],
-    keeps: 30,
     size: null,
-    headerSize: 0,
+    keeps: 30,
+    dataKey: 'data-key',
+    dataKeys: [],
+    scroller: null,
+    ignoredSize: 0,
     direction: 'vertical',
   };
 
@@ -44,7 +45,7 @@ function Virtual(options) {
     !(name in this.options) && (this.options[name] = defaults[name]);
   }
 
-  this._updateScroller();
+  this._updateScrollEl();
 
   this.range = { start: 0, end: 0, render: 0, front: 0, behind: 0 };
   this.sizes = new Map();
@@ -53,6 +54,7 @@ function Virtual(options) {
   this.calcSize = { average: 0, total: 0, fixed: 0 };
   this.calcType = CACLTYPE.INIT;
   this.rendered = false;
+  this.scrollEl = null;
   this.scrollDirection = '';
   this.mutationObserver = null;
 
@@ -90,23 +92,19 @@ Virtual.prototype = {
   },
 
   getOffset() {
-    const scrollOffset = this._isHorizontal() ? 'scrollLeft' : 'scrollTop';
-    return this.scrollEl[scrollOffset];
+    return this.scrollEl[this._isHorizontal() ? 'scrollLeft' : 'scrollTop'];
   },
 
   getClientSize() {
-    const clientSizeKey = this._isHorizontal() ? 'clientWidth' : 'clientHeight';
-    return this.scrollEl[clientSizeKey];
+    return this.scrollEl[this._isHorizontal() ? 'clientWidth' : 'clientHeight'];
   },
 
   getScrollSize() {
-    const scrollSizeKey = this._isHorizontal() ? 'scrollWidth' : 'scrollHeight';
-    return this.scrollEl[scrollSizeKey];
+    return this.scrollEl[this._isHorizontal() ? 'scrollWidth' : 'scrollHeight'];
   },
 
   scrollToOffset(offset) {
-    const scrollKey = this._isHorizontal() ? 'scrollLeft' : 'scrollTop';
-    this.scrollEl[scrollKey] = offset;
+    this.scrollEl[this._isHorizontal() ? 'scrollLeft' : 'scrollTop'] = offset;
   },
 
   scrollToIndex(index) {
@@ -143,7 +141,7 @@ Virtual.prototype = {
       if (value && isHTMLElement(value)) {
         on(value, 'scroll', this._onScroll);
       }
-      this._updateScroller();
+      this._updateScrollEl();
     }
     // delete useless sizes
     if (key === 'dataKeys') {
@@ -173,7 +171,7 @@ Virtual.prototype = {
   },
 
   // ========================================= Properties =========================================
-  _updateScroller() {
+  _updateScrollEl() {
     const scrollEl = this.options.scroller;
     this.scrollEl = isDocument(scrollEl) ? scrollEl.documentElement || scrollEl.body : scrollEl;
   },
@@ -184,13 +182,11 @@ Virtual.prototype = {
       const children = mutationsList[0].target.children;
       for (let i = 0, len = children.length; i < len; i++) {
         const node = children[i];
-        if (!node.dataset.key || node === Sortable.ghost || css(node, 'display') === 'none') {
+        const key = node.getAttribute(this.options.dataKey);
+        if (!key || node === Sortable.ghost || css(node, 'display') === 'none') {
           continue;
         }
-        this._onItemResized(
-          node.dataset.key,
-          node[this._isHorizontal() ? 'offsetWidth' : 'offsetHeight']
-        );
+        this._onItemResized(key, node[this._isHorizontal() ? 'offsetWidth' : 'offsetHeight']);
       }
 
       if (!this.rendered) {
@@ -271,7 +267,7 @@ Virtual.prototype = {
   },
 
   _getScrollItems() {
-    const offset = this.offset - this.options.headerSize;
+    const offset = this.offset - this.options.ignoredSize;
     if (offset <= 0) {
       return 0;
     }
@@ -349,10 +345,9 @@ Virtual.prototype = {
       return 0;
     }
 
-    const { headerSize } = this.options;
     const offset = this._getOffsetByRange(0, index);
 
-    return headerSize + offset;
+    return this.options.ignoredSize + offset;
   },
 
   _getOffsetByRange(start, end) {

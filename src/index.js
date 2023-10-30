@@ -199,6 +199,13 @@ Sortable.prototype = {
     this.plugins.push(plugin);
   },
 
+  unmount(plugin) {
+    plugin.destroy && plugin.destroy();
+
+    const index = this.plugins.indexOf(plugin);
+    index > -1 && this.plugins.splice(index, 1);
+  },
+
   destroy() {
     this._dispatchEvent('onDestroy', this);
     this.el[expando] = null;
