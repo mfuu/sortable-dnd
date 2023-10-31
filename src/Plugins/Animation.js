@@ -16,7 +16,7 @@ Animation.prototype = {
 
     for (let i = start; i <= end; i++) {
       const node = children[i];
-      if (css(node, 'display') === 'none') continue;
+      if (!node || css(node, 'display') === 'none') continue;
       if (node === except || node === Sortable.ghost) continue;
       this.animations.push({ node: node, rect: getRect(node) });
     }

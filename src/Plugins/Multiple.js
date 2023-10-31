@@ -1,12 +1,5 @@
 import Sortable from '../index.js';
-import {
-  getRect,
-  getOffset,
-  toggleClass,
-  sortByOffset,
-  offsetChanged,
-  toggleVisible,
-} from '../utils';
+import { sort, getRect, getOffset, toggleClass, offsetChanged, toggleVisible } from '../utils';
 
 const multiFromTo = { sortable: null, nodes: [] };
 
@@ -14,11 +7,7 @@ let multiFrom = { ...multiFromTo },
   multiTo = { ...multiFromTo },
   selectedElements = {};
 
-export const getMultiDiffer = function () {
-  return { from: { ...multiFrom }, to: { ...multiTo } };
-};
-
-export const randomCode = function () {
+const randomCode = function () {
   return Number(Math.random().toString().slice(-3) + Date.now()).toString(32);
 };
 
@@ -42,6 +31,10 @@ Multiple.prototype = {
 
   getSelectedElements() {
     return selectedElements[this.groupName] || [];
+  },
+
+  getEmits() {
+    return { from: { ...multiFrom }, to: { ...multiTo } };
   },
 
   getHelper() {
@@ -88,9 +81,7 @@ Multiple.prototype = {
       from.sortable._dispatchEvent('onDeselect', params);
     }
 
-    selectedElements[this.groupName].sort((a, b) => {
-      return sortByOffset(getOffset(a, rootEl), getOffset(b, rootEl));
-    });
+    selectedElements[this.groupName].sort((a, b) => sort(a, b));
   },
 
   onDrag(rootEl, sortable) {
@@ -101,7 +92,7 @@ Multiple.prototype = {
     multiTo.sortable = sortable;
   },
 
-  onTrulyStarted(sortable) {
+  onStarted(sortable) {
     const dragEl = Sortable.dragged;
     sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
@@ -123,7 +114,7 @@ Multiple.prototype = {
     });
   },
 
-  onDrop(event, rootEl, downEvent, getEmits) {
+  onDrop(event, rootEl, dragEvent) {
     const dragEl = Sortable.dragged;
     multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
@@ -139,14 +130,14 @@ Multiple.prototype = {
       }
     });
 
-    multiFrom.sortable = downEvent.sortable;
+    multiFrom.sortable = dragEvent.sortable;
     multiTo.nodes = selectedElements[this.groupName].map((node) => {
       return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
     });
 
     const sortableChanged = multiFrom.sortable.el !== multiTo.sortable.el;
     const changed = sortableChanged || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
-    const params = { ...getEmits(), changed, event };
+    const params = { changed, event };
 
     if (sortableChanged) {
       multiFrom.sortable._dispatchEvent('onDrop', params);

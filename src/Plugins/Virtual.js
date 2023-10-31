@@ -18,9 +18,7 @@ const LEADING_BUFFER = 2;
 const OBSERVE_CONFIG = { subtree: true, childList: true, attributes: false };
 
 const autoObserve = function () {
-  if (getMutationObserver()) {
-    return true;
-  }
+  if (getMutationObserver()) return true;
   console.warn(
     `sortable-dnd: MutationObserver is not supported on this browser. You may have to call "updateItemSize" by yourself to update the node size.`
   );
@@ -44,8 +42,6 @@ function Virtual(options) {
   for (const name in defaults) {
     !(name in this.options) && (this.options[name] = defaults[name]);
   }
-
-  this._updateScrollEl();
 
   this.range = { start: 0, end: 0, render: 0, front: 0, behind: 0 };
   this.sizes = new Map();
@@ -71,6 +67,7 @@ Virtual.prototype = {
 
   init() {
     if (isHTMLElement(this.options.scroller)) {
+      this._updateScrollEl(this.options.scroller);
       on(this.options.scroller, 'scroll', this._onScroll);
     }
 
@@ -141,7 +138,7 @@ Virtual.prototype = {
       if (value && isHTMLElement(value)) {
         on(value, 'scroll', this._onScroll);
       }
-      this._updateScrollEl();
+      this._updateScrollEl(value);
     }
     // delete useless sizes
     if (key === 'dataKeys') {
@@ -171,9 +168,8 @@ Virtual.prototype = {
   },
 
   // ========================================= Properties =========================================
-  _updateScrollEl() {
-    const scrollEl = this.options.scroller;
-    this.scrollEl = isDocument(scrollEl) ? scrollEl.documentElement || scrollEl.body : scrollEl;
+  _updateScrollEl(scroller) {
+    this.scrollEl = isDocument(scroller) ? scroller.documentElement || scroller.body : scroller;
   },
 
   _observe() {
@@ -392,8 +388,8 @@ Virtual.prototype = {
     return this.options.direction !== 'vertical';
   },
 
-  _dispatchEvent: function (emit, params) {
-    const callback = this.options[emit];
+  _dispatchEvent: function (event, params) {
+    const callback = this.options[event];
     if (typeof callback === 'function') {
       callback(params);
     }

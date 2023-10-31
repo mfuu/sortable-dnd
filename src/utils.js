@@ -533,6 +533,19 @@ export function within(event, element, rect) {
   );
 }
 
+export function comparePosition(a, b) {
+  return a.compareDocumentPosition
+    ? a.compareDocumentPosition(b)
+    : a.contains
+    ? (a != b && a.contains(b) && 16) +
+      (a != b && b.contains(a) && 8) +
+      (a.sourceIndex >= 0 && b.sourceIndex >= 0
+        ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2)
+        : 1) +
+      0
+    : 0;
+}
+
 export function getMutationObserver() {
   return window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver;
 }
@@ -552,8 +565,9 @@ export function offsetChanged(before, after) {
   return xChanged || yChanged;
 }
 
-export function sortByOffset(before, after) {
-  return before.top === after.top ? before.left - after.left : before.top - after.top;
+export function sort(before, after) {
+  const compareValue = comparePosition(before, after);
+  return compareValue === 2 ? 1 : compareValue === 4 ? -1 : 0;
 }
 
 export function preventDefault(evt) {

@@ -25,13 +25,13 @@ AutoScroll.prototype = {
     this.autoScrollAnimationFrame = null;
   },
 
-  update(scrollEl, downEvent, moveEvent) {
+  update(scrollEl, dragEvent, moveEvent) {
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = requestAnimationFrame(() => {
-      if (downEvent && moveEvent) {
+      if (dragEvent && moveEvent) {
         this.autoScroll(scrollEl, moveEvent);
       }
-      this.update(scrollEl, downEvent, moveEvent);
+      this.update(scrollEl, dragEvent, moveEvent);
     });
   },
 

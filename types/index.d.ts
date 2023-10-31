@@ -48,18 +48,11 @@ declare class Sortable {
    * @example
    * import { Sortable, Virtual } from 'sortable-dnd'
    * 
-   * var list = [
-   *    { id: 1, text: 'a' },
-   *    { id: 2, text: 'b' },
-   *    { id: 3, text: 'c' },
-   *    ...
-   * ];
-   * 
    * var sortable = new Sortable(element);
    * 
    * var virtual = new Virtual({
    *    scroller: document,
-   *    dataKeys: list.map(item => item.id),
+   *    dataKeys: [],
    * });
    * 
    * sortable.mount(virtual);
