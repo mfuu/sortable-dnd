@@ -1,12 +1,13 @@
+import Sortable from '../index.js';
 import {
-  visible,
+  css,
+  sort,
+  matches,
   getRect,
+  getEvent,
   getOffset,
-  randomCode,
   toggleClass,
-  sortByOffset,
   offsetChanged,
-  sortableChanged,
 } from '../utils';
 
 const multiFromTo = { sortable: null, nodes: [] };
@@ -15,30 +16,33 @@ let multiFrom = { ...multiFromTo },
   multiTo = { ...multiFromTo },
   selectedElements = {};
 
-export const getMultiDiffer = function () {
-  return { from: { ...multiFrom }, to: { ...multiTo } };
+const randomCode = function () {
+  return Number(Math.random().toString().slice(-3) + Date.now()).toString(32);
 };
 
 function Multiple(options) {
+  this.active = false;
   this.options = options || {};
   this.groupName = options.group.name || 'group_' + randomCode();
 }
 
 Multiple.prototype = {
-  /**
-   * Indicates whether the multi-drag mode is used
-   * @returns {boolean}
-   */
-  allowDrag(dragEl) {
-    return (
-      this.options.multiple &&
-      selectedElements[this.groupName] &&
-      selectedElements[this.groupName].length &&
-      selectedElements[this.groupName].indexOf(dragEl) > -1
-    );
+  getSelectedElements() {
+    return selectedElements[this.groupName] || [];
+  },
+
+  getEmits() {
+    const emit = { from: {}, to: {} };
+    if (this.active) {
+      emit.from = { ...multiFrom };
+      emit.to = { ...multiTo };
+    }
+    return emit;
   },
 
   getHelper() {
+    if (!this.active) return null;
+
     const container = document.createElement('div');
     selectedElements[this.groupName].forEach((node, index) => {
       let clone = node.cloneNode(true);
@@ -57,36 +61,18 @@ Multiple.prototype = {
     return container;
   },
 
-  /**
-   * Collecting Multi-Drag Elements
-   */
-  select(event, dragEl, rootEl, from) {
-    if (!dragEl) return;
+  getOnEndParams() {
+    if (!this.active) return {};
 
-    if (!selectedElements[this.groupName]) {
-      selectedElements[this.groupName] = [];
-    }
-
-    const index = selectedElements[this.groupName].indexOf(dragEl);
-
-    toggleClass(dragEl, this.options.selectedClass, index < 0);
-
-    const params = { ...from, event };
-
-    if (index < 0) {
-      selectedElements[this.groupName].push(dragEl);
-      from.sortable._dispatchEvent('onSelect', params);
-    } else {
-      selectedElements[this.groupName].splice(index, 1);
-      from.sortable._dispatchEvent('onDeselect', params);
-    }
-
-    selectedElements[this.groupName].sort((a, b) => {
-      return sortByOffset(getOffset(a, rootEl), getOffset(b, rootEl));
-    });
+    const sortableChanged = multiFrom.sortable.el !== multiTo.sortable.el;
+    const changed = sortableChanged || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
+    return { changed };
   },
 
   onDrag(rootEl, sortable) {
+    this.active = this._isActive();
+    if (!this.active) return;
+
     multiFrom.sortable = sortable;
     multiFrom.nodes = selectedElements[this.groupName].map((node) => {
       return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
@@ -94,18 +80,23 @@ Multiple.prototype = {
     multiTo.sortable = sortable;
   },
 
-  onTrulyStarted(dragEl, sortable) {
+  onStarted(sortable) {
+    if (!this.active) return;
+
+    const dragEl = Sortable.dragged;
     sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
     selectedElements[this.groupName].forEach((node) => {
       if (node == dragEl) return;
-      visible(node, false);
+      css(node, 'display', 'none');
     });
 
     sortable.animator.animate();
   },
 
   onChange(dragEl, sortable) {
+    if (!this.active) return;
+
     const rect = getRect(dragEl);
     const offset = getOffset(dragEl, sortable.el);
 
@@ -115,13 +106,48 @@ Multiple.prototype = {
     });
   },
 
-  onDrop(event, dragEl, rootEl, downEvent, _emits) {
+  onDrop(dragEvent, dropEvent, from) {
+    if (!Sortable.dragged || !this._isMouseClick(dragEvent, dropEvent)) return;
+
+    const dragEl = Sortable.dragged;
+
+    const { selectHandle } = this.options;
+    const { target } = getEvent(dropEvent);
+
+    if (typeof selectHandle === 'function' && !selectHandle(dropEvent)) return;
+    if (typeof selectHandle === 'string' && !matches(target, selectHandle)) return;
+
+    if (!selectedElements[this.groupName]) {
+      selectedElements[this.groupName] = [];
+    }
+
+    const index = selectedElements[this.groupName].indexOf(dragEl);
+
+    toggleClass(dragEl, this.options.selectedClass, index < 0);
+
+    const params = { ...from, event: dropEvent };
+
+    if (index < 0) {
+      selectedElements[this.groupName].push(dragEl);
+      from.sortable._dispatchEvent('onSelect', params, false);
+    } else {
+      selectedElements[this.groupName].splice(index, 1);
+      from.sortable._dispatchEvent('onDeselect', params, false);
+    }
+
+    selectedElements[this.groupName].sort((a, b) => sort(a, b));
+  },
+
+  onEnd(rootEl, dragEvent) {
+    if (!this.active) return;
+
+    const dragEl = Sortable.dragged;
     multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
     const index = selectedElements[this.groupName].indexOf(dragEl);
 
     selectedElements[this.groupName].forEach((node, i) => {
-      visible(node, true);
+      css(node, 'display', '');
       if (i < index) {
         dragEl.parentNode.insertBefore(node, dragEl);
       } else {
@@ -130,27 +156,34 @@ Multiple.prototype = {
       }
     });
 
-    multiFrom.sortable = downEvent.sortable;
+    multiFrom.sortable = dragEvent.sortable;
     multiTo.nodes = selectedElements[this.groupName].map((node) => {
       return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
     });
 
-    const ctxChanged = sortableChanged(multiFrom, multiTo);
-    const changed = ctxChanged || this._offsetChanged(multiFrom.nodes, multiTo.nodes);
-    const params = { ..._emits(), changed, event };
-
-    if (ctxChanged) {
-      multiFrom.sortable._dispatchEvent('onDrop', params);
-    }
-    multiTo.sortable._dispatchEvent('onDrop', params);
-
     multiTo.sortable.animator.animate();
   },
 
-  _offsetChanged(ns1, ns2) {
-    return !!ns1.find((o2) => {
-      let o1 = ns2.find((n) => n.node === o2.node);
-      return offsetChanged(o1.offset, o2.offset);
+  _isActive() {
+    return (
+      this.options.multiple &&
+      selectedElements[this.groupName] &&
+      selectedElements[this.groupName].length &&
+      selectedElements[this.groupName].indexOf(Sortable.dragged) > -1
+    );
+  },
+
+  _isMouseClick: function (dragEvent, dropEvent) {
+    const difX = dropEvent.clientX - dragEvent.clientX;
+    const difY = dropEvent.clientY - dragEvent.clientY;
+    const difD = Math.sqrt(difX * difX + difY * difY);
+    return difD >= 0 && difD <= 1;
+  },
+
+  _offsetChanged(froms, tos) {
+    return !!froms.find((from) => {
+      const to = tos.find((t) => t.node === from.node);
+      return offsetChanged(from.offset, to.offset);
     });
   },
 };
