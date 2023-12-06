@@ -41,9 +41,10 @@ Helper.prototype = {
       minWidth: rect.width,
       minHeight: rect.height,
       opacity: '0.8',
-      'z-index': 100000,
-      'pointer-events': 'none',
+      overflow: 'hidden',
+      'z-index': '100000',
       'box-sizing': 'border-box',
+      'pointer-events': 'none',
       ...ghostStyle,
     };
 

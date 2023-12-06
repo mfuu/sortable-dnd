@@ -27,6 +27,21 @@ function Multiple(options) {
 }
 
 Multiple.prototype = {
+  select(element) {
+    toggleClass(element, this.options.selectedClass, true);
+
+    selectedElements[this.groupName].push(element);
+    selectedElements[this.groupName].sort((a, b) => sort(a, b));
+  },
+
+  deselect(element) {
+    const index = selectedElements[this.groupName].indexOf(element);
+    if (index > -1) {
+      toggleClass(element, this.options.selectedClass, false);
+      selectedElements[this.groupName].splice(index, 1);
+    }
+  },
+
   getSelectedElements() {
     return selectedElements[this.groupName] || [];
   },
@@ -173,7 +188,7 @@ Multiple.prototype = {
     );
   },
 
-  _isMouseClick: function (dragEvent, dropEvent) {
+  _isMouseClick(dragEvent, dropEvent) {
     const difX = dropEvent.clientX - dragEvent.clientX;
     const difY = dropEvent.clientY - dragEvent.clientY;
     const difD = Math.sqrt(difX * difX + difY * difY);

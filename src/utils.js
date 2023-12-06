@@ -385,7 +385,7 @@ export function index(el, selector) {
  * Gets nth child of el, ignoring hidden children, sortable's elements (does not ignore clone if it's visible) and non-draggable elements
  * @return {HTMLElement}          The child at index childNum, or null if not found
  */
-export function getChild(el, childNum, draggable, includeDragEl) {
+export function getChild(el, childNum, selector, includeDragEl) {
   let i = 0,
     currentChild = 0,
     children = el.children;
@@ -394,7 +394,7 @@ export function getChild(el, childNum, draggable, includeDragEl) {
     if (
       children[i] !== Sortable.ghost &&
       css(children[i], 'display') !== 'none' &&
-      closest(children[i], draggable, el, false) &&
+      closest(children[i], selector, el, false) &&
       (includeDragEl || children[i] !== Sortable.dragged)
     ) {
       if (currentChild === childNum) {
@@ -409,7 +409,7 @@ export function getChild(el, childNum, draggable, includeDragEl) {
 }
 
 // https://github.com/SortableJS/Sortable/blob/c5a882267542456d75b16d000dc1b603a907613a/src/Sortable.js#L161
-export function detectDirection(el, draggable) {
+export function detectDirection(el, selector) {
   let elCSS = css(el),
     elWidth =
       parseInt(elCSS.width) -
@@ -417,8 +417,8 @@ export function detectDirection(el, draggable) {
       parseInt(elCSS.paddingRight) -
       parseInt(elCSS.borderLeftWidth) -
       parseInt(elCSS.borderRightWidth),
-    child1 = getChild(el, 0, draggable),
-    child2 = getChild(el, 1, draggable),
+    child1 = getChild(el, 0, selector),
+    child2 = getChild(el, 1, selector),
     child1CSS = child1 && css(child1),
     child2CSS = child2 && css(child2),
     child1Width =
@@ -570,10 +570,6 @@ export function offsetChanged(before, after) {
 export function sort(before, after) {
   const compareValue = comparePosition(before, after);
   return compareValue === 2 ? 1 : compareValue === 4 ? -1 : 0;
-}
-
-export function _nextTick(fn) {
-  return setTimeout(fn, 0);
 }
 
 export function preventDefault(evt) {

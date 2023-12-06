@@ -15,11 +15,9 @@ import {
   containes,
   lastChild,
   getOffset,
-  _nextTick,
   IE11OrLess,
   toggleClass,
   offsetChanged,
-  isHTMLElement,
   preventDefault,
   detectDirection,
   getParentAutoScrollElement,
@@ -40,7 +38,6 @@ let rootEl,
   parentEl,
   dragEvent,
   moveEvent,
-  isMultiple,
   lastDropEl,
   listenerNode,
   lastHoverArea,
@@ -130,6 +127,7 @@ function Sortable(el, options) {
     handle: null,
     multiple: false,
     selectHandle: null,
+    customGhost: null,
     direction: function () {
       return detectDirection(el, options.draggable);
     },
@@ -189,7 +187,7 @@ Sortable.prototype = {
     sortables.splice(sortables.indexOf(this.el), 1);
     this._clearState();
 
-    this.el[expando] = this.animator = this.multiplayer = null;
+    this.el[expando] = this.animator = this.multiplayer = this.autoScroller = null;
   },
 
   option(key, value) {
@@ -206,6 +204,14 @@ Sortable.prototype = {
     if (key === 'group') {
       _prepareGroup(this.options);
     }
+  },
+
+  select(element) {
+    this.multiplayer.select(element);
+  },
+
+  deselect(element) {
+    this.multiplayer.deselect(element);
   },
 
   getSelectedElements() {
@@ -226,19 +232,7 @@ Sortable.prototype = {
     // Safari ignores further event handling after mousedown
     if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
 
-    const { draggable, handle } = this.options;
-
-    if (typeof draggable === 'function') {
-      // The function type must return an HTMLElement if used to specifies the drag element
-      const element = draggable(evt);
-      if (!element) return;
-      if (isHTMLElement(element)) {
-        dragEl = element;
-      }
-    } else {
-      // String use as 'TagName' or '.class' or '#id'
-      dragEl = closest(target, draggable, this.el, false);
-    }
+    dragEl = closest(target, this.options.draggable, this.el);
 
     // No dragging is allowed when there is no dragging element
     if (!dragEl || dragEl.animated) return;
@@ -270,18 +264,24 @@ Sortable.prototype = {
     on(listenerNode, 'touchcancel', this._onDrop);
     on(listenerNode, 'mouseup', this._onDrop);
 
-    if (typeof handle === 'function' && !handle(evt)) return;
+    const { handle } = this.options;
+    if (typeof handle === 'function' && !handle(event)) return;
     if (typeof handle === 'string' && !matches(target, handle)) return;
 
+    this._prepareStart(touch);
+  },
+
+  _prepareStart: function (touch) {
     const { delay, delayOnTouchOnly } = this.options;
+
     // Delay is impossible for native DnD in Edge or IE
     if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
       events.move.forEach((event) => on(this.el.ownerDocument, event, this._delayMoveHandler));
       events.end.forEach((event) => on(this.el.ownerDocument, event, this._cancelStart));
 
-      dragStartTimer = setTimeout(() => this._prepareStart(touch), delay);
+      dragStartTimer = setTimeout(() => this._onStart(touch), delay);
     } else {
-      this._prepareStart(touch);
+      this._onStart(touch);
     }
   },
 
@@ -302,7 +302,7 @@ Sortable.prototype = {
     events.end.forEach((event) => off(this.el.ownerDocument, event, this._cancelStart));
   },
 
-  _prepareStart: function (/** TouchEvent */ touch) {
+  _onStart: function (/** TouchEvent */ touch) {
     rootEl = this.el;
 
     if (touch) {
@@ -315,7 +315,7 @@ Sortable.prototype = {
     try {
       if (document.selection) {
         // Timeout neccessary for IE9
-        _nextTick(() => document.selection.empty());
+        setTimeout(() => document.selection.empty(), 0);
       } else {
         window.getSelection().removeAllRanges();
       }
@@ -326,10 +326,9 @@ Sortable.prototype = {
     Sortable.active = this;
 
     this._dispatchEvent('onDrag', { event: dragEvent });
-
     this.multiplayer.onStarted(this);
 
-    const element = this.multiplayer.getHelper() || dragEl;
+    const element = this._getGhostElement();
     helper.init(from.rect, element, this.el, this.options);
 
     Sortable.ghost = helper.node;
@@ -340,6 +339,15 @@ Sortable.prototype = {
     toggleClass(cloneEl, this.options.chosenClass, true);
 
     Safari && css(document.body, 'user-select', 'none');
+  },
+
+  _getGhostElement: function () {
+    const { customGhost } = this.options;
+    if (typeof customGhost === 'function') {
+      const selectedElements = this.multiplayer.getSelectedElements();
+      return customGhost(selectedElements.length ? selectedElements : [dragEl]);
+    }
+    return this.multiplayer.getHelper() || dragEl;
   },
 
   _nearestSortable: function (/** Event|TouchEvent */ evt) {
@@ -392,7 +400,7 @@ Sortable.prototype = {
     let rect = getRect(dropEl),
       direction =
         typeof this.options.direction === 'function'
-          ? this.options.direction.call(this, dragEl, moveEvent)
+          ? this.options.direction.call(moveEvent, dragEl, this)
           : this.options.direction,
       vertical = direction === 'vertical',
       mouseOnAxis = vertical ? moveEvent.clientY : moveEvent.clientX,
@@ -416,7 +424,7 @@ Sortable.prototype = {
     this._dispatchEvent('onMove', { event });
 
     rootEl = this.el;
-    dropEl = closest(target, this.options.draggable, rootEl, false);
+    dropEl = closest(target, this.options.draggable, rootEl);
 
     // insert to last
     if (rootEl !== from.sortable.el && (target === rootEl || !lastChild(rootEl))) {
@@ -425,10 +433,8 @@ Sortable.prototype = {
       return;
     }
 
-    if (!dropEl || dropEl.animated || !this._allowSwap()) return;
-    if (dropEl === cloneEl || dropEl === dragEl || containes(dropEl, cloneEl)) {
-      return;
-    }
+    if (!dropEl || dropEl.animated || dropEl === cloneEl || dropEl === dragEl) return;
+    if (!this._allowSwap() || containes(dropEl, cloneEl)) return;
 
     if (rootEl !== from.sortable.el) {
       this._onInsert(event, false);
@@ -444,7 +450,6 @@ Sortable.prototype = {
 
     from.sortable.animator.collect(cloneEl, null, cloneEl.parentNode, cloneEl);
     this.animator.collect(null, target, parentEl, cloneEl);
-
     this.multiplayer.onChange(cloneEl, this);
 
     to = { sortable: this, node: target, rect: getRect(target), offset: getOffset(target, rootEl) };
@@ -469,7 +474,6 @@ Sortable.prototype = {
     parentEl = dropEl.parentNode;
 
     this.animator.collect(cloneEl, dropEl, parentEl);
-
     this.multiplayer.onChange(cloneEl, this);
 
     to = { sortable: this, node: dropEl, rect: getRect(dropEl), offset: getOffset(dropEl, rootEl) };
@@ -550,7 +554,6 @@ Sortable.prototype = {
       parentEl =
       dragEvent =
       moveEvent =
-      isMultiple =
       lastDropEl =
       listenerNode =
       lastHoverArea =

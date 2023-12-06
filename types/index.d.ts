@@ -56,6 +56,18 @@ declare class Sortable {
   destroy(): void;
 
   /**
+   * Selects the provided multi-drag item
+   * @param element The element to be selected
+   */
+  select(element: HTMLElement): void;
+
+  /**
+   * Deselects the provided multi-drag item
+   * @param element The element to be deselected
+   */
+  deselect(element: HTMLElement): void;
+
+  /**
    * Get the selected elements in the case of `multiple: true`.
    */
   getSelectedElements(): HTMLElement[];
@@ -108,24 +120,22 @@ declare namespace Sortable {
     event: EventType;
   }
 
-  export type Direction =
-    | 'vertical'
-    | 'horizontal'
-    | ((sortable: Sortable, dragEl: HTMLElement, event: EventType) => 'vertical' | 'horizontal');
+  export type Direction = 'vertical' | 'horizontal';
 
   export type EventType = Event & (TouchEvent | MouseEvent);
 
   export interface SortableOptions {
     /**
      * Specifies which items inside the element should be draggable.
+     * 
+     * https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Selectors
      * @example
-     * - (e) => e.target.tagName === 'LI' ? true : false // use function
-     * - (e) => e.target // use function to set the drag element if retrun an HTMLElement
      * - 'div'   // use tag name
      * - '.item' // use class name
      * - '#item' // use id
+     * @defaults `' '`
      */
-    draggable?: Function | String;
+    draggable?: String;
 
     /**
      * Drag handle selector within list items.
@@ -134,8 +144,9 @@ declare namespace Sortable {
      * - 'i' // use tag name
      * - '.handle' // use class
      * - '#handle' // use id
+     * @defaults `' '`
      */
-    handle?: Function | String;
+    handle?: String | ((event: EventType) => Boolean);
 
     /**
      * Set value to allow drag between different lists.
@@ -159,14 +170,19 @@ declare namespace Sortable {
      * - 'checkbox' // use tag name
      * - '.checkbox' // use class
      * - '#checkbox' // use id
+     * @defaults `' '`
      */
-    selectHandle?: Function | String;
+    selectHandle?: String | ((event: EventType) => Boolean);
+
+    /**
+     * Customize the ghost element in drag.
+     */
+    customGhost?: (nodes: HTMLElement[]) => HTMLElement;
 
     /**
      * `vertical/horizontal` | `Function`. By default, the direction is automatically determined.
-     * @defaults ``
      */
-    direction?: Direction;
+    direction?: Direction | ((event: EventType, dragEl: HTMLElement, sortable: Sortable) => Direction);
 
     /**
      * Speed of the animation (in ms) while moving the items.
@@ -305,16 +321,25 @@ declare namespace Sortable {
     off(element: HTMLElement, event: String, fn: EventListenerOrEventListenerObject): void;
 
     /**
-     * Get/Set one CSS property.
+     * Get the values of all the CSS properties.
+     * @param element an HTMLElement.
+     */
+    css(element: HTMLElement): CSSStyleDeclaration;
+
+    /**
+     * Get the value of style properties.
+     * @param element an HTMLElement.
+     * @param prop a property key.
+     */
+    css<K extends keyof CSSStyleDeclaration>(element: HTMLElement, prop: K): CSSStyleDeclaration[K];
+
+    /**
+     * Set one CSS property.
      * @param element an HTMLElement.
      * @param prop a property key.
      * @param value a property value.
      */
-    css<K extends keyof CSSStyleDeclaration>(
-      element: HTMLElement,
-      prop: K,
-      value?: CSSStyleDeclaration[K]
-    ): void;
+    css<K extends keyof CSSStyleDeclaration>(element: HTMLElement, prop: K, value: CSSStyleDeclaration[K]): void;
 
     /**
      * Returns the index of an element within its parent for a selected set of elements
@@ -330,12 +355,7 @@ declare namespace Sortable {
      * @param context a specific element's context.
      * @param includeContext whether to add `context` to comparison
      */
-    closest(
-      element: HTMLElement,
-      selector: String,
-      context: HTMLElement,
-      includeContext: Boolean
-    ): HTMLElement | null;
+    closest(element: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean): HTMLElement | null;
 
     /**
      * Get element's offet in given parentNode
