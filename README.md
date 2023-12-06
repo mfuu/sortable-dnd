@@ -41,8 +41,6 @@ let sortable = new Sortable(
   {
     // draggable: 'li', // use tagName 
     // draggable: '#item', // use id
-    // draggable: (e) => e.target, // set the drag Element
-    // draggable: (e) => e.target.tagName === 'LI' ? true : false, // use function
     draggable: '.item', // use class
     // handle: 'I', // use tagName
     // handle: '#handle', // use id
@@ -61,6 +59,7 @@ new Sortable(element, {
   group: '', // string: 'name' or object: `{ name: 'group', put: true/false, pull: true/false }`
   multiple: false, // Enable multiple drag
   selectHandle: '', // Handle selector within list items which used to select element in `multiple: true`
+
   animation: 150, // Animation speed moving items when sorting
   chosenClass: '', // Class name for the dragging item
   selectedClass: '', // The class of the element when it is selected, it is usually used when multiple drag
@@ -76,6 +75,9 @@ new Sortable(element, {
   fallbackOnBody: false, // Appends the ghost element into the document's body
   swapOnDrop: true, // When the value is false, the dragged element will return to the starting position of the drag
 
+  customGhost: (nodes) => {
+    // Customize the ghost element in drag, must return an HTMLElement 
+  },
   // callback functions
   onDrag: ({ from, event }) => {
     // Triggered when drag is started
@@ -114,6 +116,12 @@ sortable.destroy();
 
 // Get or set the option value, depending on whether the `value` is passed in
 sortable.option(key, value?);
+
+// Selects the provided multi-drag item
+sortable.select(element);
+
+// Deselects the provided multi-drag item
+sortable.deselect(element);
 
 // Get the selected elements in the list, the return value is available in the case of `multiple`
 sortable.getSelectedElements();
