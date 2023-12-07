@@ -28,9 +28,11 @@ import Multiple from './Plugins/Multiple.js';
 import Helper from './helper.js';
 
 const expando = 'Sortable' + Date.now();
-const FromTo = { sortable: null, group: null, node: null, rect: {}, offset: {} };
 
-let rootEl,
+let to,
+  from,
+  helper,
+  rootEl,
   dragEl,
   dropEl,
   nextEl,
@@ -42,11 +44,7 @@ let rootEl,
   listenerNode,
   lastHoverArea,
   dragStartTimer,
-  sortables = [],
-  helper = new Helper(),
-  from = { ...FromTo },
-  to = { ...FromTo },
-  lastPosition = { x: 0, y: 0 };
+  sortables = [];
 
 const _prepareGroup = function (options) {
   let group = {};
@@ -85,12 +83,11 @@ const _detectNearestSortable = function (x, y) {
 };
 
 const _positionChanged = function (evt) {
-  const { clientX, clientY } = evt;
-  const distanceX = clientX - lastPosition.x;
-  const distanceY = clientY - lastPosition.y;
+  const lastEvent = moveEvent || dragEvent;
 
-  lastPosition.x = clientX;
-  lastPosition.y = clientY;
+  const { clientX, clientY } = evt;
+  const distanceX = clientX - lastEvent.clientX;
+  const distanceY = clientY - lastEvent.clientY;
 
   if (
     clientX !== void 0 &&
@@ -181,7 +178,7 @@ Sortable.prototype = {
 
   // ========================================= Public Methods =========================================
   destroy() {
-    this._dispatchEvent('onDestroy', { sortable: this }, false);
+    this._dispatchEvent('onDestroy', { sortable: this });
 
     events.start.forEach((event) => off(this.el, event, this._onDrag));
     sortables.splice(sortables.indexOf(this.el), 1);
@@ -254,11 +251,9 @@ Sortable.prototype = {
     const offset = getOffset(dragEl, this.el);
 
     from = { sortable: this, node: dragEl, rect, offset };
-    to.node = dragEl;
-    to.sortable = this;
+    to = { sortable: this, node: dragEl, rect, offset };
 
-    lastPosition = { x: event.clientX, y: event.clientY };
-    helper.distance = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    helper = new Helper({ x: event.clientX - rect.left, y: event.clientY - rect.top });
 
     on(listenerNode, 'touchend', this._onDrop);
     on(listenerNode, 'touchcancel', this._onDrop);
@@ -325,7 +320,7 @@ Sortable.prototype = {
   _onStarted: function () {
     Sortable.active = this;
 
-    this._dispatchEvent('onDrag', { event: dragEvent });
+    this._dispatchEvent('onDrag', { ...this._getFromTo(), event: dragEvent });
     this.multiplayer.onStarted(this);
 
     const element = this._getGhostElement();
@@ -421,7 +416,7 @@ Sortable.prototype = {
   _onMove: function (/** Event|TouchEvent */ event, target) {
     if (!this._allowPut()) return;
 
-    this._dispatchEvent('onMove', { event });
+    this._dispatchEvent('onMove', { ...this._getFromTo(), event });
 
     rootEl = this.el;
     dropEl = closest(target, this.options.draggable, rootEl);
@@ -454,7 +449,8 @@ Sortable.prototype = {
 
     to = { sortable: this, node: target, rect: getRect(target), offset: getOffset(target, rootEl) };
 
-    from.sortable._dispatchEvent('onRemove', { event });
+    from.sortable.multiplayer.onRemove();
+    from.sortable._dispatchEvent('onRemove', { ...this._getFromTo(), event });
 
     if (insertToLast) {
       parentEl.appendChild(cloneEl);
@@ -462,7 +458,8 @@ Sortable.prototype = {
       parentEl.insertBefore(cloneEl, dropEl);
     }
 
-    this._dispatchEvent('onAdd', { event });
+    this.multiplayer.onAdd();
+    this._dispatchEvent('onAdd', { ...this._getFromTo(), event });
 
     from.sortable.animator.animate();
     this.animator.animate();
@@ -478,7 +475,7 @@ Sortable.prototype = {
 
     to = { sortable: this, node: dropEl, rect: getRect(dropEl), offset: getOffset(dropEl, rootEl) };
 
-    this._dispatchEvent('onChange', { event });
+    this._dispatchEvent('onChange', { ...this._getFromTo(), event });
 
     parentEl.insertBefore(cloneEl, nextEl);
     this.animator.animate();
@@ -495,7 +492,7 @@ Sortable.prototype = {
     if (dragEl && dragEvent && moveEvent) {
       this._onEnd(event);
     } else if (this.options.multiple) {
-      this.multiplayer.onDrop(dragEvent, event, { ...from });
+      this.multiplayer.onSelect(dragEvent, event, { ...from });
     }
 
     this._clearState();
@@ -514,12 +511,12 @@ Sortable.prototype = {
     to.offset = getOffset(cloneEl, rootEl);
     if (to.node === cloneEl) to.node = dragEl;
 
-    this.multiplayer.onEnd(rootEl, dragEvent);
+    this.multiplayer.onDrop(rootEl, dragEvent);
 
-    const multiParams = this.multiplayer.getOnEndParams();
     const sortableChanged = from.sortable.el !== to.sortable.el;
     const changed = sortableChanged || offsetChanged(from.offset, to.offset);
-    const params = { changed, event, ...multiParams };
+    const multiParams = this.multiplayer.getOnEndParams();
+    const params = { ...this._getFromTo(), changed, event, ...multiParams };
 
     if (sortableChanged) {
       from.sortable._dispatchEvent('onDrop', params);
@@ -531,23 +528,28 @@ Sortable.prototype = {
     Safari && css(document.body, 'user-select', '');
   },
 
-  _dispatchEvent: function (event, params = {}, needDefaultEmits = true) {
-    const callback = this.options[event];
-    if (typeof callback !== 'function') return;
+  _getFromTo: function () {
+    const multiEmit = this.multiplayer.getEmits();
+    return {
+      from: { ...multiEmit.from, ...from },
+      to: { ...multiEmit.to, ...to },
+    };
+  },
 
-    let emit = {};
-    if (needDefaultEmits) {
-      const multiEmit = this.multiplayer.getEmits();
-      emit = {
-        from: { ...multiEmit.from, ...from },
-        to: { ...multiEmit.to, ...to },
-      };
+  _dispatchEvent: function (event, params = {}) {
+    const callback = this.options[event];
+    if (typeof callback === 'function') {
+      callback({ ...params });
     }
-    callback({ ...emit, ...params });
   },
 
   _clearState: function () {
-    dragEl =
+    this.multiplayer.destroy();
+    helper && helper.destroy();
+    to =
+      from =
+      helper =
+      dragEl =
       dropEl =
       nextEl =
       cloneEl =
@@ -562,9 +564,6 @@ Sortable.prototype = {
       Sortable.active =
       Sortable.dragged =
         null;
-    lastPosition = { x: 0, y: 0 };
-    from = to = { ...FromTo };
-    helper.destroy();
   },
 
   _unbindEvents: function () {
