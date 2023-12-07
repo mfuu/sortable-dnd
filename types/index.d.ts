@@ -76,6 +76,10 @@ declare class Sortable {
 declare namespace Sortable {
   export interface Options extends SortableOptions {}
 
+  export type Direction = 'vertical' | 'horizontal';
+
+  export type EventType = Event & (TouchEvent | MouseEvent);
+
   export interface DOMOffset {
     height: Number;
     width: Number;
@@ -99,36 +103,55 @@ declare namespace Sortable {
     y: Number;
   }
 
-  interface SortableState {
+  export interface Item {
+    /**
+     * Sortable instance
+     */
     sortable: Sortable;
+    /**
+     * dragged element
+     */
     node: HTMLElement;
+    /**
+     * offset value relative to the list container
+     */
     offset: DOMOffset;
+    /**
+     * value obtained by `getBoundingClientRect()`
+     */
     rect: DOMRect;
   }
 
-  interface MultiNode {
-    node: HTMLElement;
-    offset: DOMOffset;
-    rect: DOMRect;
+  export interface FromTo extends Item {
+    /**
+     * dragged elements
+     */
+    nodes?: Item[];
   }
 
-  export interface FromTo extends SortableState {
-    nodes?: MultiNode[];
-  }
-
-  export interface Select extends SortableState {
+  export interface SelectEvent extends Item {
+    /**
+     * TouchEvent | MouseEvent
+     */
     event: EventType;
   }
 
-  export type Direction = 'vertical' | 'horizontal';
-
-  export type EventType = Event & (TouchEvent | MouseEvent);
+  export interface SortableEvent {
+    from: FromTo;
+    to: FromTo;
+    /**
+     * TouchEvent | MouseEvent
+     */
+    event: EventType;
+    /**
+     * determine whether the position of dragged element(s) changes, valid only in `onDrop`.
+     */
+    changed?: Boolean;
+  }
 
   export interface SortableOptions {
     /**
      * Specifies which items inside the element should be draggable.
-     * 
-     * https://developer.mozilla.org/en-US/docs/Learn/CSS/Building_blocks/Selectors
      * @example
      * - 'div'   // use tag name
      * - '.item' // use class name
@@ -265,42 +288,42 @@ declare namespace Sortable {
     /**
      * Triggered when the drag is started.
      */
-    onDrag?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+    onDrag?: (params: SortableEvent) => void;
 
     /**
      * Triggered when the dragged element is moving.
      */
-    onMove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+    onMove?: (params: SortableEvent) => void;
 
     /**
      * Triggered when the drag is completed.
      */
-    onDrop?: (params: { from: FromTo; to: FromTo; event: EventType; changed: Boolean }) => void;
+    onDrop?: (params: SortableEvent) => void;
 
     /**
      * Triggered when element is dropped into the current list from another.
      */
-    onAdd?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+    onAdd?: (params: SortableEvent) => void;
 
     /**
      * Triggered when element is removed from the current list into another.
      */
-    onRemove?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+    onRemove?: (params: SortableEvent) => void;
 
     /**
      * Triggered when the dragged element changes position in the current list.
      */
-    onChange?: (params: { from: FromTo; to: FromTo; event: EventType }) => void;
+    onChange?: (params: SortableEvent) => void;
 
     /**
      * Triggered when element is selected.
      */
-    onSelect?: (params: Select) => void;
+    onSelect?: (params: SelectEvent) => void;
 
     /**
      * Triggered when element is unselected.
      */
-    onDeselect?: (params: Select) => void;
+    onDeselect?: (params: SelectEvent) => void;
   }
 
   export interface Utils {

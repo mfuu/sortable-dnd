@@ -1,8 +1,8 @@
 import { css, toggleClass, setTransform, setTransition } from './utils';
 
-function Helper() {
+function Helper(distance) {
   this.helper = null;
-  this.distance = { x: 0, y: 0 };
+  this.distance = distance;
 }
 
 Helper.prototype = {
@@ -14,8 +14,7 @@ Helper.prototype = {
     if (this.helper && this.helper.parentNode) {
       this.helper.parentNode.removeChild(this.helper);
     }
-    this.helper = null;
-    this.distance = { x: 0, y: 0 };
+    this.helper = this.distance = null;
   },
 
   move(x, y) {
