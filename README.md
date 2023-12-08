@@ -56,7 +56,7 @@ let sortable = new Sortable(
 new Sortable(element, {
   draggable: '', // Specifies which items inside the element should be draggable
   handle: '', // Drag handle selector within list items
-  group: '', // string: 'name' or object: `{ name: 'group', put: true/false, pull: true/false }`
+  group: '', // see @Group
   multiple: false, // Enable multiple drag
   selectHandle: '', // Handle selector within list items which used to select element in `multiple: true`
 
@@ -105,6 +105,28 @@ new Sortable(element, {
   },
 })
 ```
+
+**Group**
+
+```js
+// string
+new Sortable(el, {
+  ...,
+  group: 'name'
+})
+
+// object
+new Sortable(el, {
+  ...,
+  group: { 
+    name: 'group', // group name
+    put: true | false | ['foo', 'bar'], // whether elements can be added from other lists, or an array of group names from which elements can be taken.
+    pull: true | false | 'clone', // whether elements can be moved out of this list.
+    revertClone: true | false, // revert cloned element to initial position after moving to a another list.
+  }
+})
+```
+
 
 ## Methods
 
