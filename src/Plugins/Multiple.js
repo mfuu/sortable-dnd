@@ -42,7 +42,7 @@ Multiple.prototype = {
   },
 
   addSelected(elements) {
-    this.selectedElements.push(...elements);
+    elements.forEach((el) => this.selectedElements.push(el));
   },
 
   removeSelected(elements) {
