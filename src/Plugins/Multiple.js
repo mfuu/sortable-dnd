@@ -22,6 +22,10 @@ Multiple.prototype = {
     multiTo = multiFrom = dragElements = null;
   },
 
+  active() {
+    return !!multiFrom;
+  },
+
   select(element) {
     toggleClass(element, this.options.selectedClass, true);
 
@@ -35,6 +39,14 @@ Multiple.prototype = {
       toggleClass(element, this.options.selectedClass, false);
       this.selectedElements.splice(index, 1);
     }
+  },
+
+  addSelected(elements) {
+    this.selectedElements.push(...elements);
+  },
+
+  removeSelected(elements) {
+    this.selectedElements = this.selectedElements.filter((el) => elements.indexOf(el) < 0);
   },
 
   getSelectedElements() {
@@ -87,11 +99,9 @@ Multiple.prototype = {
     // sort all selected elements by offset before drag
     this.selectedElements.sort((a, b) => sort(a, b));
 
-    const nodes = this.selectedElements.map((node) => ({
-      node,
-      rect: getRect(node),
-      offset: getOffset(node, rootEl),
-    }));
+    const nodes = this.selectedElements.map((node) => {
+      return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
+    });
 
     multiFrom = { sortable, nodes };
     multiTo = { sortable, nodes };
@@ -113,14 +123,18 @@ Multiple.prototype = {
     sortable.animator.animate();
   },
 
-  onAdd() {
-    if (!dragElements) return;
-    this.selectedElements.push(...dragElements);
-  },
+  toggleElementsVisible(bool) {
+    if (!multiFrom) return;
 
-  onRemove() {
-    if (!dragElements) return;
-    this.selectedElements = this.selectedElements.filter((el) => dragElements.indexOf(el) < 0);
+    if (bool) {
+      const index = dragElements.indexOf(Sortable.dragged);
+      this._displayElements(dragElements, index, Sortable.dragged);
+    } else {
+      dragElements.forEach((node) => {
+        if (node == Sortable.dragged) return;
+        css(node, 'display', 'none');
+      });
+    }
   },
 
   onChange(dragEl, sortable) {
@@ -135,30 +149,41 @@ Multiple.prototype = {
     };
   },
 
-  onDrop(rootEl, dragEvent) {
+  onDrop(dragEvent, rootEl, sortableChanged) {
     if (!multiFrom || !multiTo) return;
 
+    multiFrom.sortable = dragEvent.sortable;
+
     const dragEl = Sortable.dragged;
+    const cloneEl = Sortable.clone;
+
     multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
 
     const index = dragElements.indexOf(dragEl);
 
-    dragElements.forEach((node, i) => {
-      css(node, 'display', '');
-      if (i < index) {
-        dragEl.parentNode.insertBefore(node, dragEl);
-      } else {
-        let dropEl = i > 0 ? dragElements[i - 1] : dragEl;
-        dragEl.parentNode.insertBefore(node, dropEl.nextSibling);
-      }
-    });
+    let cloneElements = null;
+    if (sortableChanged && cloneEl) {
+      css(cloneEl, 'display', 'none');
+      // clone elements to another list
+      cloneElements = dragElements.map((node) => node.cloneNode(true));
+      this._displayElements(cloneElements, index, cloneEl);
+    }
 
-    multiFrom.sortable = dragEvent.sortable;
-    multiTo.nodes = dragElements.map((node) => {
+    this._displayElements(dragElements, index, dragEl);
+
+    multiTo.nodes = (cloneElements || dragElements).map((node) => {
       return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
     });
 
     multiTo.sortable.animator.animate();
+
+    // Recalculate selected elements
+    if (sortableChanged) {
+      multiTo.sortable.multiplayer.addSelected(cloneElements || dragElements);
+      if (!cloneEl) {
+        multiFrom.sortable.multiplayer.removeSelected(dragElements);
+      }
+    }
   },
 
   onSelect(dragEvent, dropEvent, from) {
@@ -186,6 +211,19 @@ Multiple.prototype = {
       from.sortable._dispatchEvent('onDeselect', params);
     }
     this.selectedElements.sort((a, b) => sort(a, b));
+  },
+
+  _displayElements(elements, index, target) {
+    for (let i = 0; i < elements.length; i++) {
+      css(elements[i], 'display', '');
+
+      if (i < index) {
+        target.parentNode.insertBefore(elements[i], target);
+      } else {
+        let dropEl = i > 0 ? elements[i - 1] : target;
+        target.parentNode.insertBefore(elements[i], dropEl.nextSibling);
+      }
+    }
   },
 
   _isMultiple() {

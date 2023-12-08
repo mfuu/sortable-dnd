@@ -81,26 +81,39 @@ declare namespace Sortable {
   export type EventType = Event & (TouchEvent | MouseEvent);
 
   export interface DOMOffset {
-    height: Number;
-    width: Number;
-    top: Number;
-    left: Number;
+    height: number;
+    width: number;
+    top: number;
+    left: number;
   }
 
   export interface DOMRect extends DOMOffset {
-    bottom: Number;
-    right: Number;
+    bottom: number;
+    right: number;
   }
 
   export interface Group {
-    name: String;
-    put: Boolean;
-    pull: Boolean;
+    /**
+     * group name
+     */
+    name: string;
+    /**
+     * whether elements can be added from other lists, or an array of group names from which elements can be taken.
+     */
+    put?: readonly string[] | boolean;
+    /**
+     * whether elements can be moved out of this list.
+     */
+    pull?: boolean | 'clone';
+    /**
+     * revert cloned element to initial position after moving to a another list.
+     */
+    revertClone?: boolean;
   }
 
   export interface ScrollSpeed {
-    x: Number;
-    y: Number;
+    x: number;
+    y: number;
   }
 
   export interface Item {
@@ -146,7 +159,7 @@ declare namespace Sortable {
     /**
      * determine whether the position of dragged element(s) changes, valid only in `onDrop`.
      */
-    changed?: Boolean;
+    changed?: boolean;
   }
 
   export interface SortableOptions {
@@ -158,7 +171,7 @@ declare namespace Sortable {
      * - '#item' // use id
      * @defaults `' '`
      */
-    draggable?: String;
+    draggable?: string;
 
     /**
      * Drag handle selector within list items.
@@ -169,22 +182,22 @@ declare namespace Sortable {
      * - '#handle' // use id
      * @defaults `' '`
      */
-    handle?: String | ((event: EventType) => Boolean);
+    handle?: string | ((event: EventType) => boolean);
 
     /**
      * Set value to allow drag between different lists.
      * @example
-     * - String: '...'
-     * - Object: { name: '...', put: true | false, pull: true | false }
+     * - string: '...'
+     * - object: { name: '...', put: true | false, pull: true | false }
      * @defaults `' '`
      */
-    group?: String | Group;
+    group?: string | Group;
 
     /**
      * Enable multi-drag.
      * @defaults `false`
      */
-    multiple?: Boolean;
+    multiple?: boolean;
 
     /**
      * Handle selector within list items which used to select element in `multiple: true`.
@@ -195,7 +208,7 @@ declare namespace Sortable {
      * - '#checkbox' // use id
      * @defaults `' '`
      */
-    selectHandle?: String | ((event: EventType) => Boolean);
+    selectHandle?: string | ((event: EventType) => boolean);
 
     /**
      * Customize the ghost element in drag.
@@ -203,7 +216,7 @@ declare namespace Sortable {
     customGhost?: (nodes: HTMLElement[]) => HTMLElement;
 
     /**
-     * `vertical/horizontal` | `Function`. By default, the direction is automatically determined.
+     * Direction of Sortable, will be detected automatically if not given.
      */
     direction?: Direction | ((event: EventType, dragEl: HTMLElement, sortable: Sortable) => Direction);
 
@@ -211,25 +224,25 @@ declare namespace Sortable {
      * Speed of the animation (in ms) while moving the items.
      * @defaults `150`
      */
-    animation?: Number;
+    animation?: number;
 
     /**
      * Disables the sortable if set to `true`.
      * @defaults `false`
      */
-    disabled?: Boolean;
+    disabled?: boolean;
 
     /**
      * Automatic scrolling when moving to the edge of the container.
      * @defaults `true`
      */
-    autoScroll?: Boolean;
+    autoScroll?: boolean;
 
     /**
      * Threshold to trigger autoscroll.
      * @defaults `25`
      */
-    scrollThreshold?: Number;
+    scrollThreshold?: number;
 
     /**
      * Vertical&Horizontal scrolling speed (px)
@@ -241,37 +254,48 @@ declare namespace Sortable {
      * Time in milliseconds to define when the sorting should start.
      * @defaults `0`
      */
-    delay?: Number;
+    delay?: number;
 
     /**
      * Only delay if user is using touch.
      * @defaults `false`
      */
-    dealyOnTouchOnly?: Boolean;
+    dealyOnTouchOnly?: boolean;
+
+    /**
+     * How many *pixels* the point should move before cancelling a delayed drag event.
+     */
+    touchStartThreshold?: number;
+
+    /**
+     * distance mouse must be from empty sortable to insert drag element into it.
+     * @defaults `5`
+     */
+    emptyInsertThreshold?: number;
 
     /**
      * Appends the cloned DOM Element into the Document's Body.
      * @defaults `false`
      */
-    fallbackOnBody?: Boolean;
+    fallbackOnBody?: boolean;
 
     /**
      * When the value is false, the dragged element will return to the starting position of the drag.
      * @defaults `true`
      */
-    swapOnDrop?: Boolean;
+    swapOnDrop?: boolean;
 
     /**
      * This class will be added to the item while dragging.
      * @defaults `' '`
      */
-    chosenClass?: String;
+    chosenClass?: string;
 
     /**
      * Class name for selected item.
      * @defaults `' '`
      */
-    selectedClass?: String;
+    selectedClass?: string;
 
     /**
      * This styles will be applied to the mask of the dragging element.
@@ -283,7 +307,7 @@ declare namespace Sortable {
      * This class will be applied to the mask of the dragging element.
      * @defaults `' '`
      */
-    ghostClass?: String;
+    ghostClass?: string;
 
     /**
      * Triggered when the drag is started.
@@ -333,7 +357,7 @@ declare namespace Sortable {
      * @param event an Event context.
      * @param fn
      */
-    on(element: HTMLElement, event: String, fn: EventListenerOrEventListenerObject): void;
+    on(element: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
 
     /**
      * Remove an event handler function.
@@ -341,7 +365,7 @@ declare namespace Sortable {
      * @param event an Event context.
      * @param fn a callback.
      */
-    off(element: HTMLElement, event: String, fn: EventListenerOrEventListenerObject): void;
+    off(element: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
 
     /**
      * Get the values of all the CSS properties.
@@ -369,7 +393,7 @@ declare namespace Sortable {
      * @param element an HTMLElement.
      * @param selector an element seletor.
      */
-    index(element: HTMLElement, selector?: String): Number;
+    index(element: HTMLElement, selector?: string): number;
 
     /**
      * For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
@@ -378,7 +402,7 @@ declare namespace Sortable {
      * @param context a specific element's context.
      * @param includeContext whether to add `context` to comparison
      */
-    closest(element: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean): HTMLElement | null;
+    closest(element: HTMLElement, selector: string, context: HTMLElement, includeContext: boolean): HTMLElement | null;
 
     /**
      * Get element's offet in given parentNode
@@ -393,7 +417,7 @@ declare namespace Sortable {
      * @param name a class name.
      * @param state a class's state.
      */
-    toggleClass(element: HTMLElement, name: String, state: Boolean): void;
+    toggleClass(element: HTMLElement, name: string, state: boolean): void;
   }
 }
 
