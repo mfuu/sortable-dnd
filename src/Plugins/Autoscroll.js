@@ -17,7 +17,7 @@ function AutoScroll(options) {
 }
 
 AutoScroll.prototype = {
-  clear() {
+  destroy() {
     if (this.autoScrollAnimationFrame == null) {
       return;
     }
