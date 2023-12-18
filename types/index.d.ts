@@ -498,6 +498,13 @@ declare namespace Sortable {
      * @param state a class's state.
      */
     toggleClass(element: HTMLElement, name: string, state: boolean): void;
+
+    /**
+     * Determine the direction in which the container is rolling.
+     * @param el list container.
+     * @param selector an element seletor.
+     */
+    detectDirection(el: HTMLElement, selector: string): 'vertical' | 'horizontal';
   }
 }
 
