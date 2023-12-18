@@ -110,9 +110,9 @@ declare namespace Sortable {
      */
     pull?: boolean | 'clone';
     /**
-     * revert cloned element to initial position after moving to a another list.
+     * revert draged element to initial position after moving to a another list.
      */
-    revertClone?: boolean;
+    revertDrag?: boolean;
   }
 
   export interface ScrollSpeed {
@@ -150,16 +150,62 @@ declare namespace Sortable {
     store?: any;
   }
 
-  export interface SelectEvent extends Item {
+  export interface SelectEvent {
     /**
      * TouchEvent | MouseEvent
      */
     event: EventType;
+    /**
+     * index within parent
+     */
+    index: number;
+    /**
+     * dragged element
+     */
+    node: HTMLElement;
+    /**
+     * list container
+     */
+    from: HTMLElement;
   }
 
   export interface SortableEvent {
-    from: FromTo;
-    to: FromTo;
+    /**
+     * previous list
+     */
+    from: HTMLElement;
+    /**
+     * list, in which moved element.
+     */
+    to: HTMLElement;
+    /**
+     * dragged element
+     */
+    node: HTMLElement;
+    /**
+     * dragged elements
+     */
+    nodes: HTMLElement[];
+    /**
+     * cloned element, all dnd operations are based on cloned element and do not alter the source dom(node).
+     */
+    clone: HTMLElement;
+    /**
+     * cloned elements, there is a value only in the `pull: clone` after moving to a another list.
+     */
+    clones: HTMLElement[];
+    /**
+     * drop element
+     */
+    target: HTMLElement;
+    /**
+     * old index within parent
+     */
+    oldIndex: number;
+    /**
+     * new index within parent
+     */
+    newIndex: number;
     /**
      * TouchEvent | MouseEvent
      */
@@ -173,18 +219,25 @@ declare namespace Sortable {
      * 
      * @example 
      * 
-     * 0: index(to.node) === index(from.node)
+     * 0: index(target) === index(node)
      * 
-     * 1: index(to.node) > index(from.node)
+     * 1: index(target) > index(node)
      * 
-     * -1: index(to.node) < index(from.node)
+     * -1: index(target) < index(node)
      */
     relative: 0 | 1 | -1;
   }
 
   export interface SortableOptions {
     /**
-     * store data (get the stored data in all callback functions).
+     * store data
+     * @example
+     * 
+     * // store value
+     * sortable.option('store', value);
+     * 
+     * // get the stored value
+     * sortable.option('store');
      */
     store?: any;
 

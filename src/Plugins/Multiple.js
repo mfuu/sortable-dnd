@@ -1,7 +1,7 @@
 import Sortable from '../index.js';
 import { css, sort, index, matches, getEvent, toggleClass, dispatchEvent } from '../utils';
 
-let multiTo, multiFrom, dragElements;
+let toSortable, fromSortable, dragElements, cloneElements;
 
 function Multiple(options) {
   this.options = options || {};
@@ -10,11 +10,11 @@ function Multiple(options) {
 
 Multiple.prototype = {
   destroy() {
-    multiTo = multiFrom = dragElements = null;
+    toSortable = fromSortable = dragElements = cloneElements = null;
   },
 
   active() {
-    return !!multiFrom;
+    return !!fromSortable;
   },
 
   select(element) {
@@ -45,14 +45,19 @@ Multiple.prototype = {
   },
 
   getParams() {
-    if (multiFrom && multiTo) {
-      return { from: multiFrom, to: multiTo };
+    if (!fromSortable) return {};
+
+    let params = {};
+    params.nodes = dragElements;
+    if (cloneElements) {
+      params.clones = cloneElements;
     }
-    return { from: {}, to: {} };
+
+    return params;
   },
 
   getGhostElement() {
-    if (!multiFrom) return null;
+    if (!fromSortable) return null;
 
     const container = document.createElement('div');
     this.selectedElements.forEach((node, index) => {
@@ -62,6 +67,17 @@ Multiple.prototype = {
       container.appendChild(clone);
     });
     return container;
+  },
+
+  toggleVisible(bool) {
+    if (!fromSortable) return;
+
+    if (bool) {
+      const dragIndex = dragElements.indexOf(Sortable.dragged);
+      this._viewElements(dragElements, dragIndex, Sortable.dragged);
+    } else {
+      this._hideElements(dragElements);
+    }
   },
 
   onDrag(sortable) {
@@ -77,60 +93,49 @@ Multiple.prototype = {
 
     this.selectedElements.sort((a, b) => sort(a, b));
 
-    multiFrom = { sortable, nodes: this.selectedElements };
-    multiTo = { sortable, nodes: this.selectedElements };
     dragElements = this.selectedElements;
+    fromSortable = sortable;
+    toSortable = sortable;
 
     sortable.animator.collect(dragEl, null, dragEl.parentNode);
     this._hideElements(dragElements);
     sortable.animator.animate();
   },
 
-  toggleElementsVisible(bool) {
-    if (!multiFrom) return;
-
-    if (bool) {
-      const dragIndex = dragElements.indexOf(Sortable.dragged);
-      this._viewElements(dragElements, dragIndex, Sortable.dragged);
-    } else {
-      this._hideElements(dragElements);
-    }
-  },
-
   onChange(sortable) {
-    if (!multiFrom) return;
+    if (!fromSortable) return;
 
-    multiTo = { sortable, nodes: dragElements };
+    toSortable = sortable;
   },
 
-  onDrop(dragEvent, listChanged, pullMode) {
-    if (!multiFrom || !multiTo) return;
+  onDrop(sortable, listChanged, pullMode) {
+    if (!fromSortable || !toSortable) return;
 
-    multiFrom.sortable = dragEvent.sortable;
+    fromSortable = sortable;
 
     const dragEl = Sortable.dragged;
     const cloneEl = Sortable.clone;
     const dragIndex = dragElements.indexOf(dragEl);
 
-    multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
+    toSortable.animator.collect(dragEl, null, dragEl.parentNode);
 
-    let cloneElements = null;
     if (listChanged && pullMode === 'clone') {
       css(cloneEl, 'display', 'none');
       cloneElements = dragElements.map((node) => node.cloneNode(true));
       this._viewElements(cloneElements, dragIndex, cloneEl);
+    } else {
+      cloneElements = null;
     }
 
     this._viewElements(dragElements, dragIndex, dragEl);
 
-    multiTo.nodes = cloneElements || dragElements;
-    multiTo.sortable.animator.animate();
+    toSortable.animator.animate();
 
     // Recalculate selected elements
     if (listChanged) {
-      multiTo.sortable.multiplayer.addSelected(cloneElements || dragElements);
+      toSortable.multiplayer.addSelected(cloneElements || dragElements);
       if (pullMode !== 'clone') {
-        multiFrom.sortable.multiplayer.removeSelected(dragElements);
+        fromSortable.multiplayer.removeSelected(dragElements);
       }
     }
   },
@@ -148,7 +153,7 @@ Multiple.prototype = {
 
     toggleClass(dragEl, this.options.selectedClass, dragIndex < 0);
 
-    const params = { sortable, event, node: dragEl, index: index(dragEl) };
+    const params = { from: sortable.el, event, node: dragEl, index: index(dragEl) };
 
     if (dragIndex < 0) {
       this.selectedElements.push(dragEl);
