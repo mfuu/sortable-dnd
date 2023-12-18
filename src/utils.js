@@ -7,12 +7,6 @@ const captureMode = {
 
 const R_SPACE = /\s+/g;
 
-export const events = {
-  start: ['touchstart', 'mousedown'],
-  move: ['touchmove', 'mousemove'],
-  end: ['touchend', 'touchcancel', 'mouseup'],
-};
-
 function userAgent(pattern) {
   if (typeof window !== 'undefined' && window.navigator) {
     return !!(/*@__PURE__*/ navigator.userAgent.match(pattern));
@@ -120,7 +114,7 @@ export function off(el, event, fn) {
 
 /**
  * get touch event and current event
- * @param {Event|TouchEvent} evt
+ * @param {MouseEvent|TouchEvent} evt
  */
 export function getEvent(evt) {
   let event = evt;
@@ -135,25 +129,6 @@ export function getEvent(evt) {
     event.screenY = touch.screenY;
   }
   return { touch, event, target };
-}
-
-/**
- * get element's offetTop in given parent element
- */
-export function getOffset(el, parentEl) {
-  let offset = {
-    top: 0,
-    left: 0,
-    height: el.offsetHeight,
-    width: el.offsetWidth,
-  };
-
-  do {
-    offset.top += el.offsetTop;
-    offset.left += el.offsetLeft;
-  } while ((el = el.parentNode) && el !== parentEl);
-
-  return offset;
 }
 
 /**
@@ -195,17 +170,12 @@ export function getWindowScrollingElement() {
 
 /**
  * Returns the "bounding client rect" of given element
- * @param  {HTMLElement} el                       The element whose boundingClientRect is wanted
- * @param  {Object} check
- * @example - {
- * -   parent: true | false, 'check if parentNode.height < el.height'
- * -   block: true | false, 'Whether the rect should be relative to the containing block of (including) the container'
- * -   relative: true | false, 'Whether the rect should be relative to the relative parent of (including) the contaienr'
- * - }
- * @param  {HTMLElement} container              The parent the element will be placed in
- * @return {Object}                               The boundingClientRect of el, with specified adjustments
+ * @param  {HTMLElement} el The element whose boundingClientRect is wanted
+ * @param  {Boolean} relativeToContainingBlock Whether the rect should be relative to the containing block of (including) the container
+ * @param  {HTMLElement} container The parent the element will be placed in
+ * @return {Object} The boundingClientRect of el, with specified adjustments
  */
-export function getRect(el, check = {}, container) {
+export function getRect(el, relativeToContainingBlock, container) {
   if (!el.getBoundingClientRect && el !== window) return;
 
   let elRect, top, left, bottom, right, height, width;
@@ -218,36 +188,6 @@ export function getRect(el, check = {}, container) {
     right = elRect.right;
     height = elRect.height;
     width = elRect.width;
-
-    if (check.parent && el.parentNode !== el.ownerDocument.body) {
-      let parentRect,
-        parentNode = el.parentNode;
-
-      while (
-        parentNode &&
-        parentNode.getBoundingClientRect &&
-        parentNode !== el.ownerDocument.body
-      ) {
-        parentRect = parentNode.getBoundingClientRect();
-        if (parentRect.height < height) {
-          top = parentRect.top;
-          left = parentRect.left;
-          bottom = parentRect.bottom;
-          right = parentRect.right;
-          height = parentRect.height;
-          width = parentRect.width;
-          return {
-            top: top,
-            left: left,
-            bottom: bottom,
-            right: right,
-            width: width,
-            height: height,
-          };
-        }
-        parentNode = parentNode.parentNode;
-      }
-    }
   } else {
     top = 0;
     left = 0;
@@ -257,32 +197,23 @@ export function getRect(el, check = {}, container) {
     width = window.innerWidth;
   }
 
-  if ((check.block || check.relative) && el !== window) {
-    // Adjust for translate()
+  if (relativeToContainingBlock && el !== window) {
     container = container || el.parentNode;
 
-    // Not needed on <= IE11
-    if (!IE11OrLess) {
-      do {
-        if (
-          container &&
-          container.getBoundingClientRect &&
-          (css(container, 'transform') !== 'none' ||
-            (check.relative && css(container, 'position') !== 'static'))
-        ) {
-          let containerRect = container.getBoundingClientRect();
+    do {
+      if (container && container.getBoundingClientRect) {
+        let containerRect = container.getBoundingClientRect();
 
-          // Set relative to edges of padding box of container
-          top -= containerRect.top + parseInt(css(container, 'border-top-width'));
-          left -= containerRect.left + parseInt(css(container, 'border-left-width'));
-          bottom = top + elRect.height;
-          right = left + elRect.width;
+        // Set relative to edges of padding box of container
+        top -= containerRect.top + parseInt(css(container, 'border-top-width'));
+        left -= containerRect.left + parseInt(css(container, 'border-left-width'));
+        bottom = top + elRect.height;
+        right = left + elRect.width;
 
-          break;
-        }
-        /* jshint boss:true */
-      } while ((container = container.parentNode));
-    }
+        break;
+      }
+      /* jshint boss:true */
+    } while ((container = container.parentNode));
   }
 
   return {
@@ -372,7 +303,8 @@ export function index(el, selector) {
     if (
       el.nodeName.toUpperCase() !== 'TEMPLATE' &&
       (!selector || matches(el, selector)) &&
-      css(el, 'display') !== 'none'
+      css(el, 'display') !== 'none' &&
+      el !== Sortable.dragged
     ) {
       index++;
     }
@@ -550,23 +482,6 @@ export function comparePosition(a, b) {
     : 0;
 }
 
-/**
- * Check whether the front and rear positions are consistent, ignore front and rear height width changes
- */
-export function offsetChanged(before, after) {
-  function inRange(from, to, diff) {
-    if (from === to) return true;
-    return from >= to - diff && from <= to + diff;
-  }
-
-  const diffW = Math.abs(before.width - after.width);
-  const diffH = Math.abs(before.height - after.height);
-  const xChanged = !inRange(before.left, after.left, diffW);
-  const yChanged = !inRange(before.top, after.top, diffH);
-
-  return xChanged || yChanged;
-}
-
 export function sort(before, after) {
   const compareValue = comparePosition(before, after);
   return compareValue === 2 ? 1 : compareValue === 4 ? -1 : 0;
@@ -574,4 +489,11 @@ export function sort(before, after) {
 
 export function preventDefault(evt) {
   evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
+}
+
+export function dispatchEvent({ sortable, name, params }) {
+  const callback = sortable.options[name];
+  if (typeof callback === 'function') {
+    callback(Object.assign({}, params));
+  }
 }

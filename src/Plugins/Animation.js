@@ -12,19 +12,21 @@ Animation.prototype = {
     const children = Array.prototype.slice.call(parentEl.children);
     const { start, end } = this._getRange(children, dragEl, dropEl);
 
-    this.animations.length = 0;
-
+    const animations = [];
     for (let i = start; i <= end; i++) {
       const node = children[i];
       if (!node || css(node, 'display') === 'none') continue;
       if (node === except || node === Sortable.ghost) continue;
-      this.animations.push({ node: node, rect: getRect(node) });
+      animations.push({ node: node, rect: getRect(node) });
     }
+
+    this.animations.push(animations);
   },
 
   animate() {
-    for (let i = 0, len = this.animations.length; i < len; i++) {
-      const { node, rect } = this.animations[i];
+    const animations = this.animations.pop();
+    for (let i = 0, len = animations.length; i < len; i++) {
+      const { node, rect } = animations[i];
       this._excute(node, rect);
     }
   },

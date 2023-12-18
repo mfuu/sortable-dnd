@@ -15,7 +15,7 @@ declare class Sortable {
   static active: Sortable | null;
 
   /**
-   * The element being dragged.
+   * Original element to be dragged.
    */
   static dragged: HTMLElement | null;
 
@@ -23,6 +23,11 @@ declare class Sortable {
    * The ghost element.
    */
   static ghost: HTMLElement | null;
+
+  /**
+   * The clone element. All operations during dnd are based on clone.
+   */
+  static clone: HTMLElement | null;
 
   /**
    * Public Methods.
@@ -80,17 +85,16 @@ declare namespace Sortable {
 
   export type EventType = Event & (TouchEvent | MouseEvent);
 
-  export interface DOMOffset {
+  export interface DOMRect {
     height: number;
     width: number;
     top: number;
+    right: number;
+    bottom: number;
     left: number;
   }
 
-  export interface DOMRect extends DOMOffset {
-    bottom: number;
-    right: number;
-  }
+  export interface DOMOffset extends DOMRect {};
 
   export interface Group {
     /**
@@ -106,9 +110,9 @@ declare namespace Sortable {
      */
     pull?: boolean | 'clone';
     /**
-     * revert cloned element to initial position after moving to a another list.
+     * revert draged element to initial position after moving to a another list.
      */
-    revertClone?: boolean;
+    revertDrag?: boolean;
   }
 
   export interface ScrollSpeed {
@@ -122,47 +126,121 @@ declare namespace Sortable {
      */
     sortable: Sortable;
     /**
+     * index within parent
+     */
+    index: number;
+    /**
      * dragged element
      */
     node: HTMLElement;
     /**
-     * offset value relative to the list container
+     * list container
      */
-    offset: DOMOffset;
-    /**
-     * value obtained by `getBoundingClientRect()`
-     */
-    rect: DOMRect;
+    el: HTMLElement;
   }
 
   export interface FromTo extends Item {
     /**
      * dragged elements
      */
-    nodes?: Item[];
+    nodes?: HTMLElement[];
+    /**
+     * `Sortable.Options.store`
+     */
+    store?: any;
   }
 
-  export interface SelectEvent extends Item {
+  export interface SelectEvent {
     /**
      * TouchEvent | MouseEvent
      */
     event: EventType;
+    /**
+     * index within parent
+     */
+    index: number;
+    /**
+     * dragged element
+     */
+    node: HTMLElement;
+    /**
+     * list container
+     */
+    from: HTMLElement;
   }
 
   export interface SortableEvent {
-    from: FromTo;
-    to: FromTo;
+    /**
+     * previous list
+     */
+    from: HTMLElement;
+    /**
+     * list, in which moved element.
+     */
+    to: HTMLElement;
+    /**
+     * dragged element
+     */
+    node: HTMLElement;
+    /**
+     * dragged elements
+     */
+    nodes: HTMLElement[];
+    /**
+     * cloned element, all dnd operations are based on cloned element and do not alter the source dom(node).
+     */
+    clone: HTMLElement;
+    /**
+     * cloned elements, there is a value only in the `pull: clone` after moving to a another list.
+     */
+    clones: HTMLElement[];
+    /**
+     * drop element
+     */
+    target: HTMLElement;
+    /**
+     * old index within parent
+     */
+    oldIndex: number;
+    /**
+     * new index within parent
+     */
+    newIndex: number;
     /**
      * TouchEvent | MouseEvent
      */
     event: EventType;
     /**
-     * determine whether the position of dragged element(s) changes, valid only in `onDrop`.
+     * Pull mode if dragging into another sortable.
      */
-    changed?: boolean;
+    pullMode: "clone" | boolean | undefined;
+    /**
+     * Position of the drop element relative to the drag element after swap is complete.
+     * 
+     * @example 
+     * 
+     * 0: index(target) === index(node)
+     * 
+     * 1: index(target) > index(node)
+     * 
+     * -1: index(target) < index(node)
+     */
+    relative: 0 | 1 | -1;
   }
 
   export interface SortableOptions {
+    /**
+     * store data
+     * @example
+     * 
+     * // store value
+     * sortable.option('store', value);
+     * 
+     * // get the stored value
+     * sortable.option('store');
+     */
+    store?: any;
+
     /**
      * Specifies which items inside the element should be draggable.
      * @example
@@ -321,6 +399,7 @@ declare namespace Sortable {
 
     /**
      * Triggered when the drag is completed.
+     * The params records only the status from the drag to the drop. All operations in the process are ignored.
      */
     onDrop?: (params: SortableEvent) => void;
 
@@ -405,11 +484,12 @@ declare namespace Sortable {
     closest(element: HTMLElement, selector: string, context: HTMLElement, includeContext: boolean): HTMLElement | null;
 
     /**
-     * Get element's offet in given parentNode
-     * @param element an HTMLElement.
-     * @param parentEl a specific element's context.
+     * Returns the "bounding client rect" of given element
+     * @param  {HTMLElement} element The element whose boundingClientRect is wanted
+     * @param  {Boolean} relativeToContainingBlock Whether the rect should be relative to the containing block of (including) the container
+     * @param  {HTMLElement} container The parent the element will be placed in
      */
-    getOffset(element: HTMLElement, parentEl: HTMLElement): DOMOffset;
+    getRect(element: HTMLElement, relativeToContainingBlock: boolean, container: HTMLElement): DOMRect;
 
     /**
      * Add or remove one classes from each element.

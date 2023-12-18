@@ -1,16 +1,7 @@
 import Sortable from '../index.js';
-import {
-  css,
-  sort,
-  matches,
-  getRect,
-  getEvent,
-  getOffset,
-  toggleClass,
-  offsetChanged,
-} from '../utils';
+import { css, sort, index, matches, getEvent, toggleClass, dispatchEvent } from '../utils';
 
-let multiTo, multiFrom, dragElements;
+let toSortable, fromSortable, dragElements, cloneElements;
 
 function Multiple(options) {
   this.options = options || {};
@@ -19,11 +10,11 @@ function Multiple(options) {
 
 Multiple.prototype = {
   destroy() {
-    multiTo = multiFrom = dragElements = null;
+    toSortable = fromSortable = dragElements = cloneElements = null;
   },
 
   active() {
-    return !!multiFrom;
+    return !!fromSortable;
   },
 
   select(element) {
@@ -53,167 +44,128 @@ Multiple.prototype = {
     return this.selectedElements;
   },
 
-  getEmits() {
-    const emit = { from: {}, to: {} };
-    if (multiFrom && multiTo) {
-      emit.from = { ...multiFrom };
-      emit.to = { ...multiTo };
+  getParams() {
+    if (!fromSortable) return {};
+
+    let params = {};
+    params.nodes = dragElements;
+    if (cloneElements) {
+      params.clones = cloneElements;
     }
-    return emit;
+
+    return params;
   },
 
-  getHelper() {
-    if (!multiFrom) return null;
+  getGhostElement() {
+    if (!fromSortable) return null;
 
     const container = document.createElement('div');
     this.selectedElements.forEach((node, index) => {
       let clone = node.cloneNode(true);
       let opacity = index === 0 ? 1 : 0.5;
-      clone.style = `
-        opacity: ${opacity};
-        position: absolute;
-        z-index: ${index};
-        left: 0;
-        top: 0;
-        bottom: 0;
-        right: 0;
-      `;
+      clone.style = `position: absolute;left: 0;top: 0;bottom: 0;right: 0;opacity: ${opacity};z-index: ${index};`;
       container.appendChild(clone);
     });
     return container;
   },
 
-  getOnEndParams() {
-    if (!multiFrom) return {};
+  toggleVisible(bool) {
+    if (!fromSortable) return;
 
-    return {
-      changed:
-        multiFrom.sortable.el !== multiTo.sortable.el ||
-        this._offsetChanged(multiFrom.nodes, multiTo.nodes),
-    };
+    if (bool) {
+      const dragIndex = dragElements.indexOf(Sortable.dragged);
+      this._viewElements(dragElements, dragIndex, Sortable.dragged);
+    } else {
+      this._hideElements(dragElements);
+    }
   },
 
-  onDrag(rootEl, sortable) {
-    if (!this._isMultiple()) return;
+  onDrag(sortable) {
+    const dragEl = Sortable.dragged;
 
-    // sort all selected elements by offset before drag
+    if (
+      !this.options.multiple ||
+      !this.selectedElements.length ||
+      this.selectedElements.indexOf(dragEl) < 0
+    ) {
+      return;
+    }
+
     this.selectedElements.sort((a, b) => sort(a, b));
 
-    const nodes = this.selectedElements.map((node) => {
-      return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
-    });
-
-    multiFrom = { sortable, nodes };
-    multiTo = { sortable, nodes };
-
     dragElements = this.selectedElements;
-  },
+    fromSortable = sortable;
+    toSortable = sortable;
 
-  onStarted(sortable) {
-    if (!multiFrom) return;
-
-    const dragEl = Sortable.dragged;
     sortable.animator.collect(dragEl, null, dragEl.parentNode);
-
-    dragElements.forEach((node) => {
-      if (node == dragEl) return;
-      css(node, 'display', 'none');
-    });
-
+    this._hideElements(dragElements);
     sortable.animator.animate();
   },
 
-  toggleElementsVisible(bool) {
-    if (!multiFrom) return;
+  onChange(sortable) {
+    if (!fromSortable) return;
 
-    if (bool) {
-      const index = dragElements.indexOf(Sortable.dragged);
-      this._displayElements(dragElements, index, Sortable.dragged);
-    } else {
-      dragElements.forEach((node) => {
-        if (node == Sortable.dragged) return;
-        css(node, 'display', 'none');
-      });
-    }
+    toSortable = sortable;
   },
 
-  onChange(dragEl, sortable) {
-    if (!multiFrom) return;
+  onDrop(sortable, listChanged, pullMode) {
+    if (!fromSortable || !toSortable) return;
 
-    const rect = getRect(dragEl);
-    const offset = getOffset(dragEl, sortable.el);
-
-    multiTo = {
-      sortable,
-      nodes: dragElements.map((node) => ({ node, rect, offset })),
-    };
-  },
-
-  onDrop(dragEvent, rootEl, sortableChanged) {
-    if (!multiFrom || !multiTo) return;
-
-    multiFrom.sortable = dragEvent.sortable;
+    fromSortable = sortable;
 
     const dragEl = Sortable.dragged;
     const cloneEl = Sortable.clone;
+    const dragIndex = dragElements.indexOf(dragEl);
 
-    multiTo.sortable.animator.collect(dragEl, null, dragEl.parentNode);
+    toSortable.animator.collect(dragEl, null, dragEl.parentNode);
 
-    const index = dragElements.indexOf(dragEl);
-
-    let cloneElements = null;
-    if (sortableChanged && cloneEl) {
+    if (listChanged && pullMode === 'clone') {
       css(cloneEl, 'display', 'none');
-      // clone elements to another list
       cloneElements = dragElements.map((node) => node.cloneNode(true));
-      this._displayElements(cloneElements, index, cloneEl);
+      this._viewElements(cloneElements, dragIndex, cloneEl);
+    } else {
+      cloneElements = null;
     }
 
-    this._displayElements(dragElements, index, dragEl);
+    this._viewElements(dragElements, dragIndex, dragEl);
 
-    multiTo.nodes = (cloneElements || dragElements).map((node) => {
-      return { node, rect: getRect(node), offset: getOffset(node, rootEl) };
-    });
-
-    multiTo.sortable.animator.animate();
+    toSortable.animator.animate();
 
     // Recalculate selected elements
-    if (sortableChanged) {
-      multiTo.sortable.multiplayer.addSelected(cloneElements || dragElements);
-      if (!cloneEl) {
-        multiFrom.sortable.multiplayer.removeSelected(dragElements);
+    if (listChanged) {
+      toSortable.multiplayer.addSelected(cloneElements || dragElements);
+      if (pullMode !== 'clone') {
+        fromSortable.multiplayer.removeSelected(dragElements);
       }
     }
   },
 
-  onSelect(dragEvent, dropEvent, from) {
-    if (!Sortable.dragged || !this._isMouseClick(dragEvent, dropEvent)) return;
+  onSelect(dragEvent, dropEvent, dragEl, sortable) {
+    const { event, target } = getEvent(dropEvent);
 
-    const dragEl = Sortable.dragged;
+    if (Sortable.dragged || !this._isClick(dragEvent, event)) return;
 
     const { selectHandle } = this.options;
-    const { target } = getEvent(dropEvent);
-
-    if (typeof selectHandle === 'function' && !selectHandle(dropEvent)) return;
+    if (typeof selectHandle === 'function' && !selectHandle(event)) return;
     if (typeof selectHandle === 'string' && !matches(target, selectHandle)) return;
 
-    const index = this.selectedElements.indexOf(dragEl);
+    const dragIndex = this.selectedElements.indexOf(dragEl);
 
-    toggleClass(dragEl, this.options.selectedClass, index < 0);
+    toggleClass(dragEl, this.options.selectedClass, dragIndex < 0);
 
-    const params = { ...from, event: dropEvent };
+    const params = { from: sortable.el, event, node: dragEl, index: index(dragEl) };
 
-    if (index < 0) {
+    if (dragIndex < 0) {
       this.selectedElements.push(dragEl);
-      from.sortable._dispatchEvent('onSelect', params);
+      dispatchEvent({ sortable, name: 'onSelect', params: params });
     } else {
-      this.selectedElements.splice(index, 1);
-      from.sortable._dispatchEvent('onDeselect', params);
+      this.selectedElements.splice(dragIndex, 1);
+      dispatchEvent({ sortable, name: 'onDeselect', params: params });
     }
     this.selectedElements.sort((a, b) => sort(a, b));
   },
 
-  _displayElements(elements, index, target) {
+  _viewElements(elements, index, target) {
     for (let i = 0; i < elements.length; i++) {
       css(elements[i], 'display', '');
 
@@ -226,26 +178,18 @@ Multiple.prototype = {
     }
   },
 
-  _isMultiple() {
-    return (
-      this.options.multiple &&
-      this.selectedElements.length &&
-      this.selectedElements.indexOf(Sortable.dragged) > -1
-    );
+  _hideElements(elements) {
+    for (let i = 0; i < elements.length; i++) {
+      if (elements[i] == Sortable.dragged) continue;
+      css(elements[i], 'display', 'none');
+    }
   },
 
-  _isMouseClick(dragEvent, dropEvent) {
-    const difX = dropEvent.clientX - dragEvent.clientX;
-    const difY = dropEvent.clientY - dragEvent.clientY;
-    const difD = Math.sqrt(difX * difX + difY * difY);
-    return difD >= 0 && difD <= 1;
-  },
-
-  _offsetChanged(froms, tos) {
-    return !!froms.find((from) => {
-      const to = tos.find((t) => t.node === from.node);
-      return offsetChanged(from.offset, to.offset);
-    });
+  _isClick(dragEvent, dropEvent) {
+    const dx = dropEvent.clientX - dragEvent.clientX;
+    const dy = dropEvent.clientY - dragEvent.clientY;
+    const dd = Math.sqrt(dx * dx + dy * dy);
+    return dd >= 0 && dd <= 1;
   },
 };
 
