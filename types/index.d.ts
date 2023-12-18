@@ -485,9 +485,9 @@ declare namespace Sortable {
 
     /**
      * Returns the "bounding client rect" of given element
-     * @param  {HTMLElement} element The element whose boundingClientRect is wanted
-     * @param  {Boolean} relativeToContainingBlock Whether the rect should be relative to the containing block of (including) the container
-     * @param  {HTMLElement} container The parent the element will be placed in
+     * @param element The element whose boundingClientRect is wanted
+     * @param relativeToContainingBlock Whether the rect should be relative to the containing block of (including) the container
+     * @param container The parent the element will be placed in
      */
     getRect(element: HTMLElement, relativeToContainingBlock: boolean, container: HTMLElement): DOMRect;
 
