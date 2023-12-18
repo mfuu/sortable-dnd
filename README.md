@@ -74,34 +74,44 @@ new Sortable(element, {
   delayOnTouchOnly: false, // Only delay if user is using touch
   fallbackOnBody: false, // Appends the ghost element into the document's body
   swapOnDrop: true, // When the value is false, the dragged element will return to the starting position of the drag
+  store: null, // store data
 
   customGhost: (nodes) => {
-    // Customize the ghost element in drag, must return an HTMLElement 
+    // Customize the ghost element in drag
+    // you must return an HTMLElement 
   },
   // callback functions
-  onDrag: ({ from, event }) => {
+  onDrag: (params) => {
     // Triggered when drag is started
+    // see @Params
   },
-  onMove: ({ from, event }) => {
+  onMove: (params) => {
     // Triggered when the dragged element is moving
+    // see @Params
   },
-  onDrop: ({ from, to, changed, event }) => {
+  onDrop: (params) => {
     // Triggered when drag is completed
+    // see @Params
   },
-  onAdd: ({ from, to, event }) => {
+  onAdd: (params) => {
     // Triggered when the element is dropped into the list from another
+    // see @Params
   },
-  onRemove: ({ from, to, event }) => {
+  onRemove: (params) => {
     // Triggered when the element is removed from the list into another
+    // see @Params
   },
-  onChange: ({ from, to, event }) => {
+  onChange: (params) => {
     // Triggered when the dragged element changes position in the list
+    // see @Params
   },
   onSelect: (params) => {
     // Triggered when an element is selected by clicking the mouse
+    // see @Select
   },
   onDeselect: (params) => {
     // Triggered when an element is unselected by clicking the mouse
+    // see @Select
   },
 })
 ```
@@ -110,23 +120,46 @@ new Sortable(element, {
 
 ```js
 // string
-new Sortable(el, {
-  ...,
-  group: 'name'
-})
+group: 'name',
 
 // object
-new Sortable(el, {
-  ...,
-  group: { 
-    name: 'group', // group name
-    put: true | false | ['foo', 'bar'], // whether elements can be added from other lists, or an array of group names from which elements can be taken.
-    pull: true | false | 'clone', // whether elements can be moved out of this list.
-    revertClone: true | false, // revert cloned element to initial position after moving to a another list.
-  }
-})
+group: {
+  name: 'group', // group name
+  put: true | false | ['foo', 'bar'], // whether elements can be added from other lists, or an array of group names from which elements can be taken.
+  pull: true | false | 'clone', // whether elements can be moved out of this list.
+  revertDrag: true | false, // revert cloned element to initial position after moving to a another list.
+}
 ```
 
+**Params**
+
+```js
+{
+  from, // previous list
+  to, // list, in which moved element.
+  node, // dragged element
+  nodes, // dragged elements
+  clone, // cloned element, all dnd operations are based on cloned element and do not alter the source dom(node).
+  clones, // cloned elements, there is a value only in the `pull: clone` after moving to a another list.
+  target, // drop element
+  oldIndex, // old index within parent
+  newIndex, // new index within parent
+  event, // TouchEvent | MouseEvent
+  pullMode, // Pull mode if dragging into another sortable.
+  relative, // Position of the drop element relative to the drag element after swap is complete.
+} = params
+```
+
+**Select**
+
+```js
+{
+  event, // TouchEvent | MouseEvent
+  index, // index within parent
+  node, // dragged element
+  from, // list container
+} = params
+```
 
 ## Methods
 
@@ -168,7 +201,7 @@ Sortable.active; // Active Sortable instance
 **Utils**
  
 ```ts
-const { on, off, css, index, closest, getOffset, toggleClass } = Sortable.utils;
+const { on, off, css, index, closest, getRect, toggleClass } = Sortable.utils;
 
 // attach an event handler function
 on(el: HTMLElement, event: String, fn: Function);
@@ -185,8 +218,8 @@ index(el: HTMLElement, selector: String);
 // For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
 closest(el: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean);
 
-// Get element's offet in given parentNode
-getOffset(element: HTMLElement, parentEl: HTMLElement);
+// Returns the "bounding client rect" of given element
+getRect(element: HTMLElement, relativeToContainingBlock: boolean, container: HTMLElement);
 
 // Add or remove one classes from each element
 toggleClass(el: HTMLElement, name: String, state: Boolean);
