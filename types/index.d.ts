@@ -39,7 +39,7 @@ declare class Sortable {
    * @param el
    * @param options
    */
-  static create(el: HTMLElement, options: Options): Sortable;
+  static create(el: HTMLElement, options: Sortable.Options): Sortable;
 
   /**
    * Get the Sortable instance of an element.
@@ -94,7 +94,7 @@ declare namespace Sortable {
     left: number;
   }
 
-  export interface DOMOffset extends DOMRect {};
+  export interface DOMOffset extends DOMRect {}
 
   export interface Group {
     /**
@@ -118,36 +118,6 @@ declare namespace Sortable {
   export interface ScrollSpeed {
     x: number;
     y: number;
-  }
-
-  export interface Item {
-    /**
-     * Sortable instance
-     */
-    sortable: Sortable;
-    /**
-     * index within parent
-     */
-    index: number;
-    /**
-     * dragged element
-     */
-    node: HTMLElement;
-    /**
-     * list container
-     */
-    el: HTMLElement;
-  }
-
-  export interface FromTo extends Item {
-    /**
-     * dragged elements
-     */
-    nodes?: HTMLElement[];
-    /**
-     * `Sortable.Options.store`
-     */
-    store?: any;
   }
 
   export interface SelectEvent {
