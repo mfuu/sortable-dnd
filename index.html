@@ -17,7 +17,6 @@
   <!-- tab -->
   <div class="tabs">
     <button class="tabs-item" onclick="tabClick(this, 'byhandle')">handle</button>
-    <button class="tabs-item" onclick="tabClick(this, 'horizontal')">horizontal</button>
     <button class="tabs-item" onclick="tabClick(this, 'group')">group</button>
     <button class="tabs-item" onclick="tabClick(this, 'multiple')">multiple</button>
     <button class="tabs-item" onclick="tabClick(this, 'grid')">grid</button>
@@ -59,42 +58,22 @@
       </script>
     </div>
 
-    <div class="content-item horizontal">
-      <pre class="flex justify-content-center">
-        <code class="language-js">
-          new Sortable(
-            document.getElementById('group'),
-            {
-              chosenClass: "chosen",
-              selectedClass: "selected",
-            }
-          )
-        </code>
-      </pre>
-      <ul id="horizontal" class="list horizontal-list"></ul>
-      <script>
-        initSortable('horizontal');
-      </script>
-    </div>
-
     <div class="content-item group">
       <pre class="flex justify-content-center">
         <code class="language-js">
           new Sortable(
             document.getElementById('group1'),
             {
-              group: { name: 'group', put: true, pull: true },
+              group: { name: 'a', put: true, pull: 'clone', revertDrag: true },
               chosenClass: "chosen",
-              selectedClass: "selected",
             }
           );
 
           new Sortable(
             document.getElementById('group2'),
             {
-              group: { name: 'group', put: true, pull: true },
+              group: { name: 'b', put: ['a', 'b'], pull: true },
               chosenClass: "chosen",
-              selectedClass: "selected",
             }
           )
 
@@ -103,17 +82,17 @@
       </pre>
       <div class="group-list flex justify-content-center">
         <ul id="group1" class="list"></ul>
-        <ul id="group2" class="list"></ul>
-        <ul id="group3" class="list"></ul>
-        <ul id="group4" class="list"></ul>
-        <ul id="group5" class="list"></ul>
+        <ul id="group2" class="list pink"></ul>
+        <ul id="group3" class="list pink"></ul>
+        <ul id="group4" class="list turquoise"></ul>
+        <ul id="group5" class="list turquoise"></ul>
       </div>
       <script>
-        initSortable('group1', { group: { name: 'group', put: true, pull: true } });
-        initSortable('group2', { group: { name: 'group', put: true, pull: true } });
-        initSortable('group3', { group: { name: 'group', put: true, pull: true } });
-        initSortable('group4', { group: { name: 'group', put: true, pull: true } });
-        initSortable('group5', { group: { name: 'group', put: true, pull: true } });
+        initSortable('group1', { group: { name: 'a', put: true, pull: 'clone', revertDrag: true } });
+        initSortable('group2', { group: { name: 'b', put: ['a', 'b'], pull: true } });
+        initSortable('group3', { group: { name: 'b', put: ['a', 'b'], pull: true } });
+        initSortable('group4', { group: { name: 'c', put: ['a', 'c'], pull: true } });
+        initSortable('group5', { group: { name: 'c', put: ['a', 'c'], pull: true } });
       </script>
     </div>
 

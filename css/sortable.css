@@ -202,6 +202,7 @@ button:hover {
 
 .group-list .list {
   width: 19%;
+  margin: unset;
 }
 
 #nested {
@@ -254,4 +255,12 @@ button:hover {
 
 #nestedDemo div, .nested-1, .nested-2, .nested-3 {
   margin-top: 5px;
+}
+
+.pink {
+  background-color: pink;
+}
+
+.turquoise {
+  background-color: turquoise;
 }
