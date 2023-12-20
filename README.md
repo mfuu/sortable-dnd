@@ -80,7 +80,15 @@ new Sortable(element, {
     // Customize the ghost element in drag
     // you must return an HTMLElement 
   },
-  // callback functions
+
+  onChoose: (params) => {
+    // Element is chosen
+    // see @Params
+  },
+  onUnchoose: () => {
+    // Element is unchosen
+    // see @Params
+  },
   onDrag: (params) => {
     // Triggered when drag is started
     // see @Params
@@ -91,6 +99,10 @@ new Sortable(element, {
   },
   onDrop: (params) => {
     // Triggered when drag is completed
+    // see @Params
+  },
+  onRevert: (params) => {
+    // revert drag element after moving to a another list in `pull: clone` & `revertDrag: true`
     // see @Params
   },
   onAdd: (params) => {
@@ -127,14 +139,14 @@ group: {
   name: 'group', // group name
   put: true | false | ['foo', 'bar'], // whether elements can be added from other lists, or an array of group names from which elements can be taken.
   pull: true | false | 'clone', // whether elements can be moved out of this list.
-  revertDrag: true | false, // revert cloned element to initial position after moving to a another list.
+  revertDrag: true | false, // revert drag element to initial position after moving to a another list.
 }
 ```
 
 **Params**
 
 ```js
-{
+let {
   from, // previous list
   to, // list, in which moved element.
   node, // dragged element
@@ -147,13 +159,14 @@ group: {
   event, // TouchEvent | MouseEvent
   pullMode, // Pull mode if dragging into another sortable.
   relative, // Position of the drop element relative to the drag element after swap is complete.
+  revert, // back to the original list in `pull: 'clone'`
 } = params
 ```
 
 **Select**
 
 ```js
-{
+let {
   event, // TouchEvent | MouseEvent
   index, // index within parent
   node, // dragged element

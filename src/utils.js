@@ -303,8 +303,7 @@ export function index(el, selector) {
     if (
       el.nodeName.toUpperCase() !== 'TEMPLATE' &&
       (!selector || matches(el, selector)) &&
-      css(el, 'display') !== 'none' &&
-      el !== Sortable.dragged
+      css(el, 'display') !== 'none'
     ) {
       index++;
     }
@@ -315,7 +314,7 @@ export function index(el, selector) {
 
 /**
  * Gets nth child of el, ignoring hidden children, sortable's elements (does not ignore clone if it's visible) and non-draggable elements
- * @return {HTMLElement}          The child at index childNum, or null if not found
+ * @return {HTMLElement} The child at index childNum, or null if not found
  */
 export function getChild(el, childNum, selector, includeDragEl) {
   let i = 0,

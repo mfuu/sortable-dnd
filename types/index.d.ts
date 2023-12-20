@@ -196,6 +196,10 @@ declare namespace Sortable {
      * -1: index(target) < index(node)
      */
     relative: 0 | 1 | -1;
+    /**
+     * back to the original list in `pull: 'clone'`
+     */
+    revert?: boolean;
   }
 
   export interface SortableOptions {
@@ -317,7 +321,7 @@ declare namespace Sortable {
 
     /**
      * distance mouse must be from empty sortable to insert drag element into it.
-     * @defaults `5`
+     * @defaults `-5`
      */
     emptyInsertThreshold?: number;
 
@@ -358,6 +362,16 @@ declare namespace Sortable {
     ghostClass?: string;
 
     /**
+     * Element is chosen
+     */
+    onChoose?: (params: SortableEvent) => void;
+
+    /**
+     * Element is unchosen
+     */
+    onUnchoose?: (params: SortableEvent) => void;
+
+    /**
      * Triggered when the drag is started.
      */
     onDrag?: (params: SortableEvent) => void;
@@ -387,6 +401,11 @@ declare namespace Sortable {
      * Triggered when the dragged element changes position in the current list.
      */
     onChange?: (params: SortableEvent) => void;
+
+    /**
+     * revert drag element after moving to a another list in `pull: clone` & `revertDrag: true`
+     */
+    onRevert?: (params: SortableEvent) => void;
 
     /**
      * Triggered when element is selected.

@@ -7,16 +7,16 @@ function Animation(options) {
 }
 
 Animation.prototype = {
-  collect(dragEl, dropEl, parentEl, except) {
+  collect(parentEl) {
     if (!parentEl) return;
     const children = Array.prototype.slice.call(parentEl.children);
-    const { start, end } = this._getRange(children, dragEl, dropEl);
 
     const animations = [];
-    for (let i = start; i <= end; i++) {
+    for (let i = 0; i <= children.length; i++) {
       const node = children[i];
-      if (!node || css(node, 'display') === 'none') continue;
-      if (node === except || node === Sortable.ghost) continue;
+      if (!node || node === Sortable.ghost || css(node, 'display') === 'none') {
+        continue;
+      }
       animations.push({ node: node, rect: getRect(node) });
     }
 
@@ -33,6 +33,10 @@ Animation.prototype = {
 
   _excute(el, { left, top }) {
     const rect = getRect(el);
+
+    if (rect.top === top && rect.left === left) {
+      return;
+    }
     const ot = top - rect.top;
     const ol = left - rect.left;
 
@@ -53,20 +57,6 @@ Animation.prototype = {
       setTransform(el, '');
       el.animated = null;
     }, duration);
-  },
-
-  _getRange(children, dragEl, dropEl) {
-    let start = children.indexOf(dragEl);
-    let end = children.indexOf(dropEl);
-    if (start > end) [start, end] = [end, start];
-
-    if (start < 0) {
-      start = end;
-      end = children.length - 1;
-    }
-    if (end < 0) end = children.length - 1;
-
-    return { start, end };
   },
 };
 
