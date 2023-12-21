@@ -22,7 +22,7 @@ import {
   detectDirection,
   getParentAutoScrollElement,
 } from './utils.js';
-import AutoScroll from './Plugins/Autoscroll.js';
+import AutoScroll from './Plugins/AutoScroll.js';
 import Animation from './Plugins/Animation.js';
 import Multiple from './Plugins/Multiple.js';
 
@@ -590,17 +590,23 @@ Sortable.prototype = {
     toggleClass(dragEl, this.options.chosenClass, false);
 
     if (fromEl) {
+      from = fromEl;
+      oldIndex = fromIndex;
+
+      if (targetNode === cloneEl) targetNode = dragEl;
+
       this.multiplayer.toggleClass(false);
+
       dispatchEvent({
         sortable: this,
         name: 'onUnchoose',
         params: this._getParams(event),
       });
+
+      moveEvent && this._onEnd(event);
     }
 
-    if (dragEl && dragEvent && moveEvent) {
-      this._onEnd(event);
-    } else if (this.options.multiple) {
+    if (!moveEvent && this.options.multiple) {
       this.multiplayer.onSelect(dragEvent, event, dragEl, this);
     }
 
@@ -615,10 +621,7 @@ Sortable.prototype = {
   },
 
   _onEnd: function (event) {
-    from = fromEl;
-    oldIndex = fromIndex;
-
-    if (targetNode === cloneEl) targetNode = dragEl;
+    const params = this._getParams(event);
 
     this.multiplayer.onDrop(from[expando], to[expando], pullMode);
 
@@ -634,12 +637,10 @@ Sortable.prototype = {
     }
 
     css(dragEl, 'display', '');
-
     if (Safari) {
       css(document.body, 'user-select', '');
     }
 
-    const params = this._getParams(event);
     if (from !== to) {
       dispatchEvent({
         sortable: from[expando],
