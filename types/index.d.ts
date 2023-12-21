@@ -197,14 +197,18 @@ declare namespace Sortable {
      */
     relative: 0 | 1 | -1;
     /**
-     * back to the original list in `pull: 'clone'`
+     * revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
      */
-    revert?: boolean;
+    revertDrag?: boolean;
+    /**
+     * dragged element go back to the original list in `pull: 'clone'`.
+     */
+    backToOrigin?: boolean;
   }
 
   export interface SortableOptions {
     /**
-     * store data
+     * store data.
      * @example
      * 
      * // store value
@@ -240,7 +244,7 @@ declare namespace Sortable {
      * Set value to allow drag between different lists.
      * @example
      * - string: '...'
-     * - object: { name: '...', put: true | false, pull: true | false }
+     * - object: { name: '...', put: true | false, pull: true | false | 'clone', revertDrag: true | false }
      * @defaults `' '`
      */
     group?: string | Group;
@@ -362,58 +366,53 @@ declare namespace Sortable {
     ghostClass?: string;
 
     /**
-     * Element is chosen
+     * Element is chosen.
      */
     onChoose?: (params: SortableEvent) => void;
 
     /**
-     * Element is unchosen
+     * Element is unchosen.
      */
     onUnchoose?: (params: SortableEvent) => void;
 
     /**
-     * Triggered when the drag is started.
+     * Element dragging started.
      */
     onDrag?: (params: SortableEvent) => void;
 
     /**
-     * Triggered when the dragged element is moving.
+     * Event when you move an item in the list or between lists.
      */
     onMove?: (params: SortableEvent) => void;
 
     /**
-     * Triggered when the drag is completed.
+     * Element dragging is completed.
      * The params records only the status from the drag to the drop. All operations in the process are ignored.
      */
     onDrop?: (params: SortableEvent) => void;
 
     /**
-     * Triggered when element is dropped into the current list from another.
+     * Element is dropped into the current list from another.
      */
     onAdd?: (params: SortableEvent) => void;
 
     /**
-     * Triggered when element is removed from the current list into another.
+     * Element is removed from the current list into another.
      */
     onRemove?: (params: SortableEvent) => void;
 
     /**
-     * Triggered when the dragged element changes position in the current list.
+     * Called when dragging element changes position in the current list.
      */
     onChange?: (params: SortableEvent) => void;
 
     /**
-     * revert drag element after moving to a another list in `pull: clone` & `revertDrag: true`
-     */
-    onRevert?: (params: SortableEvent) => void;
-
-    /**
-     * Triggered when element is selected.
+     * Element is selected.
      */
     onSelect?: (params: SelectEvent) => void;
 
     /**
-     * Triggered when element is unselected.
+     * Element is unselected.
      */
     onDeselect?: (params: SelectEvent) => void;
   }

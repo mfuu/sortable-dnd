@@ -95,9 +95,7 @@ Multiple.prototype = {
   onDrag(sortable) {
     if (!dragElements) return;
 
-    const dragEl = Sortable.dragged;
-
-    sortable.animator.collect(dragEl.parentNode);
+    sortable.animator.collect(Sortable.dragged.parentNode);
     this._hideElements(dragElements);
     sortable.animator.animate();
 
@@ -107,21 +105,21 @@ Multiple.prototype = {
   onDrop(fromSortable, toSortable, pullMode) {
     if (!dragElements) return;
 
-    const dragEl = Sortable.dragged;
-    const cloneEl = Sortable.clone;
-    const dragIndex = dragElements.indexOf(dragEl);
+    let dragEl = Sortable.dragged,
+      cloneEl = Sortable.clone,
+      dragIndex = dragElements.indexOf(dragEl);
 
-    toSortable.animator.collect(dragEl.parentNode);
+    toSortable.animator.collect(cloneEl.parentNode);
 
     if (fromSortable !== toSortable && pullMode === 'clone') {
       css(cloneEl, 'display', 'none');
       cloneElements = dragElements.map((node) => node.cloneNode(true));
-      this._viewElements(cloneElements, dragIndex, cloneEl);
-    } else {
-      cloneElements = null;
-    }
 
-    this._viewElements(dragElements, dragIndex, dragEl);
+      this._viewElements(cloneElements, dragIndex, cloneEl);
+      this._viewElements(dragElements, dragIndex, dragEl);
+    } else {
+      this._viewElements(dragElements, dragIndex, cloneEl);
+    }
 
     toSortable.animator.animate();
 
@@ -135,7 +133,7 @@ Multiple.prototype = {
   },
 
   onSelect(dragEvent, dropEvent, dragEl, sortable) {
-    const { event, target } = getEvent(dropEvent);
+    const { event } = getEvent(dropEvent);
 
     if (Sortable.dragged || !this._isClick(dragEvent, event)) return;
 

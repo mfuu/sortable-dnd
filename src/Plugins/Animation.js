@@ -9,15 +9,35 @@ function Animation(options) {
 Animation.prototype = {
   collect(parentEl) {
     if (!parentEl) return;
-    const children = Array.prototype.slice.call(parentEl.children);
 
-    const animations = [];
+    let parentRect = getRect(parentEl),
+      docWidth =
+        window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth,
+      docHeight =
+        window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight,
+      maxWidth = Math.min(parentRect.right, docWidth),
+      maxHeight = Math.min(parentRect.bottom, docHeight),
+      children = Array.prototype.slice.call(parentEl.children),
+      animations = [];
+
     for (let i = 0; i <= children.length; i++) {
       const node = children[i];
       if (!node || node === Sortable.ghost || css(node, 'display') === 'none') {
         continue;
       }
-      animations.push({ node: node, rect: getRect(node) });
+
+      const rect = getRect(node);
+
+      if (rect.bottom < 0 || rect.right < 0) {
+        continue;
+      }
+
+      // Animate only elements within the visible area
+      if (rect.top > maxHeight || rect.left > maxWidth) {
+        break;
+      }
+
+      animations.push({ node: node, rect });
     }
 
     this.animations.push(animations);
@@ -37,6 +57,7 @@ Animation.prototype = {
     if (rect.top === top && rect.left === left) {
       return;
     }
+
     const ot = top - rect.top;
     const ol = left - rect.left;
 
@@ -46,9 +67,7 @@ Animation.prototype = {
     // repaint
     el.offsetWidth;
 
-    const duration = this.options.animation;
-
-    setTransitionDuration(el, duration);
+    setTransitionDuration(el, this.options.animation);
     setTransform(el, 'translate3d(0px, 0px, 0px)');
 
     clearTimeout(el.animated);
@@ -56,7 +75,7 @@ Animation.prototype = {
       setTransitionDuration(el);
       setTransform(el, '');
       el.animated = null;
-    }, duration);
+    }, this.options.animation);
   },
 };
 

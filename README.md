@@ -81,48 +81,53 @@ new Sortable(element, {
     // you must return an HTMLElement 
   },
 
+  // Element is chosen
   onChoose: (params) => {
-    // Element is chosen
     // see @Params
   },
+
+  // Element is unchosen
   onUnchoose: () => {
-    // Element is unchosen
     // see @Params
   },
+
+  // Element dragging started
   onDrag: (params) => {
-    // Triggered when drag is started
     // see @Params
   },
+
+  // Event when you move an item in the list or between lists
   onMove: (params) => {
-    // Triggered when the dragged element is moving
     // see @Params
   },
+
+  // Element dragging is completed
   onDrop: (params) => {
-    // Triggered when drag is completed
     // see @Params
   },
-  onRevert: (params) => {
-    // revert drag element after moving to a another list in `pull: clone` & `revertDrag: true`
-    // see @Params
-  },
+
+  // Element is dropped into the current list from another
   onAdd: (params) => {
-    // Triggered when the element is dropped into the list from another
     // see @Params
   },
+
+  // Element is removed from the current list into another
   onRemove: (params) => {
-    // Triggered when the element is removed from the list into another
     // see @Params
   },
+
+  // Called when dragging element changes position in the current list
   onChange: (params) => {
-    // Triggered when the dragged element changes position in the list
     // see @Params
   },
+
+  // Element is selected
   onSelect: (params) => {
-    // Triggered when an element is selected by clicking the mouse
     // see @Select
   },
+
+  // Element is unselected
   onDeselect: (params) => {
-    // Triggered when an element is unselected by clicking the mouse
     // see @Select
   },
 })
@@ -159,7 +164,8 @@ let {
   event, // TouchEvent | MouseEvent
   pullMode, // Pull mode if dragging into another sortable.
   relative, // Position of the drop element relative to the drag element after swap is complete.
-  revert, // back to the original list in `pull: 'clone'`
+  revertDrag, // revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
+  backToOrigin, // dragged element go back to the original list in `pull: 'clone'`.
 } = params
 ```
 
