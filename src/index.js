@@ -514,7 +514,7 @@ Sortable.prototype = {
         sortable: fromEl[expando],
         name: 'onChange',
         params: this._getParams(event, {
-          to: from,
+          to: fromEl,
           target: dragEl,
           newIndex: fromIndex,
           revertDrag: true,
@@ -535,6 +535,7 @@ Sortable.prototype = {
         sortable: this,
         name: 'onChange',
         params: this._getParams(event, {
+          from: fromEl,
           backToOrigin: true,
         }),
       });
