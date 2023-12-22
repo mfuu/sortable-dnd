@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.1
+ * sortable-dnd v0.6.2
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -262,7 +262,7 @@
       return -1;
     }
     while (el = el.previousElementSibling) {
-      if (el.nodeName.toUpperCase() !== 'TEMPLATE' && (!selector || matches(el, selector)) && css(el, 'display') !== 'none' && el !== Sortable.dragged) {
+      if (el.nodeName.toUpperCase() !== 'TEMPLATE' && (!selector || matches(el, selector)) && css(el, 'display') !== 'none') {
         index++;
       }
     }
@@ -271,7 +271,7 @@
 
   /**
    * Gets nth child of el, ignoring hidden children, sortable's elements (does not ignore clone if it's visible) and non-draggable elements
-   * @return {HTMLElement}          The child at index childNum, or null if not found
+   * @return {HTMLElement} The child at index childNum, or null if not found
    */
   function getChild(el, childNum, selector, includeDragEl) {
     var i = 0,
@@ -489,20 +489,32 @@
     this.animations = [];
   }
   Animation.prototype = {
-    collect: function collect(dragEl, dropEl, parentEl, except) {
+    collect: function collect(parentEl) {
       if (!parentEl) return;
-      var children = Array.prototype.slice.call(parentEl.children);
-      var _this$_getRange = this._getRange(children, dragEl, dropEl),
-        start = _this$_getRange.start,
-        end = _this$_getRange.end;
-      var animations = [];
-      for (var i = start; i <= end; i++) {
+      var parentRect = getRect(parentEl),
+        docWidth = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth,
+        docHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight,
+        maxWidth = Math.min(parentRect.right, docWidth),
+        maxHeight = Math.min(parentRect.bottom, docHeight),
+        children = Array.prototype.slice.call(parentEl.children),
+        animations = [];
+      for (var i = 0; i <= children.length; i++) {
         var node = children[i];
-        if (!node || css(node, 'display') === 'none') continue;
-        if (node === except || node === Sortable.ghost) continue;
+        if (!node || node === Sortable.ghost || css(node, 'display') === 'none') {
+          continue;
+        }
+        var rect = getRect(node);
+        if (rect.bottom < 0 || rect.right < 0) {
+          continue;
+        }
+
+        // Animate only elements within the visible area
+        if (rect.top > maxHeight || rect.left > maxWidth) {
+          break;
+        }
         animations.push({
           node: node,
-          rect: getRect(node)
+          rect: rect
         });
       }
       this.animations.push(animations);
@@ -520,6 +532,9 @@
       var left = _ref.left,
         top = _ref.top;
       var rect = getRect(el);
+      if (rect.top === top && rect.left === left) {
+        return;
+      }
       var ot = top - rect.top;
       var ol = left - rect.left;
       setTransitionDuration(el);
@@ -527,47 +542,32 @@
 
       // repaint
       el.offsetWidth;
-      var duration = this.options.animation;
-      setTransitionDuration(el, duration);
+      setTransitionDuration(el, this.options.animation);
       setTransform(el, 'translate3d(0px, 0px, 0px)');
       clearTimeout(el.animated);
       el.animated = setTimeout(function () {
         setTransitionDuration(el);
         setTransform(el, '');
         el.animated = null;
-      }, duration);
-    },
-    _getRange: function _getRange(children, dragEl, dropEl) {
-      var start = children.indexOf(dragEl);
-      var end = children.indexOf(dropEl);
-      if (start > end) {
-        var _ref2 = [end, start];
-        start = _ref2[0];
-        end = _ref2[1];
-      }
-      if (start < 0) {
-        start = end;
-        end = children.length - 1;
-      }
-      if (end < 0) end = children.length - 1;
-      return {
-        start: start,
-        end: end
-      };
+      }, this.options.animation);
     }
   };
 
-  var toSortable, fromSortable, dragElements, cloneElements;
+  var dragElements, cloneElements;
   function Multiple(options) {
     this.options = options || {};
     this.selectedElements = [];
   }
   Multiple.prototype = {
     destroy: function destroy() {
-      toSortable = fromSortable = dragElements = cloneElements = null;
+      dragElements = cloneElements = null;
     },
     active: function active() {
-      return !!fromSortable;
+      return !!dragElements;
+    },
+    setParams: function setParams(params) {
+      params.nodes = dragElements || [];
+      params.clones = cloneElements || [];
     },
     select: function select(element) {
       toggleClass(element, this.options.selectedClass, true);
@@ -583,31 +583,8 @@
         this.selectedElements.splice(index, 1);
       }
     },
-    addSelected: function addSelected(elements) {
-      var _this = this;
-      elements.forEach(function (el) {
-        return _this.selectedElements.push(el);
-      });
-    },
-    removeSelected: function removeSelected(elements) {
-      this.selectedElements = this.selectedElements.filter(function (el) {
-        return elements.indexOf(el) < 0;
-      });
-    },
-    getSelectedElements: function getSelectedElements() {
-      return this.selectedElements;
-    },
-    getParams: function getParams() {
-      if (!fromSortable) return {};
-      var params = {};
-      params.nodes = dragElements;
-      if (cloneElements) {
-        params.clones = cloneElements;
-      }
-      return params;
-    },
     getGhostElement: function getGhostElement() {
-      if (!fromSortable) return null;
+      if (!dragElements) return null;
       var container = document.createElement('div');
       this.selectedElements.forEach(function (node, index) {
         var clone = node.cloneNode(true);
@@ -617,8 +594,26 @@
       });
       return container;
     },
+    toggleSelected: function toggleSelected(elements, add) {
+      var _this = this;
+      if (add) {
+        elements.forEach(function (el) {
+          return _this.selectedElements.push(el);
+        });
+      } else {
+        this.selectedElements = this.selectedElements.filter(function (el) {
+          return elements.indexOf(el) < 0;
+        });
+      }
+    },
+    toggleClass: function toggleClass$1(bool) {
+      if (!dragElements) return;
+      for (var i = 0; i < dragElements.length; i++) {
+        toggleClass(dragElements[i], this.options.chosenClass, bool);
+      }
+    },
     toggleVisible: function toggleVisible(bool) {
-      if (!fromSortable) return;
+      if (!dragElements) return;
       if (bool) {
         var dragIndex = dragElements.indexOf(Sortable.dragged);
         this._viewElements(dragElements, dragIndex, Sortable.dragged);
@@ -626,60 +621,53 @@
         this._hideElements(dragElements);
       }
     },
-    onDrag: function onDrag(sortable) {
-      var dragEl = Sortable.dragged;
-      if (!this.options.multiple || !this.selectedElements.length || this.selectedElements.indexOf(dragEl) < 0) {
+    onChoose: function onChoose() {
+      if (!this.options.multiple || !this.selectedElements.length || this.selectedElements.indexOf(Sortable.dragged) < 0) {
         return;
       }
       this.selectedElements.sort(function (a, b) {
         return sort(a, b);
       });
       dragElements = this.selectedElements;
-      fromSortable = sortable;
-      toSortable = sortable;
-      sortable.animator.collect(dragEl, null, dragEl.parentNode);
+      this.toggleClass(true);
+    },
+    onDrag: function onDrag(sortable) {
+      if (!dragElements) return;
+      sortable.animator.collect(Sortable.dragged.parentNode);
       this._hideElements(dragElements);
       sortable.animator.animate();
+      this.toggleClass(false);
     },
-    onChange: function onChange(sortable) {
-      if (!fromSortable) return;
-      toSortable = sortable;
-    },
-    onDrop: function onDrop(sortable, listChanged, pullMode) {
-      if (!fromSortable || !toSortable) return;
-      fromSortable = sortable;
-      var dragEl = Sortable.dragged;
-      var cloneEl = Sortable.clone;
-      var dragIndex = dragElements.indexOf(dragEl);
-      toSortable.animator.collect(dragEl, null, dragEl.parentNode);
-      if (listChanged && pullMode === 'clone') {
+    onDrop: function onDrop(fromSortable, toSortable, pullMode) {
+      if (!dragElements) return;
+      var dragEl = Sortable.dragged,
+        cloneEl = Sortable.clone,
+        dragIndex = dragElements.indexOf(dragEl);
+      toSortable.animator.collect(cloneEl.parentNode);
+      if (fromSortable !== toSortable && pullMode === 'clone') {
         css(cloneEl, 'display', 'none');
         cloneElements = dragElements.map(function (node) {
           return node.cloneNode(true);
         });
         this._viewElements(cloneElements, dragIndex, cloneEl);
+        this._viewElements(dragElements, dragIndex, dragEl);
       } else {
-        cloneElements = null;
+        this._viewElements(dragElements, dragIndex, cloneEl);
       }
-      this._viewElements(dragElements, dragIndex, dragEl);
       toSortable.animator.animate();
 
       // Recalculate selected elements
-      if (listChanged) {
-        toSortable.multiplayer.addSelected(cloneElements || dragElements);
+      if (fromSortable !== toSortable) {
+        toSortable.multiplayer.toggleSelected(cloneElements || dragElements, true);
         if (pullMode !== 'clone') {
-          fromSortable.multiplayer.removeSelected(dragElements);
+          fromSortable.multiplayer.toggleSelected(dragElements, false);
         }
       }
     },
     onSelect: function onSelect(dragEvent, dropEvent, dragEl, sortable) {
       var _getEvent = getEvent(dropEvent),
-        event = _getEvent.event,
-        target = _getEvent.target;
+        event = _getEvent.event;
       if (Sortable.dragged || !this._isClick(dragEvent, event)) return;
-      var selectHandle = this.options.selectHandle;
-      if (typeof selectHandle === 'function' && !selectHandle(event)) return;
-      if (typeof selectHandle === 'string' && !matches(target, selectHandle)) return;
       var dragIndex = this.selectedElements.indexOf(dragEl);
       toggleClass(dragEl, this.options.selectedClass, dragIndex < 0);
       var params = {
@@ -733,20 +721,9 @@
   };
 
   var expando = 'Sortable' + Date.now();
-  var dragEl,
-    dropEl,
-    nextEl,
-    cloneEl,
-    ghostEl,
-    parentEl,
-    dragEvent,
-    moveEvent,
-    lastDropEl,
-    listenerNode,
-    lastHoverArea,
-    dragStartTimer,
-    sortables = [];
-  var to, from, pullMode, oldIndex, newIndex, dragIndex, targetNode;
+  var sortables = [];
+  var fromEl, dragEl, dropEl, nextEl, cloneEl, ghostEl, parentEl, dragEvent, moveEvent, lastDropEl, listenerNode, lastHoverArea, dragStartTimer;
+  var to, from, pullMode, oldIndex, newIndex, fromIndex, targetNode;
   var _prepareGroup = function _prepareGroup(options) {
     var group = {};
     var originalGroup = options.group;
@@ -878,19 +855,25 @@
 
       // Safari ignores further event handling after mousedown
       if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
-      var _this$options = this.options,
-        handle = _this$options.handle,
-        draggable = _this$options.draggable;
-      dragEl = closest(target, draggable, this.el);
+      var element = closest(target, this.options.draggable, this.el);
 
       // No dragging is allowed when there is no dragging element
-      if (!dragEl || dragEl.animated) return;
+      if (!element || element.animated) return;
+      dragEl = element;
       dragEvent = event;
-      dragEvent.sortable = this;
       listenerNode = touch ? dragEl : document;
       on(listenerNode, 'mouseup', this._onDrop);
       on(listenerNode, 'touchend', this._onDrop);
       on(listenerNode, 'touchcancel', this._onDrop);
+      var _this$options = this.options,
+        handle = _this$options.handle,
+        selectHandle = _this$options.selectHandle;
+
+      // allow multi-drag
+      if (typeof selectHandle === 'function' && selectHandle(event)) return;
+      if (typeof selectHandle === 'string' && matches(target, selectHandle)) return;
+
+      // check handle
       if (typeof handle === 'function' && !handle(event)) return;
       if (typeof handle === 'string' && !matches(target, handle)) return;
       var _this$options2 = this.options,
@@ -905,10 +888,10 @@
         on(this.el.ownerDocument, 'touchend', this._cancelStart);
         on(this.el.ownerDocument, 'touchcancel', this._cancelStart);
         dragStartTimer = setTimeout(function () {
-          return _this._onStart(touch);
+          return _this._onStart(touch, event);
         }, delay);
       } else {
-        this._onStart(touch);
+        this._onStart(touch, event);
       }
     },
     _delayMoveHandler: function _delayMoveHandler(evt) {
@@ -925,7 +908,28 @@
       off(this.el.ownerDocument, 'touchend', this._cancelStart);
       off(this.el.ownerDocument, 'touchcancel', this._cancelStart);
     },
-    _onStart: function _onStart(touch) {
+    _onStart: function _onStart(touch, event) {
+      var i = index(dragEl);
+      to = this.el;
+      from = this.el;
+      oldIndex = i;
+      newIndex = i;
+      fromIndex = i;
+      targetNode = dragEl;
+      fromEl = this.el;
+      cloneEl = dragEl.cloneNode(true);
+      parentEl = dragEl.parentNode;
+      pullMode = this.options.group.pull;
+      Sortable.clone = cloneEl;
+      Sortable.active = this;
+      Sortable.dragged = dragEl;
+      toggleClass(dragEl, this.options.chosenClass, true);
+      this.multiplayer.onChoose();
+      dispatchEvent({
+        sortable: this,
+        name: 'onChoose',
+        params: this._getParams(event)
+      });
       if (touch) {
         on(listenerNode, 'touchmove', this._nearestSortable);
       } else {
@@ -945,20 +949,7 @@
       } catch (error) {}
     },
     _onStarted: function _onStarted() {
-      var i = index(dragEl);
-      to = this.el;
-      from = this.el;
-      oldIndex = i;
-      newIndex = i;
-      dragIndex = i;
-      targetNode = dragEl;
-      parentEl = dragEl.parentNode;
-      pullMode = this.options.group.pull;
-      cloneEl = dragEl.cloneNode(true);
       toggleClass(cloneEl, this.options.chosenClass, true);
-      Sortable.clone = cloneEl;
-      Sortable.active = this;
-      Sortable.dragged = dragEl;
       this._appendGhost();
       this.multiplayer.onDrag(this);
       dispatchEvent({
@@ -967,13 +958,16 @@
         params: this._getParams(dragEvent)
       });
       css(dragEl, 'display', 'none');
+      toggleClass(dragEl, this.options.chosenClass, false);
       dragEl.parentNode.insertBefore(cloneEl, dragEl);
-      Safari && css(document.body, 'user-select', 'none');
+      if (Safari) {
+        css(document.body, 'user-select', 'none');
+      }
     },
     _getGhostElement: function _getGhostElement() {
       var customGhost = this.options.customGhost;
       if (typeof customGhost === 'function') {
-        var selectedElements = this.multiplayer.getSelectedElements();
+        var selectedElements = this.multiplayer.selectedElements;
         return customGhost(selectedElements.length ? selectedElements : [dragEl]);
       }
       return this.multiplayer.getGhostElement() || dragEl;
@@ -1037,7 +1031,7 @@
       nearest && nearest[expando]._onMove(event, target);
     },
     _allowPut: function _allowPut() {
-      if (dragEvent.sortable.el === this.el) {
+      if (fromEl === this.el) {
         return true;
       } else if (!this.options.group.put) {
         return false;
@@ -1045,7 +1039,7 @@
         var _this$options$group = this.options.group,
           name = _this$options$group.name,
           put = _this$options$group.put;
-        var fromGroup = dragEvent.sortable.options.group;
+        var fromGroup = fromEl[expando].options.group;
         return put.join && put.indexOf(fromGroup.name) > -1 || fromGroup.name && name && fromGroup.name === name;
       }
     },
@@ -1096,45 +1090,67 @@
       lastDropEl = dropEl;
     },
     _onInsert: function _onInsert(event) {
-      var target = dropEl || cloneEl;
-      parentEl = dropEl ? dropEl.parentNode : this.el;
-      from[expando].animator.collect(cloneEl, null, cloneEl.parentNode, cloneEl);
-      this.animator.collect(null, target, parentEl, cloneEl);
-      this.multiplayer.onChange(this);
+      var target = dropEl || cloneEl,
+        cloneTo = pullMode === 'clone' && this.el !== fromEl && from === fromEl,
+        cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl;
       to = this.el;
       oldIndex = index(cloneEl);
-      newIndex = index(target);
       targetNode = target;
+      parentEl = dropEl ? dropEl.parentNode : this.el;
+      from[expando].animator.collect(cloneEl.parentNode);
+      this.animator.collect(parentEl);
 
       // show dragEl before clone to another list
-      // no need to trigger 'onRemove' when clone to another list
-      if (pullMode === 'clone' && this.el !== dragEvent.sortable.el && from === dragEvent.sortable.el) {
-        this.animator.collect(dragEl, cloneEl, dragEl.parentNode);
+      if (cloneTo) {
         css(dragEl, 'display', '');
-        if (!dragEvent.sortable.options.group.revertDrag) {
-          dragEl.parentNode.insertBefore(dragEl, cloneEl);
+        fromEl[expando].multiplayer.toggleVisible(true);
+        if (!fromEl[expando].options.group.revertDrag) {
+          from.insertBefore(dragEl, cloneEl);
         }
-        dragEvent.sortable.multiplayer.toggleVisible(true);
-        this.animator.animate();
+      }
+
+      // hide dragEl when returning to the original list
+      if (cloneBack) {
+        oldIndex = index(dragEl);
+        css(dragEl, 'display', 'none');
+        this.multiplayer.toggleVisible(false);
+      }
+      if (dropEl) {
+        parentEl.insertBefore(cloneEl, lastHoverArea < 0 ? dropEl : dropEl.nextSibling);
       } else {
+        parentEl.appendChild(cloneEl);
+      }
+      newIndex = index(cloneEl);
+      if (cloneTo && fromEl[expando].options.group.revertDrag) {
+        dispatchEvent({
+          sortable: fromEl[expando],
+          name: 'onChange',
+          params: this._getParams(event, {
+            to: fromEl,
+            target: dragEl,
+            newIndex: fromIndex,
+            revertDrag: true
+          })
+        });
+      }
+      if (!cloneTo) {
         dispatchEvent({
           sortable: from[expando],
           name: 'onRemove',
           params: this._getParams(event)
         });
       }
-      if (dropEl) {
-        parentEl.insertBefore(cloneEl, dropEl);
-      } else {
-        parentEl.appendChild(cloneEl);
+      if (cloneBack && dropEl !== dragEl) {
+        dispatchEvent({
+          sortable: this,
+          name: 'onChange',
+          params: this._getParams(event, {
+            from: fromEl,
+            backToOrigin: true
+          })
+        });
       }
-
-      // hide dragEl when returning to the original list
-      // no need to trigger 'onAdd' when clone back to the original list
-      if (pullMode === 'clone' && this.el === dragEvent.sortable.el) {
-        css(dragEl, 'display', 'none');
-        dragEvent.sortable.multiplayer.toggleVisible(false);
-      } else {
+      if (!cloneBack) {
         dispatchEvent({
           sortable: this,
           name: 'onAdd',
@@ -1148,12 +1164,11 @@
     _onChange: function _onChange(event) {
       if (dropEl === dragEl) return;
       parentEl = dropEl.parentNode;
-      this.animator.collect(cloneEl, dropEl, parentEl);
-      this.multiplayer.onChange(this);
       oldIndex = index(cloneEl);
-      newIndex = index(dropEl);
       targetNode = dropEl;
+      this.animator.collect(parentEl);
       parentEl.insertBefore(cloneEl, nextEl);
+      newIndex = index(cloneEl);
       dispatchEvent({
         sortable: this,
         name: 'onChange',
@@ -1170,9 +1185,20 @@
       off(listenerNode, 'mouseup', this._onDrop);
       off(listenerNode, 'touchend', this._onDrop);
       off(listenerNode, 'touchcancel', this._onDrop);
-      if (dragEl && dragEvent && moveEvent) {
-        this._onEnd(event);
-      } else if (this.options.multiple) {
+      toggleClass(dragEl, this.options.chosenClass, false);
+      if (fromEl) {
+        from = fromEl;
+        oldIndex = fromIndex;
+        if (targetNode === cloneEl) targetNode = dragEl;
+        this.multiplayer.toggleClass(false);
+        dispatchEvent({
+          sortable: this,
+          name: 'onUnchoose',
+          params: this._getParams(event)
+        });
+        moveEvent && this._onEnd(event);
+      }
+      if (!moveEvent && this.options.multiple) {
         this.multiplayer.onSelect(dragEvent, event, dragEl, this);
       }
       if (ghostEl && ghostEl.parentNode) {
@@ -1180,21 +1206,26 @@
       }
       this.multiplayer.destroy();
       this.autoScroller.destroy();
-      _nulling();
+      this._nulling();
     },
     _onEnd: function _onEnd(event) {
-      from = dragEvent.sortable.el;
-      oldIndex = dragIndex;
-      var listChanged = from !== to;
+      var params = this._getParams(event);
+      this.multiplayer.onDrop(from[expando], to[expando], pullMode);
 
       // swap real drag element to the current drop position
-      if (this.options.swapOnDrop && (pullMode !== 'clone' || !listChanged)) {
+      if (this.options.swapOnDrop && (pullMode !== 'clone' || from === to)) {
         parentEl.insertBefore(dragEl, cloneEl);
       }
-      if (targetNode === cloneEl) targetNode = dragEl;
-      this.multiplayer.onDrop(from[expando], listChanged, pullMode);
-      var params = this._getParams(event);
-      if (listChanged) {
+      if (pullMode !== 'clone' || from === to || this.multiplayer.active()) {
+        cloneEl && cloneEl.parentNode && cloneEl.parentNode.removeChild(cloneEl);
+      } else {
+        toggleClass(cloneEl, this.options.chosenClass, false);
+      }
+      css(dragEl, 'display', '');
+      if (Safari) {
+        css(document.body, 'user-select', '');
+      }
+      if (from !== to) {
         dispatchEvent({
           sortable: from[expando],
           name: 'onDrop',
@@ -1206,15 +1237,9 @@
         name: 'onDrop',
         params: params
       });
-      if (pullMode !== 'clone' || !listChanged || this.multiplayer.active()) {
-        parentEl.removeChild(cloneEl);
-      } else {
-        toggleClass(cloneEl, this.options.chosenClass, false);
-      }
-      css(dragEl, 'display', '');
-      Safari && css(document.body, 'user-select', '');
     },
     _getParams: function _getParams(event) {
+      var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
       var evt = Object.create(null);
       evt.event = event;
       evt.to = to;
@@ -1225,19 +1250,17 @@
       evt.oldIndex = oldIndex;
       evt.newIndex = newIndex;
       evt.pullMode = pullMode;
-      evt.relative = targetNode === dragEl ? 0 : sort(targetNode, cloneEl);
-      var multiParams = this.multiplayer.getParams();
-      if (multiParams.nodes) {
-        evt.nodes = multiParams.nodes;
-      }
-      if (multiParams.clones) {
-        evt.clones = multiParams.clones;
-      }
+      this.multiplayer.setParams(evt);
+      Object.assign(evt, params);
+      evt.relative = evt.target === dragEl ? 0 : sort(evt.target, cloneEl);
       return evt;
+    },
+    _nulling: function _nulling() {
+      to = from = fromEl = dragEl = dropEl = nextEl = cloneEl = ghostEl = parentEl = pullMode = oldIndex = newIndex = fromIndex = dragEvent = moveEvent = targetNode = lastDropEl = listenerNode = lastHoverArea = dragStartTimer = Sortable.clone = Sortable.ghost = Sortable.active = Sortable.dragged = null;
     },
     // ========================================= Public Methods =========================================
     destroy: function destroy() {
-      _nulling();
+      this._nulling();
       this._cancelStart();
       off(this.el, 'touchstart', this._onDrag);
       off(this.el, 'mousedown', this._onDrag);
@@ -1265,11 +1288,8 @@
       this.multiplayer.deselect(element);
     },
     getSelectedElements: function getSelectedElements() {
-      return this.multiplayer.getSelectedElements();
+      return this.multiplayer.selectedElements;
     }
-  };
-  var _nulling = function _nulling() {
-    to = from = dragEl = dropEl = nextEl = cloneEl = ghostEl = parentEl = pullMode = oldIndex = newIndex = dragIndex = dragEvent = moveEvent = targetNode = lastDropEl = listenerNode = lastHoverArea = dragStartTimer = Sortable.clone = Sortable.ghost = Sortable.active = Sortable.dragged = null;
   };
   Sortable.utils = {
     on: on,
