@@ -657,7 +657,7 @@ Sortable.prototype = {
   },
 
   _getParams: function (event, params = {}) {
-    let evt = Object.create(null);
+    let evt = {};
 
     evt.event = event;
     evt.to = to;

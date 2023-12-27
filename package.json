@@ -35,6 +35,7 @@
   "homepage": "https://github.com/mfuu/sortable-dnd#readme",
   "devDependencies": {
     "@babel/core": "^7.18.10",
+    "@babel/plugin-transform-object-assign": "^7.2.0",
     "@babel/preset-env": "^7.18.10",
     "babel-eslint": "^10.1.0",
     "eslint": "^6.2.1",
