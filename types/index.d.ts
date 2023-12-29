@@ -339,7 +339,7 @@ declare namespace Sortable {
      * When the value is false, the dragged element will return to the starting position of the drag.
      * @defaults `true`
      */
-    swapOnDrop?: boolean;
+    swapOnDrop?: boolean | ((params: SortableEvent) => boolean);
 
     /**
      * This class will be added to the item while dragging.

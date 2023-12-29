@@ -73,7 +73,7 @@ new Sortable(element, {
   delay: 0, // Time in milliseconds to define when the sorting should start
   delayOnTouchOnly: false, // Only delay if user is using touch
   fallbackOnBody: false, // Appends the ghost element into the document's body
-  swapOnDrop: true, // When the value is false, the dragged element will return to the starting position of the drag
+  swapOnDrop: true/Function, // When the value is false, the dragged element will return to the starting position of the drag
   store: null, // store data
 
   customGhost: (nodes) => {

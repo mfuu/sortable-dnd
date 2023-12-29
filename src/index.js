@@ -22,7 +22,7 @@ import {
   detectDirection,
   getParentAutoScrollElement,
 } from './utils.js';
-import AutoScroll from './Plugins/AutoScroll.js';
+import AutoScroll from './Plugins/Autoscroll.js';
 import Animation from './Plugins/Animation.js';
 import Multiple from './Plugins/Multiple.js';
 
@@ -626,8 +626,12 @@ Sortable.prototype = {
 
     this.multiplayer.onDrop(from[expando], to[expando], pullMode);
 
+    let swapOnDrop = this.options.swapOnDrop;
     // swap real drag element to the current drop position
-    if (this.options.swapOnDrop && (pullMode !== 'clone' || from === to)) {
+    if (
+      (pullMode !== 'clone' || from === to) &&
+      ((typeof swapOnDrop === 'function' && swapOnDrop(params)) || swapOnDrop)
+    ) {
       parentEl.insertBefore(dragEl, cloneEl);
     }
 
