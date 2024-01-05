@@ -10,7 +10,6 @@ import {
   matches,
   closest,
   getRect,
-  getEvent,
   containes,
   lastChild,
   IE11OrLess,
@@ -66,7 +65,7 @@ const _prepareGroup = function (options) {
  * Detects first nearest empty sortable to X and Y position using emptyInsertThreshold.
  * @return {HTMLElement} Element of the first found nearest Sortable
  */
-const _detectNearestSortable = function (x, y) {
+function _detectNearestSortable(x, y) {
   let result;
   sortables.some((sortable) => {
     const threshold = sortable[expando].options.emptyInsertThreshold;
@@ -81,26 +80,22 @@ const _detectNearestSortable = function (x, y) {
     }
   });
   return result;
-};
+}
 
-const _positionChanged = function (evt) {
-  const lastEvent = moveEvent || dragEvent;
-
-  const { clientX, clientY } = evt;
-  const distanceX = clientX - lastEvent.clientX;
-  const distanceY = clientY - lastEvent.clientY;
+function _positionChanged(evt) {
+  let lastEvent = moveEvent || dragEvent;
 
   if (
-    clientX !== void 0 &&
-    clientY !== void 0 &&
-    Math.abs(distanceX) <= 0 &&
-    Math.abs(distanceY) <= 0
+    evt.clientX !== void 0 &&
+    evt.clientY !== void 0 &&
+    Math.abs(evt.clientX - lastEvent.clientX) <= 0 &&
+    Math.abs(evt.clientY - lastEvent.clientY) <= 0
   ) {
     return false;
   }
 
   return true;
-};
+}
 
 /**
  * @class Sortable
@@ -178,14 +173,15 @@ function Sortable(el, options) {
 Sortable.prototype = {
   constructor: Sortable,
 
-  _onDrag: function (/** TouchEvent|MouseEvent */ evt) {
+  _onDrag: function (/** TouchEvent|MouseEvent */ event) {
     // Don't trigger start event when an element is been dragged
     if (dragEl || this.options.disabled || !this.options.group.pull) return;
 
     // only left button and enabled
-    if (/mousedown|pointerdown/.test(evt.type) && evt.button !== 0) return;
+    if (/mousedown|pointerdown/.test(event.type) && event.button !== 0) return;
 
-    const { touch, event, target } = getEvent(evt);
+    let touch = event.touches && event.touches[0],
+      target = (touch || event).target;
 
     // Safari ignores further event handling after mousedown
     if (Safari && target && target.tagName.toUpperCase() === 'SELECT') return;
@@ -195,8 +191,12 @@ Sortable.prototype = {
     // No dragging is allowed when there is no dragging element
     if (!element || element.animated) return;
 
+    dragEvent = {
+      original: event,
+      clientX: (touch || event).clientX,
+      clientY: (touch || event).clientY,
+    };
     dragEl = element;
-    dragEvent = event;
     listenerNode = touch ? dragEl : document;
 
     on(listenerNode, 'mouseup', this._onDrop);
@@ -229,11 +229,13 @@ Sortable.prototype = {
     }
   },
 
-  _delayMoveHandler: function (evt) {
-    let e = evt.touches ? evt.touches[0] : evt;
+  _delayMoveHandler: function (event) {
+    let evt = event.touches ? event.touches[0] : event;
     if (
-      Math.max(Math.abs(e.clientX - dragEvent.clientX), Math.abs(e.clientY - dragEvent.clientY)) >=
-      Math.floor(this.options.touchStartThreshold / (window.devicePixelRatio || 1))
+      Math.max(
+        Math.abs(evt.clientX - dragEvent.clientX),
+        Math.abs(evt.clientY - dragEvent.clientY)
+      ) >= Math.floor(this.options.touchStartThreshold / (window.devicePixelRatio || 1))
     ) {
       this._cancelStart();
     }
@@ -303,7 +305,7 @@ Sortable.prototype = {
     dispatchEvent({
       sortable: this,
       name: 'onDrag',
-      params: this._getParams(dragEvent),
+      params: this._getParams(dragEvent.original),
     });
 
     css(dragEl, 'display', 'none');
@@ -370,19 +372,27 @@ Sortable.prototype = {
     css(ghostEl, 'will-change', 'transform');
   },
 
-  _nearestSortable: function (/** TouchEvent|MouseEvent */ evt) {
-    preventDefault(evt);
+  _nearestSortable: function (/** TouchEvent|MouseEvent */ event) {
+    preventDefault(event);
+
+    let touch = event.touches && event.touches[0],
+      evt = touch || event;
+
     if (!dragEvent || !dragEl || !_positionChanged(evt)) return;
 
     // Init in the move event to prevent conflict with the click event
     !moveEvent && this._onStarted();
 
-    const { event, target } = getEvent(evt);
+    moveEvent = {
+      original: event,
+      clientX: evt.clientX,
+      clientY: evt.clientY,
+    };
 
-    moveEvent = event;
+    let target = touch ? document.elementFromPoint(evt.clientX, evt.clientY) : evt.target,
+      dx = evt.clientX - dragEvent.clientX,
+      dy = evt.clientY - dragEvent.clientY;
 
-    const dx = event.clientX - dragEvent.clientX;
-    const dy = event.clientY - dragEvent.clientY;
     setTransform(ghostEl, `translate3d(${dx}px, ${dy}px, 0)`);
 
     if (this.options.autoScroll) {
@@ -390,7 +400,7 @@ Sortable.prototype = {
       this.autoScroller.update(scrollEl, dragEvent, moveEvent);
     }
 
-    const nearest = _detectNearestSortable(event.clientX, event.clientY);
+    const nearest = _detectNearestSortable(evt.clientX, evt.clientY);
     nearest && nearest[expando]._onMove(event, target);
   },
 
@@ -417,7 +427,7 @@ Sortable.prototype = {
     let rect = getRect(dropEl),
       direction =
         typeof this.options.direction === 'function'
-          ? this.options.direction.call(moveEvent, dragEl, this)
+          ? this.options.direction.call(moveEvent.original, dragEl, this)
           : this.options.direction,
       vertical = direction === 'vertical',
       mouseOnAxis = vertical ? moveEvent.clientY : moveEvent.clientX,
@@ -607,8 +617,14 @@ Sortable.prototype = {
       moveEvent && this._onEnd(event);
     }
 
-    if (!moveEvent && this.options.multiple) {
-      this.multiplayer.onSelect(dragEvent, event, dragEl, this);
+    if (!fromEl && !moveEvent && this.options.multiple) {
+      let evt = event.changedTouches ? event.changedTouches[0] : event,
+        dx = evt.clientX - dragEvent.clientX,
+        dy = evt.clientY - dragEvent.clientY,
+        dd = Math.sqrt(dx * dx + dy * dy);
+
+      // check whether the event is a click event
+      dd >= 0 && dd <= 1 && this.multiplayer.onSelect(event, dragEl, this);
     }
 
     if (ghostEl && ghostEl.parentNode) {
@@ -630,7 +646,7 @@ Sortable.prototype = {
     // swap real drag element to the current drop position
     if (
       (pullMode !== 'clone' || from === to) &&
-      ((typeof swapOnDrop === 'function' && swapOnDrop(params)) || swapOnDrop)
+      (typeof swapOnDrop === 'function' ? swapOnDrop(params) : swapOnDrop)
     ) {
       parentEl.insertBefore(dragEl, cloneEl);
     }

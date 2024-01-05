@@ -1,5 +1,5 @@
 import Sortable from '../index.js';
-import { css, sort, index, getEvent, toggleClass, dispatchEvent } from '../utils';
+import { css, sort, index, toggleClass, dispatchEvent } from '../utils';
 
 let dragElements, cloneElements;
 
@@ -132,11 +132,7 @@ Multiple.prototype = {
     }
   },
 
-  onSelect(dragEvent, dropEvent, dragEl, sortable) {
-    const { event } = getEvent(dropEvent);
-
-    if (Sortable.dragged || !this._isClick(dragEvent, event)) return;
-
+  onSelect(event, dragEl, sortable) {
     const dragIndex = this.selectedElements.indexOf(dragEl);
 
     toggleClass(dragEl, this.options.selectedClass, dragIndex < 0);
@@ -171,13 +167,6 @@ Multiple.prototype = {
       if (elements[i] == Sortable.dragged) continue;
       css(elements[i], 'display', 'none');
     }
-  },
-
-  _isClick(dragEvent, dropEvent) {
-    const dx = dropEvent.clientX - dragEvent.clientX;
-    const dy = dropEvent.clientY - dragEvent.clientY;
-    const dd = Math.sqrt(dx * dx + dy * dy);
-    return dd >= 0 && dd <= 1;
   },
 };
 

@@ -33,7 +33,7 @@ Animation.prototype = {
       }
 
       // Animate only elements within the visible area
-      if (rect.top > maxHeight || rect.left > maxWidth) {
+      if (rect.top - rect.height > maxHeight || rect.left - rect.width > maxWidth) {
         break;
       }
 
