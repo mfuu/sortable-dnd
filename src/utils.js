@@ -113,25 +113,6 @@ export function off(el, event, fn) {
 }
 
 /**
- * get touch event and current event
- * @param {MouseEvent|TouchEvent} evt
- */
-export function getEvent(evt) {
-  let event = evt;
-  let touch = (evt.touches && evt.touches[0]) || (evt.changedTouches && evt.changedTouches[0]);
-  let target = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : evt.target;
-  if (touch && !('clientX' in event)) {
-    event.clientX = touch.clientX;
-    event.clientY = touch.clientY;
-    event.pageX = touch.pageX;
-    event.pageY = touch.pageY;
-    event.screenX = touch.screenX;
-    event.screenY = touch.screenY;
-  }
-  return { touch, event, target };
-}
-
-/**
  * get scroll element
  * @param {Boolean} includeSelf whether to include the passed element
  * @returns {HTMLElement} scroll element
