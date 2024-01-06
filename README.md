@@ -73,8 +73,8 @@ new Sortable(element, {
   delay: 0, // Time in milliseconds to define when the sorting should start
   delayOnTouchOnly: false, // Only delay if user is using touch
   fallbackOnBody: false, // Appends the ghost element into the document's body
-  swapOnDrop: true/Function, // When the value is false, the dragged element will return to the starting position of the drag
   store: null, // store data
+  swapOnDrop: true | (params) => boolean, // When the value is false, the dragged element will return to the starting position of the drag
 
   customGhost: (nodes) => {
     // Customize the ghost element in drag
@@ -177,7 +177,7 @@ let {
   index, // index within parent
   node, // dragged element
   from, // list container
-} = params
+} = select
 ```
 
 ## Methods
@@ -211,6 +211,8 @@ Sortable.create(el: HTMLElement, options: Options); // Create new instance
 Sortable.get(el: HTMLElement); // Get the Sortable instance of an element
 
 Sortable.dragged; // The element being dragged
+
+Sortable.clone; // The clone element
 
 Sortable.ghost; // The ghost element
 

@@ -477,3 +477,5 @@ export function dispatchEvent({ sortable, name, params }) {
     callback(Object.assign({}, params));
   }
 }
+
+export const expando = 'Sortable' + Date.now();

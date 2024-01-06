@@ -1,5 +1,5 @@
 import Sortable from '../index.js';
-import { css, sort, index, toggleClass, dispatchEvent } from '../utils';
+import { css, sort, index, toggleClass, dispatchEvent, expando } from '../utils';
 
 let dragElements, cloneElements;
 
@@ -102,16 +102,16 @@ Multiple.prototype = {
     this.toggleClass(false);
   },
 
-  onDrop(fromSortable, toSortable, pullMode) {
+  onDrop(from, to, pullMode) {
     if (!dragElements) return;
 
     let dragEl = Sortable.dragged,
       cloneEl = Sortable.clone,
       dragIndex = dragElements.indexOf(dragEl);
 
-    toSortable.animator.collect(cloneEl.parentNode);
+    to[expando].animator.collect(cloneEl.parentNode);
 
-    if (fromSortable !== toSortable && pullMode === 'clone') {
+    if (from !== to && pullMode === 'clone') {
       css(cloneEl, 'display', 'none');
       cloneElements = dragElements.map((node) => node.cloneNode(true));
 
@@ -121,13 +121,13 @@ Multiple.prototype = {
       this._viewElements(dragElements, dragIndex, cloneEl);
     }
 
-    toSortable.animator.animate();
+    to[expando].animator.animate();
 
     // Recalculate selected elements
-    if (fromSortable !== toSortable) {
-      toSortable.multiplayer.toggleSelected(cloneElements || dragElements, true);
+    if (from !== to) {
+      to[expando].multiplayer.toggleSelected(cloneElements || dragElements, true);
       if (pullMode !== 'clone') {
-        fromSortable.multiplayer.toggleSelected(dragElements, false);
+        from[expando].multiplayer.toggleSelected(dragElements, false);
       }
     }
   },

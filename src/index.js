@@ -7,6 +7,7 @@ import {
   index,
   Safari,
   within,
+  expando,
   matches,
   closest,
   getRect,
@@ -24,8 +25,6 @@ import {
 import AutoScroll from './Plugins/Autoscroll.js';
 import Animation from './Plugins/Animation.js';
 import Multiple from './Plugins/Multiple.js';
-
-const expando = 'Sortable' + Date.now();
 
 let sortables = [];
 
@@ -640,7 +639,7 @@ Sortable.prototype = {
   _onEnd: function (event) {
     const params = this._getParams(event);
 
-    this.multiplayer.onDrop(from[expando], to[expando], pullMode);
+    this.multiplayer.onDrop(from, to, pullMode);
 
     let swapOnDrop = this.options.swapOnDrop;
     // swap real drag element to the current drop position
