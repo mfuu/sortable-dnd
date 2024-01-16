@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/sortable-dnd.svg)](https://www.npmjs.com/package/sortable-dnd)  [![npm](https://img.shields.io/npm/dm/sortable-dnd.svg)](https://npm-stat.com/charts.html?package=sortable-dnd)  [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
 
-A JS Library for Drag and Drop, supports Sortable-Draggable and Virtual-List
+A JS Library for Drag and Drop, supports Sortable and Draggable
 
 ### [Live Demo](https://mfuu.github.io/sortable-dnd/)
 
