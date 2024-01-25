@@ -82,17 +82,17 @@
       </pre>
       <div class="group-list flex justify-content-center">
         <ul id="group1" class="list"></ul>
-        <ul id="group2" class="list pink"></ul>
-        <ul id="group3" class="list pink"></ul>
-        <ul id="group4" class="list turquoise"></ul>
-        <ul id="group5" class="list turquoise"></ul>
+        <ul id="group2" class="list"></ul>
+        <ul id="group3" class="list"></ul>
+        <ul id="group4" class="list"></ul>
+        <ul id="group5" class="list"></ul>
       </div>
       <script>
-        initSortable('group1', { group: { name: 'a', put: true, pull: 'clone', revertDrag: true } });
-        initSortable('group2', { group: { name: 'b', put: ['a', 'b'], pull: true } });
-        initSortable('group3', { group: { name: 'b', put: ['a', 'b'], pull: true } });
-        initSortable('group4', { group: { name: 'c', put: ['a', 'c'], pull: true } });
-        initSortable('group5', { group: { name: 'c', put: ['a', 'c'], pull: true } });
+        initSortable('group1', { itemClass: 'white', group: { name: 'white', put: true, pull: 'clone', revertDrag: true }, multiple: true });
+        initSortable('group2', { itemClass: 'pink', group: { name: 'pink', put: ['white', 'pink'], pull: '1' }, multiple: true });
+        initSortable('group3', { itemClass: 'pink', group: { name: 'pink', put: ['white', 'pink'], pull: '1' }, multiple: true });
+        initSortable('group4', { itemClass: 'green', group: { name: 'green', put: ['white', 'green'], pull: '1' }, multiple: true });
+        initSortable('group5', { itemClass: 'green', group: { name: 'green', put: ['white', 'green'], pull: '1' }, multiple: true });
       </script>
     </div>
 
@@ -102,6 +102,7 @@
           new Sortable(
             document.getElementById('group'),
             {
+              handle: '.handle', // Use `handle` or `selectHandle` to avoid click event conflicts
               multiple: true, // mouse click to selected item
               chosenClass: 'chosen',
               selectedClass: 'selected',
@@ -111,7 +112,7 @@
       </pre>
       <ul id="multiple" class="list"></ul>
       <script>
-        initSortable('multiple', { multiple: true });
+        initSortable('multiple', { multiple: true, handle: '.handle' });
       </script>
     </div>
 
