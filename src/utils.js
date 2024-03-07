@@ -208,31 +208,36 @@ export function getRect(el, relativeToContainingBlock, container) {
 }
 
 export function closest(el, selector, ctx, includeCTX) {
-  if (el) {
-    ctx = ctx || document;
+  if (!el) return null;
 
-    do {
-      if (selector == null) {
-        let children = Array.prototype.slice.call(ctx.children);
+  if (ctx && !selector) {
+    let children = Array.prototype.slice.call(ctx.children);
 
-        // If it can be found directly in the child element, return
-        let index = children.indexOf(el);
-        if (index > -1) return children[index];
+    // If it can be found directly in the child element, return
+    let index = children.indexOf(el);
+    if (index > -1) return children[index];
 
-        // When the dom cannot be found directly in children, need to look down
-        for (let i = 0; i < children.length; i++) {
-          if (containes(el, children[i])) return children[i];
-        }
-      } else if (
+    // When the dom cannot be found directly in children, need to look down
+    for (let i = 0; i < children.length; i++) {
+      if (containes(el, children[i])) return children[i];
+    }
+  }
+
+  ctx = ctx || document;
+  do {
+    if (
+      (selector != null &&
         (selector[0] === '>'
           ? el.parentNode === ctx && matches(el, selector)
-          : matches(el, selector)) ||
-        (includeCTX && el === ctx)
-      ) {
-        return el;
-      }
-    } while ((el = el.parentNode));
-  }
+          : matches(el, selector))) ||
+      (includeCTX && el === ctx)
+    ) {
+      return el;
+    }
+
+    if (el === ctx) break;
+  } while ((el = el.parentNode));
+
   return null;
 }
 
@@ -242,7 +247,7 @@ export function closest(el, selector, ctx, includeCTX) {
 export function containes(el, root) {
   if (!el || !root) return false;
   if (root.compareDocumentPosition) {
-    return root === el || !!(root.compareDocumentPosition(el) & 16);
+    return !!(root.compareDocumentPosition(el) & 16);
   }
   if (root.contains && el.nodeType === 1) {
     return root.contains(el) && root !== el;
@@ -453,13 +458,12 @@ export function comparePosition(a, b) {
   return a.compareDocumentPosition
     ? a.compareDocumentPosition(b)
     : a.contains
-    ? (a != b && a.contains(b) && 16) +
-      (a != b && b.contains(a) && 8) +
-      (a.sourceIndex >= 0 && b.sourceIndex >= 0
-        ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2)
-        : 1) +
-      0
-    : 0;
+      ? (a != b && a.contains(b) && 16) +
+        (a != b && b.contains(a) && 8) +
+        (a.sourceIndex >= 0 && b.sourceIndex >= 0
+          ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2)
+          : 1)
+      : 0;
 }
 
 export function sort(before, after) {

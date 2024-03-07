@@ -17,15 +17,15 @@ export interface Group {
    */
   name: string;
   /**
-   * whether elements can be added from other lists, or an array of group names from which elements can be taken.
+   * Whether elements can be added from other lists, or an array of group names from which elements can be taken.
    */
   put?: readonly string[] | boolean;
   /**
-   * whether elements can be moved out of this list.
+   * Whether elements can be moved out of this list.
    */
   pull?: boolean | 'clone';
   /**
-   * revert draged element to initial position after moving to a another list.
+   * Revert draged element to initial position after moving to a another list.
    */
   revertDrag?: boolean;
 }
@@ -56,11 +56,11 @@ export interface SelectEvent {
 
 export interface SortableEvent {
   /**
-   * previous list
+   * Start list of element to be dragged.
    */
   from: HTMLElement;
   /**
-   * list, in which moved element.
+   * List of currently placed drag element.
    */
   to: HTMLElement;
   /**
@@ -98,25 +98,28 @@ export interface SortableEvent {
   /**
    * Pull mode if dragging into another sortable.
    */
-  pullMode: "clone" | boolean | undefined;
+  pullMode: 'clone' | boolean | undefined;
   /**
    * Position of the drop element relative to the drag element after swap is complete.
-   * 
-   * @example 
-   * 
-   * 0: index(target) === index(node)
-   * 
-   * 1: index(target) > index(node)
-   * 
-   * -1: index(target) < index(node)
+   * @example
+   * 0: // The position of dropEl is the same as dragEl.
+   *    <div>dragEl === dropEl</div>
+   *
+   * 1: // dropEl comes after dragEl.
+   *    <div>dragEl</div> ↓
+   *    <div>dropEl</div> ↓
+   *
+   * -1: // dropEl comes before dragEl.
+   *    <div>dropEl</div> ↓
+   *    <div>dragEl</div> ↓
    */
   relative: 0 | 1 | -1;
   /**
-   * revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
+   * Revert draged element to initial position after moving to a another list if `pull: 'clone'` & `revertDrag: true`.
    */
   revertDrag?: boolean;
   /**
-   * dragged element go back to the original list in `pull: 'clone'`.
+   * Dragged element go back to the original list if `pull: 'clone'`.
    */
   backToOrigin?: boolean;
 }
@@ -125,12 +128,10 @@ export interface SortableOptions {
   /**
    * store data.
    * @example
-   * 
-   * // store value
-   * sortable.option('store', value);
-   * 
-   * // get the stored value
-   * sortable.option('store');
+   * sortable.option('store', value); // store value
+   * sortable.option('store'); // get the stored value
+   *
+   * @defaults `undefined`
    */
   store?: any;
 
@@ -183,11 +184,13 @@ export interface SortableOptions {
 
   /**
    * Customize the ghost element in drag.
+   * @defaults `undefined`
    */
   customGhost?: (nodes: HTMLElement[]) => HTMLElement;
 
   /**
    * Direction of Sortable, will be detected automatically if not given.
+   * @defaults `' '`
    */
   direction?: Direction | ((event: EventType, dragEl: HTMLElement, sortable: Sortable) => Direction);
 
@@ -211,12 +214,12 @@ export interface SortableOptions {
 
   /**
    * Threshold to trigger autoscroll.
-   * @defaults `25`
+   * @defaults `55`
    */
   scrollThreshold?: number;
 
   /**
-   * Vertical&Horizontal scrolling speed (px)
+   * Vertical & Horizontal scrolling speed (px)
    * @defaults `{ x: 10, y: 10 }`
    */
   scrollSpeed?: ScrollSpeed;
@@ -235,17 +238,18 @@ export interface SortableOptions {
 
   /**
    * How many *pixels* the point should move before cancelling a delayed drag event.
+   * @defaults `1`
    */
   touchStartThreshold?: number;
 
   /**
-   * distance mouse must be from empty sortable to insert drag element into it.
+   * Distance mouse must be from empty sortable to insert drag element into it.
    * @defaults `-5`
    */
   emptyInsertThreshold?: number;
 
   /**
-   * Appends the cloned DOM Element into the Document's Body.
+   * Appends the ghost Element into the Document's Body.
    * @defaults `false`
    */
   fallbackOnBody?: boolean;
@@ -317,17 +321,17 @@ export interface SortableOptions {
   onRemove?: (params: SortableEvent) => void;
 
   /**
-   * Called when dragging element changes position in the current list.
+   * Dragging element changes position in the current list.
    */
   onChange?: (params: SortableEvent) => void;
 
   /**
-   * Element is selected.
+   * Element is selected. Takes effect in `multiple: true`.
    */
   onSelect?: (params: SelectEvent) => void;
 
   /**
-   * Element is unselected.
+   * Element is unselected. Takes effect in `multiple: true`.
    */
   onDeselect?: (params: SelectEvent) => void;
 }
@@ -384,7 +388,7 @@ export interface Utils {
    * @param context a specific element's context.
    * @param includeContext whether to add `context` to comparison
    */
-  closest(element: HTMLElement, selector: string, context: HTMLElement, includeContext: boolean): HTMLElement | null;
+  closest(element: HTMLElement, selector: string, context: HTMLElement, includeContext?: boolean): HTMLElement | null;
 
   /**
    * Returns the "bounding client rect" of given element
@@ -392,7 +396,7 @@ export interface Utils {
    * @param relativeToContainingBlock Whether the rect should be relative to the containing block of (including) the container
    * @param container The parent the element will be placed in
    */
-  getRect(element: HTMLElement, relativeToContainingBlock: boolean, container: HTMLElement): DOMRect;
+  getRect(element: HTMLElement, relativeToContainingBlock?: boolean, container?: HTMLElement): DOMRect;
 
   /**
    * Add or remove one classes from each element.
@@ -407,7 +411,7 @@ export interface Utils {
    * @param el list container.
    * @param selector an element seletor.
    */
-  detectDirection(el: HTMLElement, selector: string): 'vertical' | 'horizontal';
+  detectDirection(el: HTMLElement, selector: string): Direction;
 }
 
 declare class Sortable {
@@ -448,14 +452,14 @@ declare class Sortable {
 
   /**
    * Create sortable instance.
-   * @param el
-   * @param options
+   * @param el The Parent which holds the draggable element(s).
+   * @param options Options to customise the behavior of the drag animations.
    */
   static create(el: HTMLElement, options: SortableOptions): Sortable;
 
   /**
    * Get the Sortable instance of an element.
-   * @param el
+   * @param el Elements passed in when creating an instance.
    */
   static get(el: HTMLElement): Sortable | undefined;
 

@@ -21,6 +21,7 @@ import {
   preventDefault,
   detectDirection,
   getParentAutoScrollElement,
+  getChild,
 } from './utils.js';
 import AutoScroll from './Plugins/Autoscroll.js';
 import Animation from './Plugins/Animation.js';
@@ -121,9 +122,7 @@ function Sortable(el, options) {
     multiple: false,
     selectHandle: null,
     customGhost: null,
-    direction: function () {
-      return detectDirection(el, options.draggable);
-    },
+    direction: '',
     autoScroll: true,
     scrollThreshold: 55,
     scrollSpeed: { x: 10, y: 10 },
@@ -418,24 +417,43 @@ Sortable.prototype = {
     }
   },
 
+  _getDirection: function () {
+    const { draggable, direction } = this.options;
+    return direction
+      ? typeof direction === 'function'
+        ? direction.call(moveEvent.original, dragEl, this)
+        : direction
+      : detectDirection(parentEl, draggable);
+  },
+
   _allowSwap: function () {
-    const order = sort(cloneEl, dropEl);
-
-    nextEl = order < 0 ? dropEl.nextSibling : dropEl;
-
     let rect = getRect(dropEl),
-      direction =
-        typeof this.options.direction === 'function'
-          ? this.options.direction.call(moveEvent.original, dragEl, this)
-          : this.options.direction,
+      direction = this._getDirection(),
       vertical = direction === 'vertical',
-      mouseOnAxis = vertical ? moveEvent.clientY : moveEvent.clientX,
-      dropElSize = dropEl[direction === 'vertical' ? 'offsetHeight' : 'offsetWidth'],
-      hoverArea =
-        mouseOnAxis >= (vertical ? rect.top : rect.left) &&
-        mouseOnAxis < (vertical ? rect.bottom : rect.right) - dropElSize / 2
-          ? -1
-          : 1;
+      front = vertical ? 'top' : 'left',
+      behind = vertical ? 'bottom' : 'right',
+      dropElSize = dropEl[vertical ? 'offsetHeight' : 'offsetWidth'],
+      mouseAxis = vertical ? moveEvent.clientY : moveEvent.clientX,
+      hoverArea = mouseAxis >= rect[front] && mouseAxis < rect[behind] - dropElSize / 2 ? -1 : 1,
+      child1 = getChild(parentEl, 0, this.options.draggable),
+      child2 = lastChild(parentEl),
+      child1Rect = getRect(child1),
+      child2Rect = getRect(child2);
+
+    if (dropEl === parentEl || containes(parentEl, dropEl)) {
+      if (cloneEl === child1 && mouseAxis < child1Rect[front]) {
+        nextEl = dropEl;
+        return true;
+      }
+      if (cloneEl === child2 && mouseAxis > child2Rect[behind]) {
+        nextEl = dropEl.nextSibling;
+        return true;
+      }
+      return false;
+    }
+
+    const order = sort(cloneEl, dropEl);
+    nextEl = order < 0 ? dropEl.nextSibling : dropEl;
 
     if (lastDropEl !== dropEl) {
       lastHoverArea = hoverArea;
@@ -468,14 +486,14 @@ Sortable.prototype = {
     dropEl = closest(target, this.options.draggable, this.el);
 
     if (!dropEl || dropEl.animated || !this._allowSwap()) return;
-    if (dropEl === cloneEl || containes(dropEl, cloneEl)) {
+    if (dropEl === cloneEl || nextEl === cloneEl) {
       lastDropEl = dropEl;
       return;
     }
 
     if (this.el !== from) {
       this._onInsert(event);
-    } else if (!(within(event, parentEl) && target === parentEl)) {
+    } else {
       this._onChange(event);
     }
     lastDropEl = dropEl;
