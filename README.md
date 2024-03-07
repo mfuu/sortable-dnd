@@ -1,7 +1,6 @@
 # sortable-dnd
 
-[![npm](https://img.shields.io/npm/v/sortable-dnd.svg)](https://www.npmjs.com/package/sortable-dnd)  [![npm](https://img.shields.io/npm/dm/sortable-dnd.svg)](https://npm-stat.com/charts.html?package=sortable-dnd)  [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
-
+[![npm](https://img.shields.io/npm/v/sortable-dnd.svg)](https://www.npmjs.com/package/sortable-dnd) [![npm](https://img.shields.io/npm/dm/sortable-dnd.svg)](https://npm-stat.com/charts.html?package=sortable-dnd) [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](LICENSE)
 
 A JS Library for Drag and Drop, supports Sortable and Draggable
 
@@ -10,11 +9,13 @@ A JS Library for Drag and Drop, supports Sortable and Draggable
 ## Usage
 
 **Install**
+
 ```node
 npm install sortable-dnd --save
 ```
 
 **HTML**
+
 ```html
 <ul id="group">
   <li class="item">
@@ -33,21 +34,19 @@ npm install sortable-dnd --save
 ```
 
 **JavaScript**
-```js
-import Sortable from 'sortable-dnd'
 
-let sortable = new Sortable(
-  document.getElementById('group'),
-  {
-    // draggable: 'li', // use tagName 
-    // draggable: '#item', // use id
-    draggable: '.item', // use class
-    // handle: 'I', // use tagName
-    // handle: '#handle', // use id
-    // handle: (e) => e.target.tagName === 'I' ? true : false, // use function
-    handle: '.handle', // use class
-  }
-)
+```js
+import Sortable from 'sortable-dnd';
+
+let sortable = new Sortable(document.getElementById('group'), {
+  // draggable: 'li', // use tagName
+  // draggable: '#item', // use id
+  draggable: '.item', // use class
+  // handle: 'I', // use tagName
+  // handle: '#handle', // use id
+  // handle: (e) => e.target.tagName === 'I' ? true : false, // use function
+  handle: '.handle', // use class
+});
 ```
 
 ## Options
@@ -72,13 +71,16 @@ new Sortable(element, {
   scrollSpeed: { x: 10, y: 10 }, // Vertical&Horizontal scrolling speed (px)
   delay: 0, // Time in milliseconds to define when the sorting should start
   delayOnTouchOnly: false, // Only delay if user is using touch
+  touchStartThreshold: 1, // How many *pixels* the point should move before cancelling a delayed drag event.
+  emptyInsertThreshold: -5, // Distance mouse must be from empty sortable to insert drag element into it.
   fallbackOnBody: false, // Appends the ghost element into the document's body
   store: null, // store data
-  swapOnDrop: true | (params) => boolean, // When the value is false, the dragged element will return to the starting position of the drag
+  direction: '', // Direction of Sortable, will be detected automatically if not given.
+  swapOnDrop: true, // When the value is false, the dragged element will return to the starting position of the drag
 
   customGhost: (nodes) => {
     // Customize the ghost element in drag
-    // you must return an HTMLElement 
+    // you must return an HTMLElement
   },
 
   // Element is chosen
@@ -116,7 +118,7 @@ new Sortable(element, {
     // see @Params
   },
 
-  // Called when dragging element changes position in the current list
+  // Dragging element changes position in the current list
   onChange: (params) => {
     // see @Params
   },
@@ -130,7 +132,7 @@ new Sortable(element, {
   onDeselect: (params) => {
     // see @Select
   },
-})
+});
 ```
 
 **Group**
@@ -142,7 +144,7 @@ group: 'name',
 // object
 group: {
   name: 'group', // group name
-  put: true | false | ['foo', 'bar'], // whether elements can be added from other lists, or an array of group names from which elements can be taken.
+  put: true | false | ['group1', 'group2'], // whether elements can be added from other lists, or an array of group names from which elements can be taken.
   pull: true | false | 'clone', // whether elements can be moved out of this list.
   revertDrag: true | false, // revert drag element to initial position after moving to a another list.
 }
@@ -166,7 +168,7 @@ let {
   relative, // Position of the drop element relative to the drag element after swap is complete.
   revertDrag, // revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
   backToOrigin, // dragged element go back to the original list in `pull: 'clone'`.
-} = params
+} = params;
 ```
 
 **Select**
@@ -177,7 +179,7 @@ let {
   index, // index within parent
   node, // dragged element
   from, // list container
-} = select
+} = select;
 ```
 
 ## Methods
@@ -206,7 +208,7 @@ sortable.getSelectedElements();
 ```ts
 import Sortable from 'sortable-dnd';
 
-Sortable.create(el: HTMLElement, options: Options); // Create new instance
+Sortable.create(el: HTMLElement, options: SortableOptions); // Create new instance
 
 Sortable.get(el: HTMLElement); // Get the Sortable instance of an element
 
@@ -220,8 +222,9 @@ Sortable.active; // Active Sortable instance
 ```
 
 **Utils**
- 
+
 ```ts
+import Sortable from 'sortable-dnd';
 const { on, off, css, index, closest, getRect, toggleClass } = Sortable.utils;
 
 // attach an event handler function
