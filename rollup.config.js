@@ -1,7 +1,7 @@
-import babel from 'rollup-plugin-babel';
-import resolve from 'rollup-plugin-node-resolve';
-import commonJs from 'rollup-plugin-commonjs';
-import { uglify } from 'rollup-plugin-uglify';
+import babel from '@rollup/plugin-babel';
+import terser from '@rollup/plugin-terser';
+import resolve from '@rollup/plugin-node-resolve';
+import commonJs from '@rollup/plugin-commonjs';
 
 const packageJson = require('./package.json');
 const version = packageJson.version;
@@ -31,7 +31,7 @@ export default {
       name: 'Sortable',
       sourcemap: false,
       banner: banner.replace(/\n/, ''),
-      plugins: [uglify()],
+      plugins: [terser()],
     },
   ],
   plugins: [babel(), resolve(), commonJs()],
