@@ -41,7 +41,7 @@ export const vendorPrefix = (function () {
     return {};
   }
 
-  // window.getComputedStyle() returns null inside an iframe with display: none
+  // window.getComputedStyle() returns null inside an iframe with `display: none`
   // in this case return an array with a fake mozilla style in it.
   const styles = window.getComputedStyle(document.documentElement, '') || ['-moz-hidden-iframe'];
   const pre = (Array.prototype.slice
@@ -79,7 +79,7 @@ export function setTransition(el, transition) {
 }
 
 export function setTransitionDuration(el, duration) {
-  el.style[`${vendorPrefix.css}transition-duration`] = duration == null ? '' : `${duration}ms`;
+  el.style[`${vendorPrefix.css}transition-duration`] = duration ? `${duration}ms` : '';
 }
 
 export function setTransform(el, transform) {
@@ -133,8 +133,9 @@ export function getParentAutoScrollElement(el, includeSelf) {
         (elem.clientHeight < elem.scrollHeight &&
           (elemCSS.overflowY == 'auto' || elemCSS.overflowY == 'scroll'))
       ) {
-        if (!elem.getBoundingClientRect || elem === document.body)
+        if (!elem.getBoundingClientRect || elem === document.body) {
           return getWindowScrollingElement();
+        }
 
         if (gotSelf || includeSelf) return elem;
         gotSelf = true;
@@ -211,10 +212,10 @@ export function closest(el, selector, ctx, includeCTX) {
   if (!el) return null;
 
   if (ctx && !selector) {
-    let children = Array.prototype.slice.call(ctx.children);
+    let children = Array.prototype.slice.call(ctx.children),
+      index = children.indexOf(el);
 
     // If it can be found directly in the child element, return
-    let index = children.indexOf(el);
     if (index > -1) return children[index];
 
     // When the dom cannot be found directly in children, need to look down
@@ -279,12 +280,11 @@ export function lastChild(el, selector) {
  * Returns the index of an element within its parent for a selected set of elements
  */
 export function index(el, selector) {
-  let index = 0;
-
   if (!el || !el.parentNode) {
     return -1;
   }
 
+  let index = 0;
   while ((el = el.previousElementSibling)) {
     if (
       el.nodeName.toUpperCase() !== 'TEMPLATE' &&
@@ -393,7 +393,6 @@ export function toggleClass(el, name, state) {
 
 /**
  * Check if a DOM element matches a given selector
- * @returns
  */
 export function matches(el, selector) {
   if (!selector) return;
@@ -434,19 +433,6 @@ export function css(el, prop, val) {
       style[prop] = val + (typeof val === 'string' ? '' : 'px');
     }
   }
-}
-
-/**
- * Check if the mouse pointer is within an element
- */
-export function within(event, element, rect) {
-  rect = rect || getRect(element);
-  return (
-    event.clientX <= rect.right &&
-    event.clientX >= rect.left &&
-    event.clientY >= rect.top &&
-    event.clientY <= rect.bottom
-  );
 }
 
 /**

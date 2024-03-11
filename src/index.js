@@ -6,7 +6,6 @@ import {
   Edge,
   index,
   Safari,
-  within,
   expando,
   matches,
   closest,
@@ -41,7 +40,8 @@ let fromEl,
   lastDropEl,
   listenerNode,
   lastHoverArea,
-  dragStartTimer;
+  dragStartTimer,
+  useSelectHandle;
 
 let to, from, pullMode, oldIndex, newIndex, fromIndex, targetNode;
 
@@ -85,16 +85,12 @@ function _detectNearestSortable(x, y) {
 function _positionChanged(evt) {
   let lastEvent = moveEvent || dragEvent;
 
-  if (
+  return !(
     evt.clientX !== void 0 &&
     evt.clientY !== void 0 &&
     Math.abs(evt.clientX - lastEvent.clientX) <= 0 &&
     Math.abs(evt.clientY - lastEvent.clientY) <= 0
-  ) {
-    return false;
-  }
-
-  return true;
+  );
 }
 
 /**
@@ -203,16 +199,18 @@ Sortable.prototype = {
 
     const { handle, selectHandle } = this.options;
 
-    // allow multi-drag
-    if (typeof selectHandle === 'function' && selectHandle(event)) return;
-    if (typeof selectHandle === 'string' && matches(target, selectHandle)) return;
-
-    // check handle
+    // use multi-select-handle
+    if (
+      (typeof selectHandle === 'function' && selectHandle(event)) ||
+      (typeof selectHandle === 'string' && matches(target, selectHandle))
+    ) {
+      useSelectHandle = true;
+      return;
+    }
     if (typeof handle === 'function' && !handle(event)) return;
     if (typeof handle === 'string' && !matches(target, handle)) return;
 
     const { delay, delayOnTouchOnly } = this.options;
-
     // Delay is impossible for native DnD in Edge or IE
     if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
       on(this.el.ownerDocument, 'touchmove', this._delayMoveHandler);
@@ -225,6 +223,10 @@ Sortable.prototype = {
     } else {
       this._onStart(touch, event);
     }
+
+    // Do not allow text to be selected when draggable
+    on(document, 'selectstart', preventDefault);
+    Safari && css(document.body, 'user-select', 'none');
   },
 
   _delayMoveHandler: function (event) {
@@ -241,12 +243,14 @@ Sortable.prototype = {
 
   _cancelStart: function () {
     clearTimeout(dragStartTimer);
-
     off(this.el.ownerDocument, 'touchmove', this._delayMoveHandler);
     off(this.el.ownerDocument, 'mousemove', this._delayMoveHandler);
     off(this.el.ownerDocument, 'mouseup', this._cancelStart);
     off(this.el.ownerDocument, 'touchend', this._cancelStart);
     off(this.el.ownerDocument, 'touchcancel', this._cancelStart);
+
+    off(document, 'selectstart', preventDefault);
+    Safari && css(document.body, 'user-select', '');
   },
 
   _onStart: function (touch, event) {
@@ -309,10 +313,6 @@ Sortable.prototype = {
     css(dragEl, 'display', 'none');
     toggleClass(dragEl, this.options.chosenClass, false);
     dragEl.parentNode.insertBefore(cloneEl, dragEl);
-
-    if (Safari) {
-      css(document.body, 'user-select', 'none');
-    }
   },
 
   _getGhostElement: function () {
@@ -376,7 +376,7 @@ Sortable.prototype = {
     let touch = event.touches && event.touches[0],
       evt = touch || event;
 
-    if (!dragEvent || !dragEl || !_positionChanged(evt)) return;
+    if (!dragEl || !_positionChanged(evt)) return;
 
     // Init in the move event to prevent conflict with the click event
     !moveEvent && this._onStarted();
@@ -428,24 +428,25 @@ Sortable.prototype = {
 
   _allowSwap: function () {
     let rect = getRect(dropEl),
-      direction = this._getDirection(),
-      vertical = direction === 'vertical',
+      vertical = this._getDirection() === 'vertical',
       front = vertical ? 'top' : 'left',
       behind = vertical ? 'bottom' : 'right',
       dropElSize = dropEl[vertical ? 'offsetHeight' : 'offsetWidth'],
       mouseAxis = vertical ? moveEvent.clientY : moveEvent.clientX,
       hoverArea = mouseAxis >= rect[front] && mouseAxis < rect[behind] - dropElSize / 2 ? -1 : 1,
-      child1 = getChild(parentEl, 0, this.options.draggable),
-      child2 = lastChild(parentEl),
-      child1Rect = getRect(child1),
-      child2Rect = getRect(child2);
+      childf = getChild(parentEl, 0, this.options.draggable),
+      childl = lastChild(parentEl),
+      childfRect = getRect(childf),
+      childlRect = getRect(childl);
 
     if (dropEl === parentEl || containes(parentEl, dropEl)) {
-      if (cloneEl === child1 && mouseAxis < child1Rect[front]) {
+      // The dragged element is the first child of its parent
+      if (cloneEl === childf && mouseAxis < childfRect[front]) {
         nextEl = dropEl;
         return true;
       }
-      if (cloneEl === child2 && mouseAxis > child2Rect[behind]) {
+      // Dragged element is the last child of its parent
+      if (cloneEl === childl && mouseAxis > childlRect[behind]) {
         nextEl = dropEl.nextSibling;
         return true;
       }
@@ -621,7 +622,9 @@ Sortable.prototype = {
       from = fromEl;
       oldIndex = fromIndex;
 
-      if (targetNode === cloneEl) targetNode = dragEl;
+      if (targetNode === cloneEl) {
+        targetNode = dragEl;
+      }
 
       this.multiplayer.toggleClass(false);
 
@@ -634,7 +637,8 @@ Sortable.prototype = {
       moveEvent && this._onEnd(event);
     }
 
-    if (!fromEl && !moveEvent && this.options.multiple) {
+    const { multiple, selectHandle } = this.options;
+    if (multiple && ((selectHandle && useSelectHandle) || (!selectHandle && !fromEl))) {
       let evt = event.changedTouches ? event.changedTouches[0] : event,
         dx = evt.clientX - dragEvent.clientX,
         dy = evt.clientY - dragEvent.clientY,
@@ -675,9 +679,6 @@ Sortable.prototype = {
     }
 
     css(dragEl, 'display', '');
-    if (Safari) {
-      css(document.body, 'user-select', '');
-    }
 
     if (from !== to) {
       dispatchEvent({
@@ -736,6 +737,7 @@ Sortable.prototype = {
       listenerNode =
       lastHoverArea =
       dragStartTimer =
+      useSelectHandle =
       Sortable.clone =
       Sortable.ghost =
       Sortable.active =
@@ -745,8 +747,8 @@ Sortable.prototype = {
 
   // ========================================= Public Methods =========================================
   destroy() {
-    this._nulling();
     this._cancelStart();
+    this._nulling();
 
     off(this.el, 'touchstart', this._onDrag);
     off(this.el, 'mousedown', this._onDrag);

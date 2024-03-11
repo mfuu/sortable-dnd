@@ -18,9 +18,8 @@ function AutoScroll(options) {
 
 AutoScroll.prototype = {
   destroy() {
-    if (this.autoScrollAnimationFrame == null) {
-      return;
-    }
+    if (!this.autoScrollAnimationFrame) return;
+
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = null;
   },
@@ -44,9 +43,8 @@ AutoScroll.prototype = {
     const { clientX, clientY } = evt;
     const { top, right, bottom, left, height, width } = rect;
 
-    if (clientY < top || clientX > right || clientY > bottom || clientX < left) {
-      return;
-    }
+    // execute only inside scrolling elements
+    if (clientY < top || clientX > right || clientY > bottom || clientX < left) return;
 
     const { scrollThreshold, scrollSpeed } = this.options;
     const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
@@ -75,13 +73,8 @@ AutoScroll.prototype = {
       scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * scrollSpeed.y);
     }
 
-    if (scrolly) {
-      scrollEl.scrollTop += scrolly;
-    }
-
-    if (scrollx) {
-      scrollEl.scrollLeft += scrollx;
-    }
+    scrollEl.scrollTop += scrolly;
+    scrollEl.scrollLeft += scrollx;
   },
 };
 

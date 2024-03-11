@@ -22,22 +22,15 @@ Animation.prototype = {
 
     for (let i = 0; i <= children.length; i++) {
       const node = children[i];
-      if (!node || node === Sortable.ghost || css(node, 'display') === 'none') {
-        continue;
-      }
+      if (!node || node === Sortable.ghost || css(node, 'display') === 'none') continue;
 
       const rect = getRect(node);
-
-      if (rect.bottom < 0 || rect.right < 0) {
-        continue;
-      }
+      if (rect.bottom < 0 || rect.right < 0) continue;
 
       // Animate only elements within the visible area
-      if (rect.top - rect.height > maxHeight || rect.left - rect.width > maxWidth) {
-        break;
-      }
+      if (rect.top - rect.height > maxHeight || rect.left - rect.width > maxWidth) break;
 
-      animations.push({ node: node, rect });
+      animations.push({ node, rect });
     }
 
     this.animations.push(animations);
@@ -54,9 +47,7 @@ Animation.prototype = {
   _excute(el, { left, top }) {
     const rect = getRect(el);
 
-    if (rect.top === top && rect.left === left) {
-      return;
-    }
+    if (rect.top === top && rect.left === left) return;
 
     const ot = top - rect.top;
     const ol = left - rect.left;
