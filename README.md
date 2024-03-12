@@ -56,6 +56,7 @@ new Sortable(element, {
   draggable: '', // Specifies which items inside the element should be draggable
   handle: '', // Drag handle selector within list items
   group: '', // see @Group
+  lockAxis: '', // Axis on which dragging will be locked
   multiple: false, // Enable multiple drag
   selectHandle: '', // Handle selector within list items which used to select element in `multiple: true`
 

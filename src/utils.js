@@ -437,7 +437,6 @@ export function css(el, prop, val) {
 
 /**
  * Reports the position of its argument node relative to the node on which it is called.
- *
  * https://developer.mozilla.org/en-US/docs/Web/API/Node/compareDocumentPosition
  */
 export function comparePosition(a, b) {

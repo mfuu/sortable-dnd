@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.5
+ * sortable-dnd v0.6.6
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -363,7 +363,6 @@
 
   /**
    * Reports the position of its argument node relative to the node on which it is called.
-   *
    * https://developer.mozilla.org/en-US/docs/Web/API/Node/compareDocumentPosition
    */
   function comparePosition(a, b) {
@@ -743,6 +742,7 @@
       store: null,
       disabled: false,
       group: '',
+      lockAxis: '',
       animation: 150,
       draggable: null,
       handle: null,
@@ -890,11 +890,7 @@
         name: 'onChoose',
         params: this._getParams(event)
       });
-      if (touch) {
-        on(listenerNode, 'touchmove', this._nearestSortable);
-      } else {
-        on(listenerNode, 'mousemove', this._nearestSortable);
-      }
+      on(listenerNode, touch ? 'touchmove' : 'mousemove', this._nearestSortable);
 
       // clear selection
       try {
@@ -931,14 +927,10 @@
     },
     _appendGhost: function _appendGhost() {
       if (ghostEl) return;
-      var _this$options3 = this.options,
-        fallbackOnBody = _this$options3.fallbackOnBody,
-        ghostClass = _this$options3.ghostClass,
-        ghostStyle = _this$options3.ghostStyle;
-      var container = fallbackOnBody ? document.body : this.el;
+      var container = this.options.fallbackOnBody ? document.body : this.el;
       var element = this._getGhostElement();
       ghostEl = element.cloneNode(true);
-      toggleClass(ghostEl, ghostClass, true);
+      toggleClass(ghostEl, this.options.ghostClass, true);
       var rect = getRect(dragEl);
       var style = _extends({
         position: 'fixed',
@@ -953,7 +945,7 @@
         'z-index': '100000',
         'box-sizing': 'border-box',
         'pointer-events': 'none'
-      }, ghostStyle);
+      }, this.options.ghostStyle);
       for (var key in style) {
         css(ghostEl, key, style[key]);
       }
@@ -975,20 +967,23 @@
 
       // Init in the move event to prevent conflict with the click event
       !moveEvent && this._onStarted();
+      var lockAxis = this.options.lockAxis,
+        clientX = lockAxis === 'x' ? dragEvent.clientX : evt.clientX,
+        clientY = lockAxis === 'y' ? dragEvent.clientY : evt.clientY,
+        target = document.elementFromPoint(clientX, clientY),
+        dx = clientX - dragEvent.clientX,
+        dy = clientY - dragEvent.clientY;
       moveEvent = {
         original: event,
-        clientX: evt.clientX,
-        clientY: evt.clientY
+        clientX: clientX,
+        clientY: clientY
       };
-      var target = touch ? document.elementFromPoint(evt.clientX, evt.clientY) : evt.target,
-        dx = evt.clientX - dragEvent.clientX,
-        dy = evt.clientY - dragEvent.clientY;
       setTransform(ghostEl, "translate3d(".concat(dx, "px, ").concat(dy, "px, 0)"));
       if (this.options.autoScroll) {
         var scrollEl = getParentAutoScrollElement(target, true);
         this.autoScroller.update(scrollEl, dragEvent, moveEvent);
       }
-      var nearest = _detectNearestSortable(evt.clientX, evt.clientY);
+      var nearest = _detectNearestSortable(clientX, clientY);
       nearest && nearest[expando]._onMove(event, target);
     },
     _allowPut: function _allowPut() {
@@ -1005,9 +1000,9 @@
       }
     },
     _getDirection: function _getDirection() {
-      var _this$options4 = this.options,
-        draggable = _this$options4.draggable,
-        direction = _this$options4.direction;
+      var _this$options3 = this.options,
+        draggable = _this$options3.draggable,
+        direction = _this$options3.direction;
       return direction ? typeof direction === 'function' ? direction.call(moveEvent.original, dragEl, this) : direction : detectDirection(parentEl, draggable);
     },
     _allowSwap: function _allowSwap() {
@@ -1069,7 +1064,7 @@
       }
       if (this.el !== from) {
         this._onInsert(event);
-      } else {
+      } else if (dropEl !== dragEl) {
         this._onChange(event);
       }
       lastDropEl = dropEl;
@@ -1147,7 +1142,6 @@
       from = this.el;
     },
     _onChange: function _onChange(event) {
-      if (dropEl === dragEl) return;
       parentEl = dropEl.parentNode;
       oldIndex = index(cloneEl);
       targetNode = dropEl;
@@ -1185,9 +1179,9 @@
         });
         moveEvent && this._onEnd(event);
       }
-      var _this$options5 = this.options,
-        multiple = _this$options5.multiple,
-        selectHandle = _this$options5.selectHandle;
+      var _this$options4 = this.options,
+        multiple = _this$options4.multiple,
+        selectHandle = _this$options4.selectHandle;
       if (multiple && (selectHandle && useSelectHandle || !selectHandle && !fromEl)) {
         var evt = event.changedTouches ? event.changedTouches[0] : event,
           dx = evt.clientX - dragEvent.clientX,

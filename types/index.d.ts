@@ -16,14 +16,17 @@ export interface Group {
    * group name
    */
   name: string;
+
   /**
    * Whether elements can be added from other lists, or an array of group names from which elements can be taken.
    */
   put?: readonly string[] | boolean;
+
   /**
    * Whether elements can be moved out of this list.
    */
   pull?: boolean | 'clone';
+
   /**
    * Revert draged element to initial position after moving to a another list.
    */
@@ -40,14 +43,17 @@ export interface SelectEvent {
    * TouchEvent | MouseEvent
    */
   event: EventType;
+
   /**
    * index within parent
    */
   index: number;
+
   /**
    * dragged element
    */
   node: HTMLElement;
+
   /**
    * list container
    */
@@ -59,65 +65,75 @@ export interface SortableEvent {
    * Start list of element to be dragged.
    */
   from: HTMLElement;
+
   /**
    * List of currently placed drag element.
    */
   to: HTMLElement;
+
   /**
    * dragged element
    */
   node: HTMLElement;
+
   /**
    * dragged elements
    */
   nodes: HTMLElement[];
+
   /**
    * cloned element, all dnd operations are based on cloned element and do not alter the source dom(node).
    */
   clone: HTMLElement;
+
   /**
    * cloned elements, there is a value only in the `pull: clone` after moving to a another list.
    */
   clones: HTMLElement[];
+
   /**
    * drop element
    */
   target: HTMLElement;
+
   /**
    * old index within parent
    */
   oldIndex: number;
+
   /**
    * new index within parent
    */
   newIndex: number;
+
   /**
    * TouchEvent | MouseEvent
    */
   event: EventType;
+
   /**
-   * Pull mode if dragging into another sortable.
+   * Pull value of the start list.
    */
-  pullMode: 'clone' | boolean | undefined;
+  pullMode: boolean | 'clone';
+
   /**
    * Position of the drop element relative to the drag element after swap is complete.
    * @example
-   * 0: // The position of dropEl is the same as dragEl.
-   *    <div>dragEl === dropEl</div>
+   * 0: <div>dragEl, dropEl</div> // The position of dropEl is the same as dragEl.
    *
-   * 1: // dropEl comes after dragEl.
-   *    <div>dragEl</div> ↓
-   *    <div>dropEl</div> ↓
+   * 1: <div>dragEl</div> // dropEl comes after dragEl.
+   *    <div>dropEl</div>
    *
-   * -1: // dropEl comes before dragEl.
-   *    <div>dropEl</div> ↓
-   *    <div>dragEl</div> ↓
+   * -1: <div>dropEl</div> // dropEl comes before dragEl.
+   *    <div>dragEl</div>
    */
   relative: 0 | 1 | -1;
+
   /**
    * Revert draged element to initial position after moving to a another list if `pull: 'clone'` & `revertDrag: true`.
    */
   revertDrag?: boolean;
+
   /**
    * Dragged element go back to the original list if `pull: 'clone'`.
    */
@@ -141,7 +157,7 @@ export interface SortableOptions {
    * - 'div'   // use tag name
    * - '.item' // use class name
    * - '#item' // use id
-   * @defaults `' '`
+   * @defaults `''`
    */
   draggable?: string;
 
@@ -152,7 +168,7 @@ export interface SortableOptions {
    * - 'i' // use tag name
    * - '.handle' // use class
    * - '#handle' // use id
-   * @defaults `' '`
+   * @defaults `''`
    */
   handle?: string | ((event: EventType) => boolean);
 
@@ -161,9 +177,15 @@ export interface SortableOptions {
    * @example
    * - string: '...'
    * - object: { name: '...', put: true | false, pull: true | false | 'clone', revertDrag: true | false }
-   * @defaults `' '`
+   * @defaults `''`
    */
   group?: string | Group;
+
+  /**
+   * Axis on which dragging will be locked.
+   * @defaults `''`
+   */
+  lockAxis?: 'x' | 'y';
 
   /**
    * Enable multi-drag.
@@ -178,7 +200,7 @@ export interface SortableOptions {
    * - 'checkbox' // use tag name
    * - '.checkbox' // use class
    * - '#checkbox' // use id
-   * @defaults `' '`
+   * @defaults `''`
    */
   selectHandle?: string | ((event: EventType) => boolean);
 
@@ -190,7 +212,7 @@ export interface SortableOptions {
 
   /**
    * Direction of Sortable, will be detected automatically if not given.
-   * @defaults `' '`
+   * @defaults `''`
    */
   direction?: Direction | ((event: EventType, dragEl: HTMLElement, sortable: Sortable) => Direction);
 
@@ -262,25 +284,25 @@ export interface SortableOptions {
 
   /**
    * This class will be added to the item while dragging.
-   * @defaults `' '`
+   * @defaults `''`
    */
   chosenClass?: string;
 
   /**
    * Class name for selected item.
-   * @defaults `' '`
+   * @defaults `''`
    */
   selectedClass?: string;
 
   /**
    * This styles will be applied to the mask of the dragging element.
-   * @defaults `{ }`
+   * @defaults `{}`
    */
   ghostStyle?: CSSStyleDeclaration;
 
   /**
    * This class will be applied to the mask of the dragging element.
-   * @defaults `' '`
+   * @defaults `''`
    */
   ghostClass?: string;
 
@@ -306,7 +328,7 @@ export interface SortableOptions {
 
   /**
    * Element dragging is completed.
-   * The params records only the status from the drag to the drop. All operations in the process are ignored.
+   * The params records only the status from the drag to the drop, all operations in the process are ignored.
    */
   onDrop?: (params: SortableEvent) => void;
 

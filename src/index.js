@@ -10,6 +10,7 @@ import {
   matches,
   closest,
   getRect,
+  getChild,
   containes,
   lastChild,
   IE11OrLess,
@@ -20,7 +21,6 @@ import {
   preventDefault,
   detectDirection,
   getParentAutoScrollElement,
-  getChild,
 } from './utils.js';
 import AutoScroll from './Plugins/Autoscroll.js';
 import Animation from './Plugins/Animation.js';
@@ -112,6 +112,7 @@ function Sortable(el, options) {
     store: null,
     disabled: false,
     group: '',
+    lockAxis: '',
     animation: 150,
     draggable: null,
     handle: null,
@@ -281,11 +282,7 @@ Sortable.prototype = {
       params: this._getParams(event),
     });
 
-    if (touch) {
-      on(listenerNode, 'touchmove', this._nearestSortable);
-    } else {
-      on(listenerNode, 'mousemove', this._nearestSortable);
-    }
+    on(listenerNode, touch ? 'touchmove' : 'mousemove', this._nearestSortable);
 
     // clear selection
     try {
@@ -327,12 +324,11 @@ Sortable.prototype = {
   _appendGhost() {
     if (ghostEl) return;
 
-    const { fallbackOnBody, ghostClass, ghostStyle } = this.options;
-    const container = fallbackOnBody ? document.body : this.el;
+    const container = this.options.fallbackOnBody ? document.body : this.el;
     const element = this._getGhostElement();
 
     ghostEl = element.cloneNode(true);
-    toggleClass(ghostEl, ghostClass, true);
+    toggleClass(ghostEl, this.options.ghostClass, true);
 
     const rect = getRect(dragEl);
     const style = Object.assign(
@@ -350,7 +346,7 @@ Sortable.prototype = {
         'box-sizing': 'border-box',
         'pointer-events': 'none',
       },
-      ghostStyle
+      this.options.ghostStyle
     );
 
     for (const key in style) {
@@ -381,15 +377,18 @@ Sortable.prototype = {
     // Init in the move event to prevent conflict with the click event
     !moveEvent && this._onStarted();
 
+    let lockAxis = this.options.lockAxis,
+      clientX = lockAxis === 'x' ? dragEvent.clientX : evt.clientX,
+      clientY = lockAxis === 'y' ? dragEvent.clientY : evt.clientY,
+      target = document.elementFromPoint(clientX, clientY),
+      dx = clientX - dragEvent.clientX,
+      dy = clientY - dragEvent.clientY;
+
     moveEvent = {
       original: event,
-      clientX: evt.clientX,
-      clientY: evt.clientY,
+      clientX: clientX,
+      clientY: clientY,
     };
-
-    let target = touch ? document.elementFromPoint(evt.clientX, evt.clientY) : evt.target,
-      dx = evt.clientX - dragEvent.clientX,
-      dy = evt.clientY - dragEvent.clientY;
 
     setTransform(ghostEl, `translate3d(${dx}px, ${dy}px, 0)`);
 
@@ -398,7 +397,7 @@ Sortable.prototype = {
       this.autoScroller.update(scrollEl, dragEvent, moveEvent);
     }
 
-    const nearest = _detectNearestSortable(evt.clientX, evt.clientY);
+    const nearest = _detectNearestSortable(clientX, clientY);
     nearest && nearest[expando]._onMove(event, target);
   },
 
@@ -494,7 +493,7 @@ Sortable.prototype = {
 
     if (this.el !== from) {
       this._onInsert(event);
-    } else {
+    } else if (dropEl !== dragEl) {
       this._onChange(event);
     }
     lastDropEl = dropEl;
@@ -584,8 +583,6 @@ Sortable.prototype = {
   },
 
   _onChange: function (event) {
-    if (dropEl === dragEl) return;
-
     parentEl = dropEl.parentNode;
     oldIndex = index(cloneEl);
     targetNode = dropEl;
