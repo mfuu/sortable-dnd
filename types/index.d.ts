@@ -67,7 +67,7 @@ export interface SortableEvent {
   from: HTMLElement;
 
   /**
-   * List of currently placed drag element.
+   * List of currently placed drag element. Or the start list(from) in `pull: 'clone'`.
    */
   to: HTMLElement;
 
@@ -117,25 +117,25 @@ export interface SortableEvent {
   pullMode: boolean | 'clone';
 
   /**
-   * Position of the drop element relative to the drag element after swap is complete.
+   * Position of the drag element relative to the drop element(target) after swap is complete.
    * @example
    * 0: <div>dragEl, dropEl</div> // The position of dropEl is the same as dragEl.
    *
-   * 1: <div>dragEl</div> // dropEl comes after dragEl.
-   *    <div>dropEl</div>
-   *
-   * -1: <div>dropEl</div> // dropEl comes before dragEl.
+   * 1: <div>dropEl</div> // dragEl comes after dropEl.
    *    <div>dragEl</div>
+   *
+   * -1: <div>dragEl</div> // dragEl comes before dropEl.
+   *     <div>dropEl</div>
    */
   relative: 0 | 1 | -1;
 
   /**
-   * Revert draged element to initial position after moving to a another list if `pull: 'clone'` & `revertDrag: true`.
+   * Revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
    */
   revertDrag?: boolean;
 
   /**
-   * Dragged element go back to the original list if `pull: 'clone'`.
+   * Dragged element go back to the original list in `pull: 'clone'`.
    */
   backToOrigin?: boolean;
 }
@@ -150,6 +150,12 @@ export interface SortableOptions {
    * @defaults `undefined`
    */
   store?: any;
+
+  /**
+   * Allow Sorting by Dragging.
+   * @defaults `true`
+   */
+  sortable?: boolean;
 
   /**
    * Specifies which items inside the element should be draggable.

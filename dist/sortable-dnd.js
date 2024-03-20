@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.6
+ * sortable-dnd v0.6.7
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -683,9 +683,8 @@
   };
 
   var sortables = [];
-  var fromEl, dragEl, dropEl, nextEl, cloneEl, ghostEl, parentEl, dragEvent, moveEvent, lastDropEl, listenerNode, lastHoverArea, dragStartTimer, useSelectHandle;
-  var to, from, pullMode, oldIndex, newIndex, fromIndex, targetNode;
-  var _prepareGroup = function _prepareGroup(options) {
+  var to, from, fromEl, dragEl, dropEl, nextEl, cloneEl, ghostEl, targetEl, parentEl, pullMode, oldIndex, newIndex, fromIndex, dragEvent, moveEvent, lastDropEl, cloneEvent, cloneTarget, listenerNode, lastHoverArea, dragStartTimer, useSelectHandle;
+  function _prepareGroup(options) {
     var group = {};
     var originalGroup = options.group;
     if (!originalGroup || _typeof(originalGroup) != 'object') {
@@ -701,7 +700,7 @@
     group.put = originalGroup.put;
     group.revertDrag = originalGroup.revertDrag;
     options.group = group;
-  };
+  }
 
   /**
    * Detects first nearest empty sortable to X and Y position using emptyInsertThreshold.
@@ -729,7 +728,7 @@
   /**
    * @class Sortable
    * @param {HTMLElement} el container
-   * @param {Object} options
+   * @param {Object} options sortable options
    */
   function Sortable(el, options) {
     if (!(el && el.nodeType && el.nodeType === 1)) {
@@ -740,16 +739,17 @@
     this.options = options = _extends({}, options);
     var defaults = {
       store: null,
-      disabled: false,
       group: '',
+      handle: null,
+      sortable: true,
+      disabled: false,
+      multiple: false,
       lockAxis: '',
+      direction: '',
       animation: 150,
       draggable: null,
-      handle: null,
-      multiple: false,
       selectHandle: null,
       customGhost: null,
-      direction: '',
       autoScroll: true,
       scrollThreshold: 55,
       scrollSpeed: {
@@ -811,7 +811,7 @@
       // No dragging is allowed when there is no dragging element
       if (!element || element.animated) return;
       dragEvent = {
-        original: event,
+        origin: event,
         clientX: (touch || event).clientX,
         clientY: (touch || event).clientY
       };
@@ -872,10 +872,17 @@
       var i = index(dragEl);
       to = this.el;
       from = this.el;
+      targetEl = dragEl;
       oldIndex = i;
       newIndex = i;
       fromIndex = i;
-      targetNode = dragEl;
+      cloneEvent = {
+        to: this.el,
+        target: dragEl,
+        newIndex: i,
+        relative: 0
+      };
+      cloneTarget = dragEl;
       fromEl = this.el;
       cloneEl = dragEl.cloneNode(true);
       parentEl = dragEl.parentNode;
@@ -911,7 +918,7 @@
       dispatchEvent({
         sortable: this,
         name: 'onDrag',
-        params: this._getParams(dragEvent.original)
+        params: this._getParams(dragEvent.origin)
       });
       css(dragEl, 'display', 'none');
       toggleClass(dragEl, this.options.chosenClass, false);
@@ -920,8 +927,8 @@
     _getGhostElement: function _getGhostElement() {
       var customGhost = this.options.customGhost;
       if (typeof customGhost === 'function') {
-        var selectedElements = this.multiplayer.selectedElements;
-        return customGhost(selectedElements.length ? selectedElements : [dragEl]);
+        var selects = this.multiplayer.selectedElements;
+        return customGhost(selects.length ? selects : [dragEl]);
       }
       return this.multiplayer.getGhostElement() || dragEl;
     },
@@ -974,7 +981,7 @@
         dx = clientX - dragEvent.clientX,
         dy = clientY - dragEvent.clientY;
       moveEvent = {
-        original: event,
+        origin: event,
         clientX: clientX,
         clientY: clientY
       };
@@ -1003,7 +1010,7 @@
       var _this$options3 = this.options,
         draggable = _this$options3.draggable,
         direction = _this$options3.direction;
-      return direction ? typeof direction === 'function' ? direction.call(moveEvent.original, dragEl, this) : direction : detectDirection(parentEl, draggable);
+      return direction ? typeof direction === 'function' ? direction.call(moveEvent.origin, dragEl, this) : direction : detectDirection(parentEl, draggable);
     },
     _allowSwap: function _allowSwap() {
       var rect = getRect(dropEl),
@@ -1043,7 +1050,7 @@
       return false;
     },
     _onMove: function _onMove( /** TouchEvent|MouseEvent */event, target) {
-      if (!this._allowPut()) return;
+      if (!this.options.sortable || !this._allowPut()) return;
       dispatchEvent({
         sortable: this,
         name: 'onMove',
@@ -1075,13 +1082,16 @@
         cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl;
       to = this.el;
       oldIndex = index(cloneEl);
-      targetNode = target;
+      targetEl = target;
       parentEl = dropEl ? dropEl.parentNode : this.el;
       from[expando].animator.collect(cloneEl.parentNode);
       this.animator.collect(parentEl);
 
       // show dragEl before clone to another list
       if (cloneTo) {
+        cloneEvent.target = cloneTarget;
+        cloneEvent.newIndex = oldIndex;
+        cloneEvent.relative = cloneTarget === dragEl ? 0 : sort(cloneEl, cloneTarget);
         css(dragEl, 'display', '');
         fromEl[expando].multiplayer.toggleVisible(true);
         if (!fromEl[expando].options.group.revertDrag) {
@@ -1102,6 +1112,9 @@
       }
       newIndex = index(cloneEl);
       if (cloneTo && fromEl[expando].options.group.revertDrag) {
+        cloneEvent.target = dragEl;
+        cloneEvent.newIndex = fromIndex;
+        cloneEvent.relative = 0;
         dispatchEvent({
           sortable: fromEl[expando],
           name: 'onChange',
@@ -1121,6 +1134,7 @@
         });
       }
       if (cloneBack && dropEl !== dragEl) {
+        cloneTarget = dropEl;
         dispatchEvent({
           sortable: this,
           name: 'onChange',
@@ -1142,9 +1156,12 @@
       from = this.el;
     },
     _onChange: function _onChange(event) {
-      parentEl = dropEl.parentNode;
       oldIndex = index(cloneEl);
-      targetNode = dropEl;
+      parentEl = dropEl.parentNode;
+      targetEl = dropEl;
+      if (this.el === fromEl) {
+        cloneTarget = dropEl;
+      }
       this.animator.collect(parentEl);
       parentEl.insertBefore(cloneEl, nextEl);
       newIndex = index(cloneEl);
@@ -1168,8 +1185,8 @@
       if (fromEl) {
         from = fromEl;
         oldIndex = fromIndex;
-        if (targetNode === cloneEl) {
-          targetNode = dragEl;
+        if (targetEl === cloneEl) {
+          targetEl = dragEl;
         }
         this.multiplayer.toggleClass(false);
         dispatchEvent({
@@ -1183,13 +1200,9 @@
         multiple = _this$options4.multiple,
         selectHandle = _this$options4.selectHandle;
       if (multiple && (selectHandle && useSelectHandle || !selectHandle && !fromEl)) {
-        var evt = event.changedTouches ? event.changedTouches[0] : event,
-          dx = evt.clientX - dragEvent.clientX,
-          dy = evt.clientY - dragEvent.clientY,
-          dd = Math.sqrt(dx * dx + dy * dy);
-
+        var evt = event.changedTouches ? event.changedTouches[0] : event;
         // check whether the event is a click event
-        dd >= 0 && dd <= 1 && this.multiplayer.onSelect(event, dragEl, this);
+        !_positionChanged(evt) && this.multiplayer.onSelect(event, dragEl, this);
       }
       if (ghostEl && ghostEl.parentNode) {
         ghostEl.parentNode.removeChild(ghostEl);
@@ -1216,7 +1229,7 @@
         dispatchEvent({
           sortable: from[expando],
           name: 'onDrop',
-          params: params
+          params: pullMode === 'clone' ? _extends({}, params, cloneEvent) : params
         });
       }
       dispatchEvent({
@@ -1233,17 +1246,17 @@
       evt.from = from;
       evt.node = dragEl;
       evt.clone = cloneEl;
-      evt.target = targetNode;
+      evt.target = targetEl;
       evt.oldIndex = oldIndex;
       evt.newIndex = newIndex;
       evt.pullMode = pullMode;
       this.multiplayer.setParams(evt);
       _extends(evt, params);
-      evt.relative = evt.target === dragEl ? 0 : sort(evt.target, cloneEl);
+      evt.relative = targetEl === dragEl ? 0 : sort(cloneEl, targetEl);
       return evt;
     },
     _nulling: function _nulling() {
-      to = from = fromEl = dragEl = dropEl = nextEl = cloneEl = ghostEl = parentEl = pullMode = oldIndex = newIndex = fromIndex = dragEvent = moveEvent = targetNode = lastDropEl = listenerNode = lastHoverArea = dragStartTimer = useSelectHandle = Sortable.clone = Sortable.ghost = Sortable.active = Sortable.dragged = null;
+      to = from = fromEl = dragEl = dropEl = nextEl = cloneEl = ghostEl = targetEl = parentEl = pullMode = oldIndex = newIndex = fromIndex = dragEvent = moveEvent = lastDropEl = cloneEvent = cloneTarget = listenerNode = lastHoverArea = dragStartTimer = useSelectHandle = Sortable.clone = Sortable.ghost = Sortable.active = Sortable.dragged = null;
     },
     // ========================================= Public Methods =========================================
     destroy: function destroy() {
