@@ -35,10 +35,10 @@ export const supportPassive = (function () {
   return supportPassive;
 })();
 
-export const vendorPrefix = (function () {
+export const cssVendorPrefix = (function () {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     // Server environment
-    return {};
+    return '';
   }
 
   // window.getComputedStyle() returns null inside an iframe with `display: none`
@@ -49,14 +49,8 @@ export const vendorPrefix = (function () {
     .join('')
     .match(/-(moz|webkit|ms)-/) ||
     (styles.OLink === '' && ['', 'o']))[1];
-  const dom = 'WebKit|Moz|MS|O'.match(new RegExp('(' + pre + ')', 'i'))[1];
 
-  return {
-    dom,
-    lowercase: pre,
-    css: '-' + pre + '-',
-    js: pre[0].toUpperCase() + pre.substr(1),
-  };
+  return pre ? `-${pre}-` : '';
 })();
 
 export function isHTMLElement(el) {
@@ -70,20 +64,16 @@ export function isHTMLElement(el) {
   }
 }
 
+export function setTransform(el, transform) {
+  el.style[`${cssVendorPrefix}transform`] = transform;
+}
+
 export function setTransition(el, transition) {
-  el.style[`${vendorPrefix.css}transition`] = transition
-    ? transition === 'none'
-      ? 'none'
-      : `${transition}`
-    : '';
+  el.style[`${cssVendorPrefix}transition`] = transition;
 }
 
 export function setTransitionDuration(el, duration) {
-  el.style[`${vendorPrefix.css}transition-duration`] = duration ? `${duration}ms` : '';
-}
-
-export function setTransform(el, transform) {
-  el.style[`${vendorPrefix.css}transform`] = transform ? `${transform}` : '';
+  el.style[`${cssVendorPrefix}transition-duration`] = duration ? `${duration}ms` : '';
 }
 
 /**

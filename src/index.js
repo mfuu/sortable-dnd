@@ -478,13 +478,19 @@ Sortable.prototype = {
   },
 
   _onMove: function (/** TouchEvent|MouseEvent */ event, target) {
-    if (!this.options.sortable || !this._allowPut()) return;
+    if (this.options.disabled || !this._allowPut()) return;
+
+    dropEl = closest(target, this.options.draggable, this.el);
 
     dispatchEvent({
       sortable: this,
       name: 'onMove',
-      params: this._getParams(event),
+      params: this._getParams(event, {
+        target: dropEl,
+      }),
     });
+
+    if (!this.options.sortable) return;
 
     // insert to last
     if (this.el !== from && (target === this.el || !lastChild(this.el))) {
@@ -492,8 +498,6 @@ Sortable.prototype = {
       this._onInsert(event);
       return;
     }
-
-    dropEl = closest(target, this.options.draggable, this.el);
 
     if (!dropEl || dropEl.animated || !this._allowSwap()) return;
     if (dropEl === cloneEl || nextEl === cloneEl) {

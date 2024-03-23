@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.7
+ * sortable-dnd v0.6.8
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -62,32 +62,26 @@
     });
     return supportPassive;
   }();
-  var vendorPrefix = function () {
+  var cssVendorPrefix = function () {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       // Server environment
-      return {};
+      return '';
     }
 
     // window.getComputedStyle() returns null inside an iframe with `display: none`
     // in this case return an array with a fake mozilla style in it.
     var styles = window.getComputedStyle(document.documentElement, '') || ['-moz-hidden-iframe'];
     var pre = (Array.prototype.slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || styles.OLink === '' && ['', 'o'])[1];
-    var dom = 'WebKit|Moz|MS|O'.match(new RegExp('(' + pre + ')', 'i'))[1];
-    return {
-      dom: dom,
-      lowercase: pre,
-      css: '-' + pre + '-',
-      js: pre[0].toUpperCase() + pre.substr(1)
-    };
+    return pre ? "-".concat(pre, "-") : '';
   }();
+  function setTransform(el, transform) {
+    el.style["".concat(cssVendorPrefix, "transform")] = transform;
+  }
   function setTransition(el, transition) {
-    el.style["".concat(vendorPrefix.css, "transition")] = transition ? transition === 'none' ? 'none' : "".concat(transition) : '';
+    el.style["".concat(cssVendorPrefix, "transition")] = transition;
   }
   function setTransitionDuration(el, duration) {
-    el.style["".concat(vendorPrefix.css, "transition-duration")] = duration ? "".concat(duration, "ms") : '';
-  }
-  function setTransform(el, transform) {
-    el.style["".concat(vendorPrefix.css, "transform")] = transform ? "".concat(transform) : '';
+    el.style["".concat(cssVendorPrefix, "transition-duration")] = duration ? "".concat(duration, "ms") : '';
   }
 
   /**
@@ -508,7 +502,7 @@
       if (rect.top === top && rect.left === left) return;
       var ot = top - rect.top;
       var ol = left - rect.left;
-      setTransitionDuration(el);
+      setTransitionDuration(el, 0);
       setTransform(el, "translate3d(".concat(ol, "px, ").concat(ot, "px, 0)"));
 
       // repaint
@@ -517,7 +511,7 @@
       setTransform(el, 'translate3d(0px, 0px, 0px)');
       clearTimeout(el.animated);
       el.animated = setTimeout(function () {
-        setTransitionDuration(el);
+        setTransitionDuration(el, 0);
         setTransform(el, '');
         el.animated = null;
       }, this.options.animation);
@@ -1050,12 +1044,16 @@
       return false;
     },
     _onMove: function _onMove( /** TouchEvent|MouseEvent */event, target) {
-      if (!this.options.sortable || !this._allowPut()) return;
+      if (this.options.disabled || !this._allowPut()) return;
+      dropEl = closest(target, this.options.draggable, this.el);
       dispatchEvent({
         sortable: this,
         name: 'onMove',
-        params: this._getParams(event)
+        params: this._getParams(event, {
+          target: dropEl
+        })
       });
+      if (!this.options.sortable) return;
 
       // insert to last
       if (this.el !== from && (target === this.el || !lastChild(this.el))) {
@@ -1063,7 +1061,6 @@
         this._onInsert(event);
         return;
       }
-      dropEl = closest(target, this.options.draggable, this.el);
       if (!dropEl || dropEl.animated || !this._allowSwap()) return;
       if (dropEl === cloneEl || nextEl === cloneEl) {
         lastDropEl = dropEl;

@@ -52,7 +52,7 @@ Animation.prototype = {
     const ot = top - rect.top;
     const ol = left - rect.left;
 
-    setTransitionDuration(el);
+    setTransitionDuration(el, 0);
     setTransform(el, `translate3d(${ol}px, ${ot}px, 0)`);
 
     // repaint
@@ -63,7 +63,7 @@ Animation.prototype = {
 
     clearTimeout(el.animated);
     el.animated = setTimeout(() => {
-      setTransitionDuration(el);
+      setTransitionDuration(el, 0);
       setTransform(el, '');
       el.animated = null;
     }, this.options.animation);
