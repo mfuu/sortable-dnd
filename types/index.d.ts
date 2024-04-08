@@ -23,7 +23,7 @@ export interface Group {
   put?: readonly string[] | boolean;
 
   /**
-   * Whether elements can be moved out of this list.
+   * Ability to move from the list. `clone` — copy the item, rather than move.
    */
   pull?: boolean | 'clone';
 
@@ -97,12 +97,12 @@ export interface SortableEvent {
   target: HTMLElement;
 
   /**
-   * old index within parent
+   * old index within parent. `-1`: element added from another list to the current list
    */
   oldIndex: number;
 
   /**
-   * new index within parent
+   * new index within parent. `-1`: element has been removed from the current list
    */
   newIndex: number;
 
@@ -152,7 +152,7 @@ export interface SortableOptions {
   store?: any;
 
   /**
-   * Allow Sorting by Dragging.
+   * Whether the current list can be sorted by dragging.
    * @defaults `true`
    */
   sortable?: boolean;
@@ -223,10 +223,38 @@ export interface SortableOptions {
   direction?: Direction | ((event: EventType, dragEl: HTMLElement, sortable: Sortable) => Direction);
 
   /**
-   * Speed of the animation (in ms) while moving the items.
+   * ms, animation speed moving items when sorting, `0` — without animation.
    * @defaults `150`
    */
   animation?: number;
+
+  /**
+   * Easing for animation.
+   *
+   * See https://easings.net/ for examples.
+   *
+   * For other possible values, see
+   * https://www.w3schools.com/cssref/css3_pr_animation-timing-function.asp
+   *
+   * @example
+   *
+   * // CSS functions
+   * | 'steps(int, start | end)'
+   * | 'cubic-bezier(n, n, n, n)'
+   *
+   * // CSS values
+   * | 'linear'
+   * | 'ease'
+   * | 'ease-in'
+   * | 'ease-out'
+   * | 'ease-in-out'
+   * | 'step-start'
+   * | 'step-end'
+   * | 'initial'
+   * | 'inherit'
+   * @defaults `''`
+   */
+  easing?: string;
 
   /**
    * Disables the sortable if set to `true`.
@@ -286,7 +314,7 @@ export interface SortableOptions {
    * When the value is false, the dragged element will return to the starting position of the drag.
    * @defaults `true`
    */
-  swapOnDrop?: boolean | ((params: SortableEvent) => boolean);
+  swapOnDrop?: boolean | ((event: SortableEvent) => boolean);
 
   /**
    * This class will be added to the item while dragging.
@@ -315,53 +343,52 @@ export interface SortableOptions {
   /**
    * Element is chosen.
    */
-  onChoose?: (params: SortableEvent) => void;
+  onChoose?: (event: SortableEvent) => void;
 
   /**
    * Element is unchosen.
    */
-  onUnchoose?: (params: SortableEvent) => void;
+  onUnchoose?: (event: SortableEvent) => void;
 
   /**
    * Element dragging started.
    */
-  onDrag?: (params: SortableEvent) => void;
+  onDrag?: (event: SortableEvent) => void;
 
   /**
    * Event when you move an item in the list or between lists.
    */
-  onMove?: (params: SortableEvent) => void;
+  onMove?: (event: SortableEvent) => void;
 
   /**
-   * Element dragging is completed.
-   * The params records only the status from the drag to the drop, all operations in the process are ignored.
+   * Element dragging is completed. Only record changes in the current list.
    */
-  onDrop?: (params: SortableEvent) => void;
+  onDrop?: (event: SortableEvent) => void;
 
   /**
    * Element is dropped into the current list from another.
    */
-  onAdd?: (params: SortableEvent) => void;
+  onAdd?: (event: SortableEvent) => void;
 
   /**
    * Element is removed from the current list into another.
    */
-  onRemove?: (params: SortableEvent) => void;
+  onRemove?: (event: SortableEvent) => void;
 
   /**
    * Dragging element changes position in the current list.
    */
-  onChange?: (params: SortableEvent) => void;
+  onChange?: (event: SortableEvent) => void;
 
   /**
    * Element is selected. Takes effect in `multiple: true`.
    */
-  onSelect?: (params: SelectEvent) => void;
+  onSelect?: (event: SelectEvent) => void;
 
   /**
    * Element is unselected. Takes effect in `multiple: true`.
    */
-  onDeselect?: (params: SelectEvent) => void;
+  onDeselect?: (event: SelectEvent) => void;
 }
 
 export interface Utils {
@@ -522,5 +549,4 @@ declare class Sortable {
   getSelectedElements(): HTMLElement[];
 }
 
-export { Sortable };
 export default Sortable;

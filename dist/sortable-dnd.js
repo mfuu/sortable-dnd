@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.8
+ * sortable-dnd v0.6.9
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -62,7 +62,7 @@
     });
     return supportPassive;
   }();
-  var cssVendorPrefix = function () {
+  (function () {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       // Server environment
       return '';
@@ -73,16 +73,7 @@
     var styles = window.getComputedStyle(document.documentElement, '') || ['-moz-hidden-iframe'];
     var pre = (Array.prototype.slice.call(styles).join('').match(/-(moz|webkit|ms)-/) || styles.OLink === '' && ['', 'o'])[1];
     return pre ? "-".concat(pre, "-") : '';
-  }();
-  function setTransform(el, transform) {
-    el.style["".concat(cssVendorPrefix, "transform")] = transform;
-  }
-  function setTransition(el, transition) {
-    el.style["".concat(cssVendorPrefix, "transition")] = transition;
-  }
-  function setTransitionDuration(el, duration) {
-    el.style["".concat(cssVendorPrefix, "transition-duration")] = duration ? "".concat(duration, "ms") : '';
-  }
+  })();
 
   /**
    * add specified event listener
@@ -200,7 +191,7 @@
       if (_index > -1) return children[_index];
 
       // When the dom cannot be found directly in children, need to look down
-      for (var i = 0; i < children.length; i++) {
+      for (var i = 0, len = children.length; i < len; i++) {
         if (containes(el, children[i])) return children[i];
       }
     }
@@ -459,7 +450,7 @@
 
   function Animation(options) {
     this.options = options;
-    this.animations = [];
+    this.stack = [];
   }
   Animation.prototype = {
     collect: function collect(parentEl) {
@@ -471,50 +462,51 @@
         maxHeight = Math.min(parentRect.bottom, docHeight),
         children = Array.prototype.slice.call(parentEl.children),
         animations = [];
-      for (var i = 0; i <= children.length; i++) {
-        var node = children[i];
-        if (!node || node === Sortable.ghost || css(node, 'display') === 'none') continue;
-        var rect = getRect(node);
+      for (var i = 0, len = children.length; i <= len; i++) {
+        var el = children[i];
+        if (!el || el === Sortable.ghost || css(el, 'display') === 'none') continue;
+        var rect = getRect(el);
         if (rect.bottom < 0 || rect.right < 0) continue;
 
         // Animate only elements within the visible area
         if (rect.top - rect.height > maxHeight || rect.left - rect.width > maxWidth) break;
         animations.push({
-          node: node,
+          el: el,
           rect: rect
         });
       }
-      this.animations.push(animations);
+      this.stack.push(animations);
     },
     animate: function animate() {
-      var animations = this.animations.pop();
+      var animations = this.stack.pop();
       for (var i = 0, len = animations.length; i < len; i++) {
         var _animations$i = animations[i],
-          node = _animations$i.node,
+          el = _animations$i.el,
           rect = _animations$i.rect;
-        this._excute(node, rect);
+        this.options.animation && this._excute(el, rect);
       }
     },
-    _excute: function _excute(el, _ref) {
-      var left = _ref.left,
-        top = _ref.top;
-      var rect = getRect(el);
-      if (rect.top === top && rect.left === left) return;
-      var ot = top - rect.top;
-      var ol = left - rect.left;
-      setTransitionDuration(el, 0);
-      setTransform(el, "translate3d(".concat(ol, "px, ").concat(ot, "px, 0)"));
+    _excute: function _excute(el, fromRect) {
+      var toRect = getRect(el);
+      if (toRect.top === fromRect.top && toRect.left === fromRect.left) return;
+      var dx = fromRect.left - toRect.left;
+      var dy = fromRect.top - toRect.top;
+      css(el, 'transition', '');
+      css(el, 'transform', 'translate3d(' + dx + 'px, ' + dy + 'px, 0)');
 
       // repaint
       el.offsetWidth;
-      setTransitionDuration(el, this.options.animation);
-      setTransform(el, 'translate3d(0px, 0px, 0px)');
-      clearTimeout(el.animated);
+      var _this$options = this.options,
+        animation = _this$options.animation,
+        easing = _this$options.easing;
+      css(el, 'transition', 'transform ' + animation + 'ms' + (easing ? ' ' + easing : ''));
+      css(el, 'transform', 'translate3d(0px, 0px, 0px)');
+      typeof el.animated === 'number' && clearTimeout(el.animated);
       el.animated = setTimeout(function () {
-        setTransitionDuration(el, 0);
-        setTransform(el, '');
+        css(el, 'transition', '');
+        css(el, 'transform', '');
         el.animated = null;
-      }, this.options.animation);
+      }, animation);
     }
   };
 
@@ -697,22 +689,23 @@
   }
 
   /**
-   * Detects first nearest empty sortable to X and Y position using emptyInsertThreshold.
-   * @return {HTMLElement} Element of the first found nearest Sortable
+   * Detects nearest empty sortable to X and Y position using emptyInsertThreshold.
+   * @return {HTMLElement} Element of the found nearest Sortable
    */
   function _detectNearestSortable(x, y) {
-    var result;
-    sortables.some(function (sortable) {
+    var nearestRect;
+    return sortables.reduce(function (result, sortable) {
       var threshold = sortable[expando].options.emptyInsertThreshold;
       if (threshold == void 0) return;
       var rect = getRect(sortable),
         insideHorizontally = x >= rect.left - threshold && x <= rect.right + threshold,
         insideVertically = y >= rect.top - threshold && y <= rect.bottom + threshold;
-      if (insideHorizontally && insideVertically) {
-        return result = sortable;
+      if (insideHorizontally && insideVertically && (!nearestRect || nearestRect && rect.left >= nearestRect.left && rect.right <= nearestRect.right && rect.top >= nearestRect.top && rect.bottom <= nearestRect.bottom)) {
+        result = sortable;
+        nearestRect = rect;
       }
-    });
-    return result;
+      return result;
+    }, null);
   }
   function _positionChanged(evt) {
     var lastEvent = moveEvent || dragEvent;
@@ -741,6 +734,7 @@
       lockAxis: '',
       direction: '',
       animation: 150,
+      easing: '',
       draggable: null,
       selectHandle: null,
       customGhost: null,
@@ -775,12 +769,7 @@
         this[fn] = this[fn].bind(this);
       }
     }
-    var supportTouch = this.options.supportTouch;
-    if (supportTouch) {
-      on(el, 'touchstart', this._onDrag);
-    } else {
-      on(el, 'mousedown', this._onDrag);
-    }
+    on(el, this.options.supportTouch ? 'touchstart' : 'mousedown', this._onDrag);
     sortables.push(el);
     this.autoScroller = new AutoScroll(this.options);
     this.multiplayer = new Multiple(this.options);
@@ -788,7 +777,7 @@
   }
   Sortable.prototype = {
     constructor: Sortable,
-    _onDrag: function _onDrag( /** TouchEvent|MouseEvent */event) {
+    _onDrag: function _onDrag(event) {
       var _this = this;
       // Don't trigger start event when an element is been dragged
       if (dragEl || this.options.disabled || !this.options.group.pull) return;
@@ -939,28 +928,25 @@
         left: rect.left,
         width: rect.width,
         height: rect.height,
-        minWidth: rect.width,
-        minHeight: rect.height,
+        zIndex: '100000',
         opacity: '0.8',
         overflow: 'hidden',
-        'z-index': '100000',
-        'box-sizing': 'border-box',
-        'pointer-events': 'none'
+        boxSizing: 'border-box',
+        transform: 'translate3d(0px, 0px, 0px)',
+        transition: 'none',
+        pointerEvents: 'none'
       }, this.options.ghostStyle);
       for (var key in style) {
         css(ghostEl, key, style[key]);
       }
-      setTransition(ghostEl, 'none');
-      setTransform(ghostEl, 'translate3d(0px, 0px, 0px)');
       Sortable.ghost = ghostEl;
       container.appendChild(ghostEl);
       var ox = (dragEvent.clientX - rect.left) / parseInt(ghostEl.style.width) * 100;
       var oy = (dragEvent.clientY - rect.top) / parseInt(ghostEl.style.height) * 100;
-      css(ghostEl, 'transform-origin', "".concat(ox, "% ").concat(oy, "%"));
-      css(ghostEl, 'transform', 'translateZ(0)');
+      css(ghostEl, 'transform-origin', ox + '% ' + oy + '%');
       css(ghostEl, 'will-change', 'transform');
     },
-    _nearestSortable: function _nearestSortable( /** TouchEvent|MouseEvent */event) {
+    _nearestSortable: function _nearestSortable(event) {
       preventDefault(event);
       var touch = event.touches && event.touches[0],
         evt = touch || event;
@@ -979,7 +965,7 @@
         clientX: clientX,
         clientY: clientY
       };
-      setTransform(ghostEl, "translate3d(".concat(dx, "px, ").concat(dy, "px, 0)"));
+      css(ghostEl, 'transform', 'translate3d(' + dx + 'px, ' + dy + 'px, 0)');
       if (this.options.autoScroll) {
         var scrollEl = getParentAutoScrollElement(target, true);
         this.autoScroller.update(scrollEl, dragEvent, moveEvent);
@@ -1043,7 +1029,7 @@
       }
       return false;
     },
-    _onMove: function _onMove( /** TouchEvent|MouseEvent */event, target) {
+    _onMove: function _onMove(event, target) {
       if (this.options.disabled || !this._allowPut()) return;
       dropEl = closest(target, this.options.draggable, this.el);
       dispatchEvent({
@@ -1053,7 +1039,16 @@
           target: dropEl
         })
       });
-      if (!this.options.sortable) return;
+
+      // dragEl is allowed to return to the original list in `sortable: false`
+      if (!this.options.sortable && this.el === fromEl) {
+        if (from !== fromEl) {
+          dropEl = lastDropEl = dragEl;
+          lastHoverArea = 0;
+          this._onInsert(event);
+        }
+        return;
+      }
 
       // insert to last
       if (this.el !== from && (target === this.el || !lastChild(this.el))) {
@@ -1127,11 +1122,13 @@
         dispatchEvent({
           sortable: from[expando],
           name: 'onRemove',
-          params: this._getParams(event)
+          params: this._getParams(event, {
+            newIndex: -1
+          })
         });
       }
-      if (cloneBack && dropEl !== dragEl) {
-        cloneTarget = dropEl;
+      if (cloneBack && target !== dragEl) {
+        cloneTarget = target;
         dispatchEvent({
           sortable: this,
           name: 'onChange',
@@ -1145,7 +1142,9 @@
         dispatchEvent({
           sortable: this,
           name: 'onAdd',
-          params: this._getParams(event)
+          params: this._getParams(event, {
+            oldIndex: -1
+          })
         });
       }
       from[expando].animator.animate();
@@ -1170,7 +1169,7 @@
       this.animator.animate();
       from = this.el;
     },
-    _onDrop: function _onDrop( /** TouchEvent|MouseEvent */event) {
+    _onDrop: function _onDrop(event) {
       preventDefault(event);
       this._cancelStart();
       off(listenerNode, 'touchmove', this._nearestSortable);
@@ -1204,8 +1203,8 @@
       if (ghostEl && ghostEl.parentNode) {
         ghostEl.parentNode.removeChild(ghostEl);
       }
-      this.multiplayer.destroy();
       this.autoScroller.destroy();
+      this.multiplayer.destroy();
       this._nulling();
     },
     _onEnd: function _onEnd(event) {
@@ -1226,13 +1225,17 @@
         dispatchEvent({
           sortable: from[expando],
           name: 'onDrop',
-          params: pullMode === 'clone' ? _extends({}, params, cloneEvent) : params
+          params: _extends({}, params, pullMode === 'clone' ? cloneEvent : {
+            newIndex: -1
+          })
         });
       }
       dispatchEvent({
         sortable: to[expando],
         name: 'onDrop',
-        params: params
+        params: _extends({}, params, from === to ? {} : {
+          oldIndex: -1
+        })
       });
     },
     _getParams: function _getParams(event) {

@@ -1,9 +1,9 @@
 import Sortable from '../index.js';
-import { css, getRect, setTransform, setTransitionDuration } from '../utils.js';
+import { css, getRect } from '../utils.js';
 
 function Animation(options) {
   this.options = options;
-  this.animations = [];
+  this.stack = [];
 }
 
 Animation.prototype = {
@@ -20,53 +20,53 @@ Animation.prototype = {
       children = Array.prototype.slice.call(parentEl.children),
       animations = [];
 
-    for (let i = 0; i <= children.length; i++) {
-      const node = children[i];
-      if (!node || node === Sortable.ghost || css(node, 'display') === 'none') continue;
+    for (let i = 0, len = children.length; i <= len; i++) {
+      const el = children[i];
+      if (!el || el === Sortable.ghost || css(el, 'display') === 'none') continue;
 
-      const rect = getRect(node);
+      const rect = getRect(el);
       if (rect.bottom < 0 || rect.right < 0) continue;
 
       // Animate only elements within the visible area
       if (rect.top - rect.height > maxHeight || rect.left - rect.width > maxWidth) break;
 
-      animations.push({ node, rect });
+      animations.push({ el, rect });
     }
 
-    this.animations.push(animations);
+    this.stack.push(animations);
   },
 
   animate() {
-    const animations = this.animations.pop();
+    const animations = this.stack.pop();
     for (let i = 0, len = animations.length; i < len; i++) {
-      const { node, rect } = animations[i];
-      this._excute(node, rect);
+      const { el, rect } = animations[i];
+      this.options.animation && this._excute(el, rect);
     }
   },
 
-  _excute(el, { left, top }) {
-    const rect = getRect(el);
+  _excute(el, fromRect) {
+    const toRect = getRect(el);
+    if (toRect.top === fromRect.top && toRect.left === fromRect.left) return;
 
-    if (rect.top === top && rect.left === left) return;
+    const dx = fromRect.left - toRect.left;
+    const dy = fromRect.top - toRect.top;
 
-    const ot = top - rect.top;
-    const ol = left - rect.left;
-
-    setTransitionDuration(el, 0);
-    setTransform(el, `translate3d(${ol}px, ${ot}px, 0)`);
+    css(el, 'transition', '');
+    css(el, 'transform', 'translate3d(' + dx + 'px, ' + dy + 'px, 0)');
 
     // repaint
     el.offsetWidth;
 
-    setTransitionDuration(el, this.options.animation);
-    setTransform(el, 'translate3d(0px, 0px, 0px)');
+    const { animation, easing } = this.options;
+    css(el, 'transition', 'transform ' + animation + 'ms' + (easing ? ' ' + easing : ''));
+    css(el, 'transform', 'translate3d(0px, 0px, 0px)');
 
-    clearTimeout(el.animated);
+    typeof el.animated === 'number' && clearTimeout(el.animated);
     el.animated = setTimeout(() => {
-      setTransitionDuration(el, 0);
-      setTransform(el, '');
+      css(el, 'transition', '');
+      css(el, 'transform', '');
       el.animated = null;
-    }, this.options.animation);
+    }, animation);
   },
 };
 

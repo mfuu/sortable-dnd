@@ -64,18 +64,6 @@ export function isHTMLElement(el) {
   }
 }
 
-export function setTransform(el, transform) {
-  el.style[`${cssVendorPrefix}transform`] = transform;
-}
-
-export function setTransition(el, transition) {
-  el.style[`${cssVendorPrefix}transition`] = transition;
-}
-
-export function setTransitionDuration(el, duration) {
-  el.style[`${cssVendorPrefix}transition-duration`] = duration ? `${duration}ms` : '';
-}
-
 /**
  * add specified event listener
  */
@@ -209,7 +197,7 @@ export function closest(el, selector, ctx, includeCTX) {
     if (index > -1) return children[index];
 
     // When the dom cannot be found directly in children, need to look down
-    for (let i = 0; i < children.length; i++) {
+    for (let i = 0, len = children.length; i < len; i++) {
       if (containes(el, children[i])) return children[i];
     }
   }

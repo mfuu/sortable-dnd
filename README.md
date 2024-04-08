@@ -60,12 +60,14 @@ new Sortable(element, {
   multiple: false, // Enable multiple drag
   selectHandle: '', // Handle selector within list items which used to select element in `multiple: true`
 
+  easing: '', // Easing for animation
   animation: 150, // Animation speed moving items when sorting
   chosenClass: '', // Class name for the dragging item
   selectedClass: '', // The class of the element when it is selected, it is usually used when multiple drag
   ghostStyle: {}, // The style of the mask element when dragging
   ghostClass: '', // The class of the mask element when dragging
 
+  sortable: true, // Whether the current list can be sorted by dragging.
   disabled: false, // Disables the sortable if set to true
   autoScroll: true, // Automatic scrolling when moving to the edge of the container
   scrollThreshold: 55, // Threshold to trigger autoscroll
@@ -85,53 +87,53 @@ new Sortable(element, {
   },
 
   // Element is chosen
-  onChoose: (params) => {
-    // see @Params
+  onChoose: (event) => {
+    // see @SortableEvent
   },
 
   // Element is unchosen
   onUnchoose: () => {
-    // see @Params
+    // see @SortableEvent
   },
 
   // Element dragging started
-  onDrag: (params) => {
-    // see @Params
+  onDrag: (event) => {
+    // see @SortableEvent
   },
 
   // Event when you move an item in the list or between lists
-  onMove: (params) => {
-    // see @Params
+  onMove: (event) => {
+    // see @SortableEvent
   },
 
   // Element dragging is completed
-  onDrop: (params) => {
-    // see @Params
+  onDrop: (event) => {
+    // see @SortableEvent
   },
 
   // Element is dropped into the current list from another
-  onAdd: (params) => {
-    // see @Params
+  onAdd: (event) => {
+    // see @SortableEvent
   },
 
   // Element is removed from the current list into another
-  onRemove: (params) => {
-    // see @Params
+  onRemove: (event) => {
+    // see @SortableEvent
   },
 
   // Dragging element changes position in the current list
-  onChange: (params) => {
-    // see @Params
+  onChange: (event) => {
+    // see @SortableEvent
   },
 
   // Element is selected
-  onSelect: (params) => {
-    // see @Select
+  onSelect: (event) => {
+    // see @SelectEvent
   },
 
   // Element is unselected
-  onDeselect: (params) => {
-    // see @Select
+  onDeselect: (event) => {
+    // see @SelectEvent
   },
 });
 ```
@@ -151,7 +153,7 @@ group: {
 }
 ```
 
-**Params**
+**SortableEvent**
 
 ```js
 let {
@@ -172,7 +174,7 @@ let {
 } = params;
 ```
 
-**Select**
+**SelectEvent**
 
 ```js
 let {
