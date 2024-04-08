@@ -15,8 +15,6 @@ import {
   lastChild,
   IE11OrLess,
   toggleClass,
-  setTransform,
-  setTransition,
   dispatchEvent,
   preventDefault,
   detectDirection,
@@ -69,12 +67,12 @@ function _prepareGroup(options) {
 }
 
 /**
- * Detects first nearest empty sortable to X and Y position using emptyInsertThreshold.
- * @return {HTMLElement} Element of the first found nearest Sortable
+ * Detects nearest empty sortable to X and Y position using emptyInsertThreshold.
+ * @return {HTMLElement} Element of the found nearest Sortable
  */
 function _detectNearestSortable(x, y) {
-  let result;
-  sortables.some((sortable) => {
+  let nearestRect;
+  return sortables.reduce((result, sortable) => {
     const threshold = sortable[expando].options.emptyInsertThreshold;
     if (threshold == void 0) return;
 
@@ -82,11 +80,21 @@ function _detectNearestSortable(x, y) {
       insideHorizontally = x >= rect.left - threshold && x <= rect.right + threshold,
       insideVertically = y >= rect.top - threshold && y <= rect.bottom + threshold;
 
-    if (insideHorizontally && insideVertically) {
-      return (result = sortable);
+    if (
+      insideHorizontally &&
+      insideVertically &&
+      (!nearestRect ||
+        (nearestRect &&
+          rect.left >= nearestRect.left &&
+          rect.right <= nearestRect.right &&
+          rect.top >= nearestRect.top &&
+          rect.bottom <= nearestRect.bottom))
+    ) {
+      result = sortable;
+      nearestRect = rect;
     }
-  });
-  return result;
+    return result;
+  }, null);
 }
 
 function _positionChanged(evt) {
@@ -125,6 +133,7 @@ function Sortable(el, options) {
     lockAxis: '',
     direction: '',
     animation: 150,
+    easing: '',
     draggable: null,
     selectHandle: null,
     customGhost: null,
@@ -146,7 +155,7 @@ function Sortable(el, options) {
   };
 
   // Set default options
-  for (const name in defaults) {
+  for (let name in defaults) {
     !(name in this.options) && (this.options[name] = defaults[name]);
   }
 
@@ -159,12 +168,7 @@ function Sortable(el, options) {
     }
   }
 
-  const { supportTouch } = this.options;
-  if (supportTouch) {
-    on(el, 'touchstart', this._onDrag);
-  } else {
-    on(el, 'mousedown', this._onDrag);
-  }
+  on(el, this.options.supportTouch ? 'touchstart' : 'mousedown', this._onDrag);
 
   sortables.push(el);
 
@@ -176,7 +180,7 @@ function Sortable(el, options) {
 Sortable.prototype = {
   constructor: Sortable,
 
-  _onDrag: function (/** TouchEvent|MouseEvent */ event) {
+  _onDrag: function (event) {
     // Don't trigger start event when an element is been dragged
     if (dragEl || this.options.disabled || !this.options.group.pull) return;
 
@@ -348,35 +352,31 @@ Sortable.prototype = {
         left: rect.left,
         width: rect.width,
         height: rect.height,
-        minWidth: rect.width,
-        minHeight: rect.height,
+        zIndex: '100000',
         opacity: '0.8',
         overflow: 'hidden',
-        'z-index': '100000',
-        'box-sizing': 'border-box',
-        'pointer-events': 'none',
+        boxSizing: 'border-box',
+        transform: 'translate3d(0px, 0px, 0px)',
+        transition: 'none',
+        pointerEvents: 'none',
       },
       this.options.ghostStyle
     );
 
-    for (const key in style) {
+    for (let key in style) {
       css(ghostEl, key, style[key]);
     }
-
-    setTransition(ghostEl, 'none');
-    setTransform(ghostEl, 'translate3d(0px, 0px, 0px)');
 
     Sortable.ghost = ghostEl;
     container.appendChild(ghostEl);
 
     const ox = ((dragEvent.clientX - rect.left) / parseInt(ghostEl.style.width)) * 100;
     const oy = ((dragEvent.clientY - rect.top) / parseInt(ghostEl.style.height)) * 100;
-    css(ghostEl, 'transform-origin', `${ox}% ${oy}%`);
-    css(ghostEl, 'transform', 'translateZ(0)');
+    css(ghostEl, 'transform-origin', ox + '% ' + oy + '%');
     css(ghostEl, 'will-change', 'transform');
   },
 
-  _nearestSortable: function (/** TouchEvent|MouseEvent */ event) {
+  _nearestSortable: function (event) {
     preventDefault(event);
 
     let touch = event.touches && event.touches[0],
@@ -400,7 +400,7 @@ Sortable.prototype = {
       clientY: clientY,
     };
 
-    setTransform(ghostEl, `translate3d(${dx}px, ${dy}px, 0)`);
+    css(ghostEl, 'transform', 'translate3d(' + dx + 'px, ' + dy + 'px, 0)');
 
     if (this.options.autoScroll) {
       const scrollEl = getParentAutoScrollElement(target, true);
@@ -477,7 +477,7 @@ Sortable.prototype = {
     return false;
   },
 
-  _onMove: function (/** TouchEvent|MouseEvent */ event, target) {
+  _onMove: function (event, target) {
     if (this.options.disabled || !this._allowPut()) return;
 
     dropEl = closest(target, this.options.draggable, this.el);
@@ -490,7 +490,15 @@ Sortable.prototype = {
       }),
     });
 
-    if (!this.options.sortable) return;
+    // dragEl is allowed to return to the original list in `sortable: false`
+    if (!this.options.sortable && this.el === fromEl) {
+      if (from !== fromEl) {
+        dropEl = lastDropEl = dragEl;
+        lastHoverArea = 0;
+        this._onInsert(event);
+      }
+      return;
+    }
 
     // insert to last
     if (this.el !== from && (target === this.el || !lastChild(this.el))) {
@@ -575,12 +583,12 @@ Sortable.prototype = {
       dispatchEvent({
         sortable: from[expando],
         name: 'onRemove',
-        params: this._getParams(event),
+        params: this._getParams(event, { newIndex: -1 }),
       });
     }
 
-    if (cloneBack && dropEl !== dragEl) {
-      cloneTarget = dropEl;
+    if (cloneBack && target !== dragEl) {
+      cloneTarget = target;
       dispatchEvent({
         sortable: this,
         name: 'onChange',
@@ -595,7 +603,7 @@ Sortable.prototype = {
       dispatchEvent({
         sortable: this,
         name: 'onAdd',
-        params: this._getParams(event),
+        params: this._getParams(event, { oldIndex: -1 }),
       });
     }
 
@@ -630,7 +638,7 @@ Sortable.prototype = {
     from = this.el;
   },
 
-  _onDrop: function (/** TouchEvent|MouseEvent */ event) {
+  _onDrop: function (event) {
     preventDefault(event);
     this._cancelStart();
 
@@ -663,7 +671,7 @@ Sortable.prototype = {
 
     const { multiple, selectHandle } = this.options;
     if (multiple && ((selectHandle && useSelectHandle) || (!selectHandle && !fromEl))) {
-      let evt = event.changedTouches ? event.changedTouches[0] : event;
+      const evt = event.changedTouches ? event.changedTouches[0] : event;
       // check whether the event is a click event
       !_positionChanged(evt) && this.multiplayer.onSelect(event, dragEl, this);
     }
@@ -672,9 +680,8 @@ Sortable.prototype = {
       ghostEl.parentNode.removeChild(ghostEl);
     }
 
-    this.multiplayer.destroy();
     this.autoScroller.destroy();
-
+    this.multiplayer.destroy();
     this._nulling();
   },
 
@@ -704,13 +711,13 @@ Sortable.prototype = {
       dispatchEvent({
         sortable: from[expando],
         name: 'onDrop',
-        params: pullMode === 'clone' ? Object.assign({}, params, cloneEvent) : params,
+        params: Object.assign({}, params, pullMode === 'clone' ? cloneEvent : { newIndex: -1 }),
       });
     }
     dispatchEvent({
       sortable: to[expando],
       name: 'onDrop',
-      params: params,
+      params: Object.assign({}, params, from === to ? {} : { oldIndex: -1 }),
     });
   },
 
