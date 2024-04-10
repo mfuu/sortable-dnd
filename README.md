@@ -92,7 +92,7 @@ new Sortable(element, {
   },
 
   // Element is unchosen
-  onUnchoose: () => {
+  onUnchoose: (event) => {
     // see @SortableEvent
   },
 
