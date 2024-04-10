@@ -543,7 +543,7 @@ Sortable.prototype = {
       css(dragEl, 'display', '');
       fromEl[expando].multiplayer.toggleVisible(true);
       if (!fromEl[expando].options.group.revertDrag) {
-        from.insertBefore(dragEl, cloneEl);
+        cloneEl.parentNode.insertBefore(dragEl, cloneEl);
       }
     }
 

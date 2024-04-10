@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.10
+ * sortable-dnd v0.6.11
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -1087,7 +1087,7 @@
         css(dragEl, 'display', '');
         fromEl[expando].multiplayer.toggleVisible(true);
         if (!fromEl[expando].options.group.revertDrag) {
-          from.insertBefore(dragEl, cloneEl);
+          cloneEl.parentNode.insertBefore(dragEl, cloneEl);
         }
       }
 
