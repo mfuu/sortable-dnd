@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.9
+ * sortable-dnd v0.6.10
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -1056,7 +1056,7 @@
         this._onInsert(event);
         return;
       }
-      if (!dropEl || dropEl.animated || !this._allowSwap()) return;
+      if (!dropEl || dropEl.animated || containes(dropEl, cloneEl) || !this._allowSwap()) return;
       if (dropEl === cloneEl || nextEl === cloneEl) {
         lastDropEl = dropEl;
         return;

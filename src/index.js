@@ -507,7 +507,7 @@ Sortable.prototype = {
       return;
     }
 
-    if (!dropEl || dropEl.animated || !this._allowSwap()) return;
+    if (!dropEl || dropEl.animated || containes(dropEl, cloneEl) || !this._allowSwap()) return;
     if (dropEl === cloneEl || nextEl === cloneEl) {
       lastDropEl = dropEl;
       return;
