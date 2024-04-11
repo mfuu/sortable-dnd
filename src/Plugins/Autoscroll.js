@@ -50,31 +50,35 @@ AutoScroll.prototype = {
     const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
 
     // check direction
-    const toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
-    const toLeft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
-    const toRight =
-      scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
-    const toBottom =
-      scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold;
-
-    let scrollx = 0,
-      scrolly = 0;
+    let toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold,
+      toLeft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold,
+      toRight =
+        scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold,
+      toBottom =
+        scrollTop + height < scrollHeight &&
+        clientY <= bottom &&
+        clientY >= bottom - scrollThreshold;
 
     if (toLeft) {
-      scrollx = Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * scrollSpeed.x);
+      scrollEl.scrollLeft += Math.floor(
+        Math.max(-1, (clientX - left) / scrollThreshold - 1) * scrollSpeed.x
+      );
     }
     if (toRight) {
-      scrollx = Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * scrollSpeed.x);
+      scrollEl.scrollLeft += Math.ceil(
+        Math.min(1, (clientX - right) / scrollThreshold + 1) * scrollSpeed.x
+      );
     }
     if (toTop) {
-      scrolly = Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * scrollSpeed.y);
+      scrollEl.scrollTop += Math.floor(
+        Math.max(-1, (clientY - top) / scrollThreshold - 1) * scrollSpeed.y
+      );
     }
     if (toBottom) {
-      scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * scrollSpeed.y);
+      scrollEl.scrollTop += Math.ceil(
+        Math.min(1, (clientY - bottom) / scrollThreshold + 1) * scrollSpeed.y
+      );
     }
-
-    scrollEl.scrollTop += scrolly;
-    scrollEl.scrollLeft += scrollx;
   },
 };
 

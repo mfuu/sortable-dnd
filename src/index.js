@@ -151,7 +151,7 @@ function Sortable(el, options) {
     swapOnDrop: true,
     fallbackOnBody: false,
     supportTouch: 'ontouchstart' in window,
-    emptyInsertThreshold: -5,
+    emptyInsertThreshold: -1,
   };
 
   // Set default options
@@ -402,13 +402,15 @@ Sortable.prototype = {
 
     css(ghostEl, 'transform', 'translate3d(' + dx + 'px, ' + dy + 'px, 0)');
 
-    if (this.options.autoScroll) {
-      const scrollEl = getParentAutoScrollElement(target, true);
-      this.autoScroller.update(scrollEl, dragEvent, moveEvent);
-    }
-
     const nearest = _detectNearestSortable(clientX, clientY);
     nearest && nearest[expando]._onMove(event, target);
+
+    if (!nearest || nearest[expando].options.autoScroll) {
+      const scrollEl = getParentAutoScrollElement(target, true);
+      this.autoScroller.update(scrollEl, dragEvent, moveEvent);
+    } else {
+      this.autoScroller.destroy();
+    }
   },
 
   _allowPut: function () {

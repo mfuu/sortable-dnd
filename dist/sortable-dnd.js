@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.11
+ * sortable-dnd v0.6.12
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -425,26 +425,22 @@
         scrollWidth = scrollEl.scrollWidth;
 
       // check direction
-      var toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold;
-      var toLeft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold;
-      var toRight = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold;
-      var toBottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold;
-      var scrollx = 0,
-        scrolly = 0;
+      var toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold,
+        toLeft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold,
+        toRight = scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold,
+        toBottom = scrollTop + height < scrollHeight && clientY <= bottom && clientY >= bottom - scrollThreshold;
       if (toLeft) {
-        scrollx = Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * scrollSpeed.x);
+        scrollEl.scrollLeft += Math.floor(Math.max(-1, (clientX - left) / scrollThreshold - 1) * scrollSpeed.x);
       }
       if (toRight) {
-        scrollx = Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * scrollSpeed.x);
+        scrollEl.scrollLeft += Math.ceil(Math.min(1, (clientX - right) / scrollThreshold + 1) * scrollSpeed.x);
       }
       if (toTop) {
-        scrolly = Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * scrollSpeed.y);
+        scrollEl.scrollTop += Math.floor(Math.max(-1, (clientY - top) / scrollThreshold - 1) * scrollSpeed.y);
       }
       if (toBottom) {
-        scrolly = Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * scrollSpeed.y);
+        scrollEl.scrollTop += Math.ceil(Math.min(1, (clientY - bottom) / scrollThreshold + 1) * scrollSpeed.y);
       }
-      scrollEl.scrollTop += scrolly;
-      scrollEl.scrollLeft += scrollx;
     }
   };
 
@@ -754,7 +750,7 @@
       swapOnDrop: true,
       fallbackOnBody: false,
       supportTouch: 'ontouchstart' in window,
-      emptyInsertThreshold: -5
+      emptyInsertThreshold: -1
     };
 
     // Set default options
@@ -966,12 +962,14 @@
         clientY: clientY
       };
       css(ghostEl, 'transform', 'translate3d(' + dx + 'px, ' + dy + 'px, 0)');
-      if (this.options.autoScroll) {
-        var scrollEl = getParentAutoScrollElement(target, true);
-        this.autoScroller.update(scrollEl, dragEvent, moveEvent);
-      }
       var nearest = _detectNearestSortable(clientX, clientY);
       nearest && nearest[expando]._onMove(event, target);
+      if (!nearest || nearest[expando].options.autoScroll) {
+        var scrollEl = getParentAutoScrollElement(target, true);
+        this.autoScroller.update(scrollEl, dragEvent, moveEvent);
+      } else {
+        this.autoScroller.destroy();
+      }
     },
     _allowPut: function _allowPut() {
       if (fromEl === this.el) {

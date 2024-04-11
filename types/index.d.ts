@@ -119,13 +119,14 @@ export interface SortableEvent {
   /**
    * Position of the drag element relative to the drop element(target) after swap is complete.
    * @example
-   * 0: <div>dragEl, dropEl</div> // The position of dropEl is the same as dragEl.
+   * 0: // The position of dropEl is the same as dragEl.
+   * <div>dragEl, dropEl</div>
    *
-   * 1: <div>dropEl</div> // dragEl comes after dropEl.
-   *    <div>dragEl</div>
+   * 1: // dragEl comes after dropEl.
+   * <div>dropEl</div> <div>dragEl</div>
    *
-   * -1: <div>dragEl</div> // dragEl comes before dropEl.
-   *     <div>dropEl</div>
+   * -1: // dragEl comes before dropEl.
+   * <div>dragEl</div> <div>dropEl</div>
    */
   relative: 0 | 1 | -1;
 
@@ -181,8 +182,20 @@ export interface SortableOptions {
   /**
    * Set value to allow drag between different lists.
    * @example
-   * - string: '...'
-   * - object: { name: '...', put: true | false, pull: true | false | 'clone', revertDrag: true | false }
+   * - string: 'name'
+   * - object: {
+   *    name: 'name', // group name
+   * 
+   *    // whether elements can be added from other lists,
+   *    // or an array of group names from which elements can be taken.
+   *    put: true | false | ['group1', 'group2'],
+   * 
+   *    // whether elements can be moved out of this list.
+   *    pull: true | false | 'clone',
+   * 
+   *    // revert drag element to initial position after moving to a another list.
+   *    revertDrag: true | false,
+   * }
    * @defaults `''`
    */
   group?: string | Group;
@@ -300,7 +313,7 @@ export interface SortableOptions {
 
   /**
    * Distance mouse must be from empty sortable to insert drag element into it.
-   * @defaults `-5`
+   * @defaults `-1`
    */
   emptyInsertThreshold?: number;
 
@@ -311,13 +324,13 @@ export interface SortableOptions {
   fallbackOnBody?: boolean;
 
   /**
-   * When the value is false, the dragged element will return to the starting position of the drag.
+   * When the value is false, the dragEl will not move to the drop position.
    * @defaults `true`
    */
   swapOnDrop?: boolean | ((event: SortableEvent) => boolean);
 
   /**
-   * This class will be added to the item while dragging.
+   * Class name for the chosen item.
    * @defaults `''`
    */
   chosenClass?: string;
@@ -356,7 +369,7 @@ export interface SortableOptions {
   onDrag?: (event: SortableEvent) => void;
 
   /**
-   * Event when you move an item in the list or between lists.
+   * Move an item in the list or between lists.
    */
   onMove?: (event: SortableEvent) => void;
 

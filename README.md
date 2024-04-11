@@ -62,7 +62,7 @@ new Sortable(element, {
 
   easing: '', // Easing for animation
   animation: 150, // Animation speed moving items when sorting
-  chosenClass: '', // Class name for the dragging item
+  chosenClass: '', // Class name for the chosen item
   selectedClass: '', // The class of the element when it is selected, it is usually used when multiple drag
   ghostStyle: {}, // The style of the mask element when dragging
   ghostClass: '', // The class of the mask element when dragging
@@ -75,7 +75,7 @@ new Sortable(element, {
   delay: 0, // Time in milliseconds to define when the sorting should start
   delayOnTouchOnly: false, // Only delay if user is using touch
   touchStartThreshold: 1, // How many *pixels* the point should move before cancelling a delayed drag event.
-  emptyInsertThreshold: -5, // Distance mouse must be from empty sortable to insert drag element into it.
+  emptyInsertThreshold: -1, // Distance mouse must be from empty sortable to insert drag element into it.
   fallbackOnBody: false, // Appends the ghost element into the document's body
   store: null, // store data
   direction: '', // Direction of Sortable, will be detected automatically if not given.
@@ -101,7 +101,7 @@ new Sortable(element, {
     // see @SortableEvent
   },
 
-  // Event when you move an item in the list or between lists
+  // Move an item in the list or between lists
   onMove: (event) => {
     // see @SortableEvent
   },
@@ -147,42 +147,45 @@ group: 'name',
 // object
 group: {
   name: 'group', // group name
-  put: true | false | ['group1', 'group2'], // whether elements can be added from other lists, or an array of group names from which elements can be taken.
-  pull: true | false | 'clone', // whether elements can be moved out of this list.
-  revertDrag: true | false, // revert drag element to initial position after moving to a another list.
+
+  // whether elements can be added from other lists,
+  // or an array of group names from which elements can be taken.
+  put: true | false | ['group1', 'group2'],
+
+  // whether elements can be moved out of this list.
+  pull: true | false | 'clone',
+
+  // revert drag element to initial position after moving to a another list.
+  revertDrag: true | false,
 }
 ```
 
 **SortableEvent**
 
 ```js
-let {
-  from, // previous list
-  to, // list, in which moved element.
-  node, // dragged element
-  nodes, // dragged elements
-  clone, // cloned element, all dnd operations are based on cloned element and do not alter the source dom(node).
-  clones, // cloned elements, there is a value only in the `pull: clone` after moving to a another list.
-  target, // drop element
-  oldIndex, // old index within parent
-  newIndex, // new index within parent
-  event, // TouchEvent | MouseEvent
-  pullMode, // Pull mode if dragging into another sortable.
-  relative, // Position of the drop element relative to the drag element after swap is complete.
-  revertDrag, // revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
-  backToOrigin, // dragged element go back to the original list in `pull: 'clone'`.
-} = params;
+event.from; // previous list
+event.to; // list, in which moved element.
+event.node; // dragged element
+event.nodes; // dragged elements
+event.clone; // cloned element, all dnd operations are based on cloned element and do not alter the source dom(node).
+event.clones; // cloned elements, there is a value only in the `pull: clone` after moving to a another list.
+event.target; // drop element
+event.oldIndex; // old index within parent. `-1`: element added from another list to the current list
+event.newIndex; // new index within parent. `-1`: element has been removed from the current list
+event.event; // TouchEvent | MouseEvent
+event.pullMode; // Pull mode if dragging into another sortable.
+event.relative; // Position of the drop element relative to the drag element after swap is complete.
+event.revertDrag; // revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
+event.backToOrigin; // dragged element go back to the original list in `pull: 'clone'`.
 ```
 
 **SelectEvent**
 
 ```js
-let {
-  event, // TouchEvent | MouseEvent
-  index, // index within parent
-  node, // dragged element
-  from, // list container
-} = select;
+event.event; // TouchEvent | MouseEvent
+event.index; // index within parent
+event.node; // dragged element
+event.from;  // list container
 ```
 
 ## Methods
