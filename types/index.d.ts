@@ -456,7 +456,7 @@ export interface Utils {
    * @param context a specific element's context.
    * @param includeContext whether to add `context` to comparison
    */
-  closest(element: HTMLElement, selector: string, context: HTMLElement, includeContext?: boolean): HTMLElement | null;
+  closest(element: HTMLElement, selector: string, context?: HTMLElement, includeContext?: boolean): HTMLElement | null;
 
   /**
    * Returns the "bounding client rect" of given element
