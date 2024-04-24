@@ -180,6 +180,47 @@ function Sortable(el, options) {
 Sortable.prototype = {
   constructor: Sortable,
 
+  destroy() {
+    this._cancelStart();
+    this._nulling();
+
+    off(this.el, 'touchstart', this._onDrag);
+    off(this.el, 'mousedown', this._onDrag);
+
+    let index = sortables.indexOf(this.el);
+    index > -1 && sortables.splice(index, 1);
+
+    this.el[expando] = this.animator = this.multiplayer = this.autoScroller = null;
+  },
+
+  option(key, value) {
+    if (value === void 0) {
+      return this.options[key];
+    }
+
+    // set option
+    this.options[key] = value;
+    this.animator.options[key] = value;
+    this.multiplayer.options[key] = value;
+    this.autoScroller.options[key] = value;
+
+    if (key === 'group') {
+      _prepareGroup(this.options);
+    }
+  },
+
+  select(element) {
+    this.multiplayer.select(element);
+  },
+
+  deselect(element) {
+    this.multiplayer.deselect(element);
+  },
+
+  getSelectedElements() {
+    return this.multiplayer.selectedElements;
+  },
+
   _onDrag: function (event) {
     // Don't trigger start event when an element is been dragged
     if (dragEl || this.options.disabled || !this.options.group.pull) return;
@@ -526,12 +567,13 @@ Sortable.prototype = {
   _onInsert: function (event) {
     let target = dropEl || cloneEl,
       cloneTo = pullMode === 'clone' && this.el !== fromEl && from === fromEl,
-      cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl;
+      cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl,
+      dropExist = dropEl && containes(dropEl, document);
 
     to = this.el;
     oldIndex = index(cloneEl);
     targetEl = target;
-    parentEl = dropEl ? dropEl.parentNode : this.el;
+    parentEl = dropExist ? dropEl.parentNode : this.el;
 
     from[expando].animator.collect(cloneEl.parentNode);
     this.animator.collect(parentEl);
@@ -556,13 +598,15 @@ Sortable.prototype = {
       this.multiplayer.toggleVisible(false);
     }
 
-    if (dropEl) {
+    css(cloneEl, 'display', dropEl === dragEl && !dropExist ? 'none' : '');
+
+    if (dropEl && dropExist) {
       parentEl.insertBefore(cloneEl, lastHoverArea < 0 ? dropEl : dropEl.nextSibling);
     } else {
       parentEl.appendChild(cloneEl);
     }
 
-    newIndex = index(cloneEl);
+    newIndex = dropEl === dragEl && !dropExist ? fromIndex : index(cloneEl);
 
     if (cloneTo && fromEl[expando].options.group.revertDrag) {
       cloneEvent.target = dragEl;
@@ -774,46 +818,6 @@ Sortable.prototype = {
       Sortable.active =
       Sortable.dragged =
         null;
-  },
-
-  // ========================================= Public Methods =========================================
-  destroy() {
-    this._cancelStart();
-    this._nulling();
-
-    off(this.el, 'touchstart', this._onDrag);
-    off(this.el, 'mousedown', this._onDrag);
-
-    sortables.splice(sortables.indexOf(this.el), 1);
-    this.el[expando] = this.animator = this.multiplayer = this.autoScroller = null;
-  },
-
-  option(key, value) {
-    if (value === void 0) {
-      return this.options[key];
-    }
-
-    // set option
-    this.options[key] = value;
-    this.animator.options[key] = value;
-    this.multiplayer.options[key] = value;
-    this.autoScroller.options[key] = value;
-
-    if (key === 'group') {
-      _prepareGroup(this.options);
-    }
-  },
-
-  select(element) {
-    this.multiplayer.select(element);
-  },
-
-  deselect(element) {
-    this.multiplayer.deselect(element);
-  },
-
-  getSelectedElements() {
-    return this.multiplayer.selectedElements;
   },
 };
 

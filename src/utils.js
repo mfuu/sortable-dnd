@@ -24,7 +24,6 @@ export const ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
  * detect passive event support
  */
 export const supportPassive = (function () {
-  // https://github.com/Modernizr/Modernizr/issues/1894
   let supportPassive = false;
   document.addEventListener('checkIfSupportPassive', null, {
     get passive() {
@@ -97,7 +96,9 @@ export function off(el, event, fn) {
  */
 export function getParentAutoScrollElement(el, includeSelf) {
   // skip to window
-  if (!el || !el.getBoundingClientRect) return getWindowScrollingElement();
+  if (!el || !el.getBoundingClientRect) {
+    return getWindowScrollingElement();
+  }
 
   let elem = el;
   let gotSelf = false;
@@ -187,18 +188,15 @@ export function getRect(el, relativeToContainingBlock, container) {
 }
 
 export function closest(el, selector, ctx, includeCTX) {
-  if (!el) return null;
+  if (!el) return;
 
   if (ctx && !selector) {
-    let children = Array.prototype.slice.call(ctx.children),
-      index = children.indexOf(el);
+    let children = Array.prototype.slice.call(ctx.children);
 
-    // If it can be found directly in the child element, return
-    if (index > -1) return children[index];
-
-    // When the dom cannot be found directly in children, need to look down
     for (let i = 0, len = children.length; i < len; i++) {
-      if (containes(el, children[i])) return children[i];
+      if (children[i] === el || containes(el, children[i])) {
+        return children[i];
+      }
     }
   }
 
@@ -303,7 +301,6 @@ export function getChild(el, childNum, selector, includeDragEl) {
   return null;
 }
 
-// https://github.com/SortableJS/Sortable/blob/c5a882267542456d75b16d000dc1b603a907613a/src/Sortable.js#L161
 export function detectDirection(el, selector) {
   let elCSS = css(el),
     elWidth =
@@ -415,7 +412,6 @@ export function css(el, prop, val) {
 
 /**
  * Reports the position of its argument node relative to the node on which it is called.
- * https://developer.mozilla.org/en-US/docs/Web/API/Node/compareDocumentPosition
  */
 export function comparePosition(a, b) {
   return a.compareDocumentPosition

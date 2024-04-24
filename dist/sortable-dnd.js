@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.12
+ * sortable-dnd v0.6.14
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -52,7 +52,6 @@
    * detect passive event support
    */
   var supportPassive = function () {
-    // https://github.com/Modernizr/Modernizr/issues/1894
     var supportPassive = false;
     document.addEventListener('checkIfSupportPassive', null, {
       get passive() {
@@ -108,7 +107,9 @@
    */
   function getParentAutoScrollElement(el, includeSelf) {
     // skip to window
-    if (!el || !el.getBoundingClientRect) return getWindowScrollingElement();
+    if (!el || !el.getBoundingClientRect) {
+      return getWindowScrollingElement();
+    }
     var elem = el;
     var gotSelf = false;
     do {
@@ -182,17 +183,13 @@
     };
   }
   function closest(el, selector, ctx, includeCTX) {
-    if (!el) return null;
+    if (!el) return;
     if (ctx && !selector) {
-      var children = Array.prototype.slice.call(ctx.children),
-        _index = children.indexOf(el);
-
-      // If it can be found directly in the child element, return
-      if (_index > -1) return children[_index];
-
-      // When the dom cannot be found directly in children, need to look down
+      var children = Array.prototype.slice.call(ctx.children);
       for (var i = 0, len = children.length; i < len; i++) {
-        if (containes(el, children[i])) return children[i];
+        if (children[i] === el || containes(el, children[i])) {
+          return children[i];
+        }
       }
     }
     ctx = ctx || document;
@@ -267,8 +264,6 @@
     }
     return null;
   }
-
-  // https://github.com/SortableJS/Sortable/blob/c5a882267542456d75b16d000dc1b603a907613a/src/Sortable.js#L161
   function detectDirection(el, selector) {
     var elCSS = css(el),
       elWidth = parseInt(elCSS.width) - parseInt(elCSS.paddingLeft) - parseInt(elCSS.paddingRight) - parseInt(elCSS.borderLeftWidth) - parseInt(elCSS.borderRightWidth),
@@ -348,7 +343,6 @@
 
   /**
    * Reports the position of its argument node relative to the node on which it is called.
-   * https://developer.mozilla.org/en-US/docs/Web/API/Node/compareDocumentPosition
    */
   function comparePosition(a, b) {
     return a.compareDocumentPosition ? a.compareDocumentPosition(b) : a.contains ? (a != b && a.contains(b) && 16) + (a != b && b.contains(a) && 8) + (a.sourceIndex >= 0 && b.sourceIndex >= 0 ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2) : 1) : 0;
@@ -773,6 +767,38 @@
   }
   Sortable.prototype = {
     constructor: Sortable,
+    destroy: function destroy() {
+      this._cancelStart();
+      this._nulling();
+      off(this.el, 'touchstart', this._onDrag);
+      off(this.el, 'mousedown', this._onDrag);
+      var index = sortables.indexOf(this.el);
+      index > -1 && sortables.splice(index, 1);
+      this.el[expando] = this.animator = this.multiplayer = this.autoScroller = null;
+    },
+    option: function option(key, value) {
+      if (value === void 0) {
+        return this.options[key];
+      }
+
+      // set option
+      this.options[key] = value;
+      this.animator.options[key] = value;
+      this.multiplayer.options[key] = value;
+      this.autoScroller.options[key] = value;
+      if (key === 'group') {
+        _prepareGroup(this.options);
+      }
+    },
+    select: function select(element) {
+      this.multiplayer.select(element);
+    },
+    deselect: function deselect(element) {
+      this.multiplayer.deselect(element);
+    },
+    getSelectedElements: function getSelectedElements() {
+      return this.multiplayer.selectedElements;
+    },
     _onDrag: function _onDrag(event) {
       var _this = this;
       // Don't trigger start event when an element is been dragged
@@ -1069,11 +1095,12 @@
     _onInsert: function _onInsert(event) {
       var target = dropEl || cloneEl,
         cloneTo = pullMode === 'clone' && this.el !== fromEl && from === fromEl,
-        cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl;
+        cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl,
+        dropExist = dropEl && containes(dropEl, document);
       to = this.el;
       oldIndex = index(cloneEl);
       targetEl = target;
-      parentEl = dropEl ? dropEl.parentNode : this.el;
+      parentEl = dropExist ? dropEl.parentNode : this.el;
       from[expando].animator.collect(cloneEl.parentNode);
       this.animator.collect(parentEl);
 
@@ -1095,12 +1122,13 @@
         css(dragEl, 'display', 'none');
         this.multiplayer.toggleVisible(false);
       }
-      if (dropEl) {
+      css(cloneEl, 'display', dropEl === dragEl && !dropExist ? 'none' : '');
+      if (dropEl && dropExist) {
         parentEl.insertBefore(cloneEl, lastHoverArea < 0 ? dropEl : dropEl.nextSibling);
       } else {
         parentEl.appendChild(cloneEl);
       }
-      newIndex = index(cloneEl);
+      newIndex = dropEl === dragEl && !dropExist ? fromIndex : index(cloneEl);
       if (cloneTo && fromEl[expando].options.group.revertDrag) {
         cloneEvent.target = dragEl;
         cloneEvent.newIndex = fromIndex;
@@ -1255,38 +1283,6 @@
     },
     _nulling: function _nulling() {
       to = from = fromEl = dragEl = dropEl = nextEl = cloneEl = ghostEl = targetEl = parentEl = pullMode = oldIndex = newIndex = fromIndex = dragEvent = moveEvent = lastDropEl = cloneEvent = cloneTarget = listenerNode = lastHoverArea = dragStartTimer = useSelectHandle = Sortable.clone = Sortable.ghost = Sortable.active = Sortable.dragged = null;
-    },
-    // ========================================= Public Methods =========================================
-    destroy: function destroy() {
-      this._cancelStart();
-      this._nulling();
-      off(this.el, 'touchstart', this._onDrag);
-      off(this.el, 'mousedown', this._onDrag);
-      sortables.splice(sortables.indexOf(this.el), 1);
-      this.el[expando] = this.animator = this.multiplayer = this.autoScroller = null;
-    },
-    option: function option(key, value) {
-      if (value === void 0) {
-        return this.options[key];
-      }
-
-      // set option
-      this.options[key] = value;
-      this.animator.options[key] = value;
-      this.multiplayer.options[key] = value;
-      this.autoScroller.options[key] = value;
-      if (key === 'group') {
-        _prepareGroup(this.options);
-      }
-    },
-    select: function select(element) {
-      this.multiplayer.select(element);
-    },
-    deselect: function deselect(element) {
-      this.multiplayer.deselect(element);
-    },
-    getSelectedElements: function getSelectedElements() {
-      return this.multiplayer.selectedElements;
     }
   };
   Sortable.utils = {
