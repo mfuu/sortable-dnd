@@ -568,7 +568,7 @@ Sortable.prototype = {
     let target = dropEl || cloneEl,
       cloneTo = pullMode === 'clone' && this.el !== fromEl && from === fromEl,
       cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl,
-      dropExist = dropEl && containes(dropEl, document);
+      dropExist = containes(dropEl, document);
 
     to = this.el;
     oldIndex = index(cloneEl);
