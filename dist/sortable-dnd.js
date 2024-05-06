@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.14
+ * sortable-dnd v0.6.15
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -1096,7 +1096,8 @@
       var target = dropEl || cloneEl,
         cloneTo = pullMode === 'clone' && this.el !== fromEl && from === fromEl,
         cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl,
-        dropExist = containes(dropEl, document);
+        dropExist = containes(dropEl, document),
+        dragRemoved = dropEl === dragEl && !dropExist;
       to = this.el;
       oldIndex = index(cloneEl);
       targetEl = target;
@@ -1122,13 +1123,13 @@
         css(dragEl, 'display', 'none');
         this.multiplayer.toggleVisible(false);
       }
-      css(cloneEl, 'display', dropEl === dragEl && !dropExist ? 'none' : '');
+      css(cloneEl, 'display', dragRemoved ? 'none' : '');
       if (dropEl && dropExist) {
         parentEl.insertBefore(cloneEl, lastHoverArea < 0 ? dropEl : dropEl.nextSibling);
       } else {
         parentEl.appendChild(cloneEl);
       }
-      newIndex = dropEl === dragEl && !dropExist ? fromIndex : index(cloneEl);
+      newIndex = dragRemoved ? fromIndex : index(cloneEl);
       if (cloneTo && fromEl[expando].options.group.revertDrag) {
         cloneEvent.target = dragEl;
         cloneEvent.newIndex = fromIndex;
@@ -1196,7 +1197,6 @@
       from = this.el;
     },
     _onDrop: function _onDrop(event) {
-      preventDefault(event);
       this._cancelStart();
       off(listenerNode, 'touchmove', this._nearestSortable);
       off(listenerNode, 'mousemove', this._nearestSortable);

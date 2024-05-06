@@ -11,7 +11,7 @@ A JS Library for Drag and Drop, supports Sortable and Draggable
 **Install**
 
 ```node
-npm install sortable-dnd --save
+npm install sortable-dnd
 ```
 
 **HTML**
@@ -19,15 +19,15 @@ npm install sortable-dnd --save
 ```html
 <ul id="group">
   <li class="item">
-    <i id="handle" class="handle">drag me</i>
+    <i id="handle" class="handle">handle</i>
     <p>1</p>
   </li>
   <li class="item">
-    <i id="handle" class="handle">drag me</i>
+    <i id="handle" class="handle">handle</i>
     <p>2</p>
   </li>
   <li class="item">
-    <i id="handle" class="handle">drag me</i>
+    <i id="handle" class="handle">handle</i>
     <p>3</p>
   </li>
 </ul>

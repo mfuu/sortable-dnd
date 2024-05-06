@@ -568,7 +568,8 @@ Sortable.prototype = {
     let target = dropEl || cloneEl,
       cloneTo = pullMode === 'clone' && this.el !== fromEl && from === fromEl,
       cloneBack = pullMode === 'clone' && this.el === fromEl && from !== fromEl,
-      dropExist = containes(dropEl, document);
+      dropExist = containes(dropEl, document),
+      dragRemoved = dropEl === dragEl && !dropExist;
 
     to = this.el;
     oldIndex = index(cloneEl);
@@ -598,7 +599,7 @@ Sortable.prototype = {
       this.multiplayer.toggleVisible(false);
     }
 
-    css(cloneEl, 'display', dropEl === dragEl && !dropExist ? 'none' : '');
+    css(cloneEl, 'display', dragRemoved ? 'none' : '');
 
     if (dropEl && dropExist) {
       parentEl.insertBefore(cloneEl, lastHoverArea < 0 ? dropEl : dropEl.nextSibling);
@@ -606,7 +607,7 @@ Sortable.prototype = {
       parentEl.appendChild(cloneEl);
     }
 
-    newIndex = dropEl === dragEl && !dropExist ? fromIndex : index(cloneEl);
+    newIndex = dragRemoved ? fromIndex : index(cloneEl);
 
     if (cloneTo && fromEl[expando].options.group.revertDrag) {
       cloneEvent.target = dragEl;
@@ -685,7 +686,6 @@ Sortable.prototype = {
   },
 
   _onDrop: function (event) {
-    preventDefault(event);
     this._cancelStart();
 
     off(listenerNode, 'touchmove', this._nearestSortable);
