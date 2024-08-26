@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.15
+ * sortable-dnd v0.6.16
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -816,7 +816,7 @@
       // No dragging is allowed when there is no dragging element
       if (!element || element.animated) return;
       dragEvent = {
-        origin: event,
+        event: event,
         clientX: (touch || event).clientX,
         clientY: (touch || event).clientY
       };
@@ -874,6 +874,7 @@
       Safari && css(document.body, 'user-select', '');
     },
     _onStart: function _onStart(touch, event) {
+      preventDefault(event);
       var i = index(dragEl);
       to = this.el;
       from = this.el;
@@ -923,7 +924,7 @@
       dispatchEvent({
         sortable: this,
         name: 'onDrag',
-        params: this._getParams(dragEvent.origin)
+        params: this._getParams(dragEvent.event)
       });
       css(dragEl, 'display', 'none');
       toggleClass(dragEl, this.options.chosenClass, false);
@@ -983,7 +984,7 @@
         dx = clientX - dragEvent.clientX,
         dy = clientY - dragEvent.clientY;
       moveEvent = {
-        origin: event,
+        event: event,
         clientX: clientX,
         clientY: clientY
       };
@@ -1014,7 +1015,7 @@
       var _this$options3 = this.options,
         draggable = _this$options3.draggable,
         direction = _this$options3.direction;
-      return direction ? typeof direction === 'function' ? direction.call(moveEvent.origin, dragEl, this) : direction : detectDirection(parentEl, draggable);
+      return direction ? typeof direction === 'function' ? direction.call(moveEvent.event, dragEl, this) : direction : detectDirection(parentEl, draggable);
     },
     _allowSwap: function _allowSwap() {
       var rect = getRect(dropEl),

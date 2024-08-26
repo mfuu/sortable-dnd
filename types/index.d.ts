@@ -303,7 +303,7 @@ export interface SortableOptions {
    * Only delay if user is using touch.
    * @defaults `false`
    */
-  dealyOnTouchOnly?: boolean;
+  delayOnTouchOnly?: boolean;
 
   /**
    * How many *pixels* the point should move before cancelling a delayed drag event.
