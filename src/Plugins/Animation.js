@@ -37,10 +37,12 @@ Animation.prototype = {
   },
 
   animate() {
+    if (!this.options.animation) return;
+
     const animations = this.stack.pop();
     for (let i = 0, len = animations.length; i < len; i++) {
       const { el, rect } = animations[i];
-      this.options.animation && this._excute(el, rect);
+      this._excute(el, rect);
     }
   },
 
@@ -52,13 +54,13 @@ Animation.prototype = {
     const dy = fromRect.top - toRect.top;
 
     css(el, 'transition', '');
-    css(el, 'transform', 'translate3d(' + dx + 'px, ' + dy + 'px, 0)');
+    css(el, 'transform', `translate3d(${dx}px, ${dy}px, 0)`);
 
     // repaint
     el.offsetWidth;
 
     const { animation, easing } = this.options;
-    css(el, 'transition', 'transform ' + animation + 'ms' + (easing ? ' ' + easing : ''));
+    css(el, 'transition', `transform ${animation}ms ${easing ? ' ' + easing : ''}`);
     css(el, 'transform', 'translate3d(0px, 0px, 0px)');
 
     typeof el.animated === 'number' && clearTimeout(el.animated);

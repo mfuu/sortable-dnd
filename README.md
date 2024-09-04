@@ -64,6 +64,7 @@ new Sortable(element, {
   animation: 150, // Animation speed moving items when sorting
   chosenClass: '', // Class name for the chosen item
   selectedClass: '', // The class of the element when it is selected, it is usually used when multiple drag
+  placeholderClass: '', // Class name for the drop placeholder
   ghostStyle: {}, // The style of the mask element when dragging
   ghostClass: '', // The class of the mask element when dragging
 

@@ -148,6 +148,7 @@ function Sortable(el, options) {
     ghostStyle: {},
     chosenClass: '',
     selectedClass: '',
+    placeholderClass: '',
     swapOnDrop: true,
     fallbackOnBody: false,
     supportTouch: 'ontouchstart' in window,
@@ -170,56 +171,15 @@ function Sortable(el, options) {
 
   on(el, this.options.supportTouch ? 'touchstart' : 'mousedown', this._onDrag);
 
-  sortables.push(el);
-
   this.autoScroller = new AutoScroll(this.options);
   this.multiplayer = new Multiple(this.options);
   this.animator = new Animation(this.options);
+
+  sortables.push(el);
 }
 
 Sortable.prototype = {
   constructor: Sortable,
-
-  destroy() {
-    this._cancelStart();
-    this._nulling();
-
-    off(this.el, 'touchstart', this._onDrag);
-    off(this.el, 'mousedown', this._onDrag);
-
-    let index = sortables.indexOf(this.el);
-    index > -1 && sortables.splice(index, 1);
-
-    this.el[expando] = this.animator = this.multiplayer = this.autoScroller = null;
-  },
-
-  option(key, value) {
-    if (value === void 0) {
-      return this.options[key];
-    }
-
-    // set option
-    this.options[key] = value;
-    this.animator.options[key] = value;
-    this.multiplayer.options[key] = value;
-    this.autoScroller.options[key] = value;
-
-    if (key === 'group') {
-      _prepareGroup(this.options);
-    }
-  },
-
-  select(element) {
-    this.multiplayer.select(element);
-  },
-
-  deselect(element) {
-    this.multiplayer.deselect(element);
-  },
-
-  getSelectedElements() {
-    return this.multiplayer.selectedElements;
-  },
 
   _onDrag(event) {
     // Don't trigger start event when an element is been dragged
@@ -240,7 +200,7 @@ Sortable.prototype = {
     if (!element || element.animated) return;
 
     dragEvent = {
-      event: event,
+      event,
       clientX: (touch || event).clientX,
       clientY: (touch || event).clientY,
     };
@@ -354,6 +314,7 @@ Sortable.prototype = {
 
   _onStarted() {
     toggleClass(cloneEl, this.options.chosenClass, true);
+    toggleClass(cloneEl, this.options.placeholderClass, true);
 
     this._appendGhost();
     this.multiplayer.onDrag(this);
@@ -372,7 +333,7 @@ Sortable.prototype = {
   _getGhostElement() {
     const { customGhost } = this.options;
     if (typeof customGhost === 'function') {
-      const selects = this.multiplayer.selectedElements;
+      const selects = this.multiplayer.selects;
       return customGhost(selects.length ? selects : [dragEl]);
     }
     return this.multiplayer.getGhostElement() || dragEl;
@@ -415,7 +376,7 @@ Sortable.prototype = {
 
     const ox = ((dragEvent.clientX - rect.left) / parseInt(ghostEl.style.width)) * 100;
     const oy = ((dragEvent.clientY - rect.top) / parseInt(ghostEl.style.height)) * 100;
-    css(ghostEl, 'transform-origin', ox + '% ' + oy + '%');
+    css(ghostEl, 'transform-origin', `${ox}% ${oy}%`);
     css(ghostEl, 'will-change', 'transform');
   },
 
@@ -437,22 +398,18 @@ Sortable.prototype = {
       dx = clientX - dragEvent.clientX,
       dy = clientY - dragEvent.clientY;
 
-    moveEvent = {
-      event: event,
-      clientX: clientX,
-      clientY: clientY,
-    };
+    moveEvent = { event, clientX, clientY };
 
-    css(ghostEl, 'transform', 'translate3d(' + dx + 'px, ' + dy + 'px, 0)');
+    css(ghostEl, 'transform', `translate3d(${dx}px, ${dy}px, 0)`);
 
     const nearest = _detectNearestSortable(clientX, clientY);
     nearest && nearest[expando]._onMove(event, target);
 
     if (!nearest || nearest[expando].options.autoScroll) {
       const scrollEl = getParentAutoScrollElement(target, true);
-      this.autoScroller.update(scrollEl, dragEvent, moveEvent);
+      this.autoScroller.start(scrollEl, dragEvent, moveEvent);
     } else {
-      this.autoScroller.destroy();
+      this.autoScroller.stop();
     }
   },
 
@@ -697,6 +654,7 @@ Sortable.prototype = {
     off(listenerNode, 'touchcancel', this._onDrop);
 
     toggleClass(dragEl, this.options.chosenClass, false);
+    toggleClass(cloneEl, this.options.placeholderClass, false);
 
     if (fromEl) {
       from = fromEl;
@@ -728,26 +686,27 @@ Sortable.prototype = {
       ghostEl.parentNode.removeChild(ghostEl);
     }
 
-    this.autoScroller.destroy();
-    this.multiplayer.destroy();
+    this.autoScroller.stop();
+    this.multiplayer.nulling();
     this._nulling();
   },
 
   _onEnd(event) {
     const params = this._getParams(event);
+    const isClone = pullMode === 'clone';
 
-    this.multiplayer.onDrop(from, to, pullMode);
+    this.multiplayer.onDrop(from, to, isClone);
 
     let swapOnDrop = this.options.swapOnDrop;
     // swap real drag element to the current drop position
     if (
-      (pullMode !== 'clone' || from === to) &&
+      (!isClone || from === to) &&
       (typeof swapOnDrop === 'function' ? swapOnDrop(params) : swapOnDrop)
     ) {
       parentEl.insertBefore(dragEl, cloneEl);
     }
 
-    if (pullMode !== 'clone' || from === to || this.multiplayer.active()) {
+    if (!isClone || from === to || this.multiplayer.active()) {
       cloneEl && cloneEl.parentNode && cloneEl.parentNode.removeChild(cloneEl);
     } else {
       toggleClass(cloneEl, this.options.chosenClass, false);
@@ -782,9 +741,7 @@ Sortable.prototype = {
     evt.newIndex = newIndex;
     evt.pullMode = pullMode;
 
-    this.multiplayer.setParams(evt);
-
-    Object.assign(evt, params);
+    Object.assign(evt, this.multiplayer.elements(), params);
 
     evt.relative = targetEl === dragEl ? 0 : sort(cloneEl, targetEl);
 
@@ -820,6 +777,47 @@ Sortable.prototype = {
       Sortable.active =
       Sortable.dragged =
         null;
+  },
+
+  destroy() {
+    this._cancelStart();
+    this._nulling();
+
+    off(this.el, 'touchstart', this._onDrag);
+    off(this.el, 'mousedown', this._onDrag);
+
+    let index = sortables.indexOf(this.el);
+    index > -1 && sortables.splice(index, 1);
+
+    this.el[expando] = this.animator = this.multiplayer = this.autoScroller = null;
+  },
+
+  option(key, value) {
+    if (value === void 0) {
+      return this.options[key];
+    }
+
+    // set option
+    this.options[key] = value;
+    this.animator.options[key] = value;
+    this.multiplayer.options[key] = value;
+    this.autoScroller.options[key] = value;
+
+    if (key === 'group') {
+      _prepareGroup(this.options);
+    }
+  },
+
+  select(element) {
+    this.multiplayer.select(element);
+  },
+
+  deselect(element) {
+    this.multiplayer.deselect(element);
+  },
+
+  getSelectedElements() {
+    return this.multiplayer.selects;
   },
 };
 

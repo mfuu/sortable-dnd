@@ -5,11 +5,11 @@ let dragElements, cloneElements;
 
 function Multiple(options) {
   this.options = options || {};
-  this.selectedElements = [];
+  this.selects = [];
 }
 
 Multiple.prototype = {
-  destroy() {
+  nulling() {
     dragElements = cloneElements = null;
   },
 
@@ -17,23 +17,25 @@ Multiple.prototype = {
     return !!dragElements;
   },
 
-  setParams(params) {
-    params.nodes = dragElements || [];
-    params.clones = cloneElements || [];
+  elements() {
+    return {
+      nodes: dragElements || [],
+      clones: cloneElements || [],
+    };
   },
 
   select(element) {
     toggleClass(element, this.options.selectedClass, true);
 
-    this.selectedElements.push(element);
-    this.selectedElements.sort((a, b) => sort(a, b));
+    this.selects.push(element);
+    this.selects.sort((a, b) => sort(a, b));
   },
 
   deselect(element) {
-    const index = this.selectedElements.indexOf(element);
+    const index = this.selects.indexOf(element);
     if (index > -1) {
       toggleClass(element, this.options.selectedClass, false);
-      this.selectedElements.splice(index, 1);
+      this.selects.splice(index, 1);
     }
   },
 
@@ -41,7 +43,7 @@ Multiple.prototype = {
     if (!dragElements) return null;
 
     const container = document.createElement('div');
-    this.selectedElements.forEach((node, index) => {
+    this.selects.forEach((node, index) => {
       let clone = node.cloneNode(true);
       let opacity = index === 0 ? 1 : 0.5;
       clone.style = `position: absolute;left: 0;top: 0;bottom: 0;right: 0;opacity: ${opacity};z-index: ${index};`;
@@ -50,26 +52,26 @@ Multiple.prototype = {
     return container;
   },
 
-  toggleSelected(elements, add) {
-    if (add) {
-      elements.forEach((el) => this.selectedElements.push(el));
+  toggleSelected(elements, isAdd) {
+    if (isAdd) {
+      elements.forEach((el) => this.selects.push(el));
     } else {
-      this.selectedElements = this.selectedElements.filter((el) => elements.indexOf(el) < 0);
+      this.selects = this.selects.filter((el) => elements.indexOf(el) < 0);
     }
   },
 
-  toggleClass(bool) {
+  toggleClass(state) {
     if (!dragElements) return;
 
     for (let i = 0; i < dragElements.length; i++) {
-      toggleClass(dragElements[i], this.options.chosenClass, bool);
+      toggleClass(dragElements[i], this.options.chosenClass, state);
     }
   },
 
-  toggleVisible(bool) {
+  toggleVisible(visible) {
     if (!dragElements) return;
 
-    if (bool) {
+    if (visible) {
       const dragIndex = dragElements.indexOf(Sortable.dragged);
       this._viewElements(dragElements, dragIndex, Sortable.dragged);
     } else {
@@ -80,14 +82,14 @@ Multiple.prototype = {
   onChoose() {
     if (
       !this.options.multiple ||
-      !this.selectedElements.length ||
-      this.selectedElements.indexOf(Sortable.dragged) < 0
+      this.selects.length === 0 ||
+      this.selects.indexOf(Sortable.dragged) < 0
     ) {
       return;
     }
 
-    this.selectedElements.sort((a, b) => sort(a, b));
-    dragElements = this.selectedElements;
+    this.selects.sort((a, b) => sort(a, b));
+    dragElements = this.selects;
 
     this.toggleClass(true);
   },
@@ -102,7 +104,7 @@ Multiple.prototype = {
     this.toggleClass(false);
   },
 
-  onDrop(from, to, pullMode) {
+  onDrop(from, to, isClone) {
     if (!dragElements) return;
 
     let dragEl = Sortable.dragged,
@@ -111,9 +113,9 @@ Multiple.prototype = {
 
     to[expando].animator.collect(cloneEl.parentNode);
 
-    if (from !== to && pullMode === 'clone') {
+    if (from !== to && isClone) {
       css(cloneEl, 'display', 'none');
-      cloneElements = dragElements.map((node) => node.cloneNode(true));
+      cloneElements = dragElements.map((el) => el.cloneNode(true));
 
       this._viewElements(cloneElements, dragIndex, cloneEl);
       this._viewElements(dragElements, dragIndex, dragEl);
@@ -126,27 +128,25 @@ Multiple.prototype = {
     // Recalculate selected elements
     if (from !== to) {
       to[expando].multiplayer.toggleSelected(cloneElements || dragElements, true);
-      if (pullMode !== 'clone') {
-        from[expando].multiplayer.toggleSelected(dragElements, false);
-      }
+      !isClone && from[expando].multiplayer.toggleSelected(dragElements, false);
     }
   },
 
   onSelect(event, dragEl, sortable) {
-    const dragIndex = this.selectedElements.indexOf(dragEl);
+    const dragIndex = this.selects.indexOf(dragEl);
 
     toggleClass(dragEl, this.options.selectedClass, dragIndex < 0);
 
     const params = { from: sortable.el, event, node: dragEl, index: index(dragEl) };
 
     if (dragIndex < 0) {
-      this.selectedElements.push(dragEl);
+      this.selects.push(dragEl);
       dispatchEvent({ sortable, name: 'onSelect', params: params });
     } else {
-      this.selectedElements.splice(dragIndex, 1);
+      this.selects.splice(dragIndex, 1);
       dispatchEvent({ sortable, name: 'onDeselect', params: params });
     }
-    this.selectedElements.sort((a, b) => sort(a, b));
+    this.selects.sort((a, b) => sort(a, b));
   },
 
   _viewElements(elements, index, target) {

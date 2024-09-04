@@ -185,14 +185,14 @@ export interface SortableOptions {
    * - string: 'name'
    * - object: {
    *    name: 'name', // group name
-   * 
+   *
    *    // whether elements can be added from other lists,
    *    // or an array of group names from which elements can be taken.
    *    put: true | false | ['group1', 'group2'],
-   * 
+   *
    *    // whether elements can be moved out of this list.
    *    pull: true | false | 'clone',
-   * 
+   *
    *    // revert drag element to initial position after moving to a another list.
    *    revertDrag: true | false,
    * }
@@ -340,6 +340,11 @@ export interface SortableOptions {
    * @defaults `''`
    */
   selectedClass?: string;
+
+  /**
+   * Class name for the drop placeholder.
+   */
+  placeholderClass?: string;
 
   /**
    * This styles will be applied to the mask of the dragging element.

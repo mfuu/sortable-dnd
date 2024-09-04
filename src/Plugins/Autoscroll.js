@@ -17,20 +17,20 @@ function AutoScroll(options) {
 }
 
 AutoScroll.prototype = {
-  destroy() {
+  stop() {
     if (!this.autoScrollAnimationFrame) return;
 
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = null;
   },
 
-  update(scrollEl, dragEvent, moveEvent) {
+  start(scrollEl, dragEvent, moveEvent) {
     cancelAnimationFrame(this.autoScrollAnimationFrame);
     this.autoScrollAnimationFrame = requestAnimationFrame(() => {
       if (dragEvent && moveEvent) {
         this.autoScroll(scrollEl, moveEvent);
       }
-      this.update(scrollEl, dragEvent, moveEvent);
+      this.start(scrollEl, dragEvent, moveEvent);
     });
   },
 
