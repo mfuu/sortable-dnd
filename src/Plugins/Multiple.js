@@ -1,5 +1,5 @@
 import Sortable from '../index.js';
-import { css, sort, index, toggleClass, dispatchEvent, expando } from '../utils';
+import { css, sort, index, toggleClass, dispatchEvent, expando, matches } from '../utils';
 
 let dragElements, cloneElements;
 
@@ -17,7 +17,7 @@ Multiple.prototype = {
     return !!dragElements;
   },
 
-  elements() {
+  params() {
     return {
       nodes: dragElements || [],
       clones: cloneElements || [],
@@ -79,6 +79,15 @@ Multiple.prototype = {
     }
   },
 
+  useSelectHandle(event, target) {
+    const { selectHandle } = this.options;
+
+    return !!(
+      (typeof selectHandle === 'function' && selectHandle(event)) ||
+      (typeof selectHandle === 'string' && matches(target, selectHandle))
+    );
+  },
+
   onChoose() {
     if (
       !this.options.multiple ||
@@ -94,13 +103,10 @@ Multiple.prototype = {
     this.toggleClass(true);
   },
 
-  onDrag(sortable) {
+  onDrag() {
     if (!dragElements) return;
 
-    sortable.animator.collect(Sortable.dragged.parentNode);
     this._hideElements(dragElements);
-    sortable.animator.animate();
-
     this.toggleClass(false);
   },
 
@@ -111,8 +117,6 @@ Multiple.prototype = {
       cloneEl = Sortable.clone,
       dragIndex = dragElements.indexOf(dragEl);
 
-    to[expando].animator.collect(cloneEl.parentNode);
-
     if (from !== to && isClone) {
       css(cloneEl, 'display', 'none');
       cloneElements = dragElements.map((el) => el.cloneNode(true));
@@ -122,8 +126,6 @@ Multiple.prototype = {
     } else {
       this._viewElements(dragElements, dragIndex, cloneEl);
     }
-
-    to[expando].animator.animate();
 
     // Recalculate selected elements
     if (from !== to) {

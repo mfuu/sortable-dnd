@@ -165,7 +165,7 @@ group: {
 
 ```js
 event.from; // previous list
-event.to; // list, in which moved element.
+event.to; // list of currently placed drag element
 event.node; // dragged element
 event.nodes; // dragged elements
 event.clone; // cloned element, all dnd operations are based on cloned element and do not alter the source dom(node).
@@ -186,7 +186,7 @@ event.backToOrigin; // dragged element go back to the original list in `pull: 'c
 event.event; // TouchEvent | MouseEvent
 event.index; // index within parent
 event.node; // dragged element
-event.from;  // list container
+event.from; // list container
 ```
 
 ## Methods

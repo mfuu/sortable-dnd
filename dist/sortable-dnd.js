@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.17
+ * sortable-dnd v0.6.18
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -468,8 +468,8 @@
       this.stack.push(animations);
     },
     animate: function animate() {
-      if (!this.options.animation) return;
       var animations = this.stack.pop();
+      if (!animations || !this.options.animation) return;
       for (var i = 0, len = animations.length; i < len; i++) {
         var _animations$i = animations[i],
           el = _animations$i.el,
@@ -513,7 +513,7 @@
     active: function active() {
       return !!dragElements;
     },
-    elements: function elements() {
+    params: function params() {
       return {
         nodes: dragElements || [],
         clones: cloneElements || []
@@ -571,6 +571,10 @@
         this._hideElements(dragElements);
       }
     },
+    useSelectHandle: function useSelectHandle(event, target) {
+      var selectHandle = this.options.selectHandle;
+      return !!(typeof selectHandle === 'function' && selectHandle(event) || typeof selectHandle === 'string' && matches(target, selectHandle));
+    },
     onChoose: function onChoose() {
       if (!this.options.multiple || this.selects.length === 0 || this.selects.indexOf(Sortable.dragged) < 0) {
         return;
@@ -581,11 +585,9 @@
       dragElements = this.selects;
       this.toggleClass(true);
     },
-    onDrag: function onDrag(sortable) {
+    onDrag: function onDrag() {
       if (!dragElements) return;
-      sortable.animator.collect(Sortable.dragged.parentNode);
       this._hideElements(dragElements);
-      sortable.animator.animate();
       this.toggleClass(false);
     },
     onDrop: function onDrop(from, to, isClone) {
@@ -593,7 +595,6 @@
       var dragEl = Sortable.dragged,
         cloneEl = Sortable.clone,
         dragIndex = dragElements.indexOf(dragEl);
-      to[expando].animator.collect(cloneEl.parentNode);
       if (from !== to && isClone) {
         css(cloneEl, 'display', 'none');
         cloneElements = dragElements.map(function (el) {
@@ -604,7 +605,6 @@
       } else {
         this._viewElements(dragElements, dragIndex, cloneEl);
       }
-      to[expando].animator.animate();
 
       // Recalculate selected elements
       if (from !== to) {
@@ -795,20 +795,16 @@
       on(listenerNode, 'mouseup', this._onDrop);
       on(listenerNode, 'touchend', this._onDrop);
       on(listenerNode, 'touchcancel', this._onDrop);
-      var _this$options = this.options,
-        handle = _this$options.handle,
-        selectHandle = _this$options.selectHandle;
 
       // use multi-select-handle
-      if (typeof selectHandle === 'function' && selectHandle(event) || typeof selectHandle === 'string' && matches(target, selectHandle)) {
-        useSelectHandle = true;
-        return;
-      }
+      useSelectHandle = this.multiplayer.useSelectHandle(event, target);
+      if (useSelectHandle) return;
+      var handle = this.options.handle;
       if (typeof handle === 'function' && !handle(event)) return;
       if (typeof handle === 'string' && !matches(target, handle)) return;
-      var _this$options2 = this.options,
-        delay = _this$options2.delay,
-        delayOnTouchOnly = _this$options2.delayOnTouchOnly;
+      var _this$options = this.options,
+        delay = _this$options.delay,
+        delayOnTouchOnly = _this$options.delayOnTouchOnly;
       // Delay is impossible for native DnD in Edge or IE
       if (delay && (!delayOnTouchOnly || touch) && !(Edge || IE11OrLess)) {
         on(this.el.ownerDocument, 'touchmove', this._delayMoveHandler);
@@ -888,10 +884,11 @@
       } catch (error) {}
     },
     _onStarted: function _onStarted() {
+      this.animator.collect(parentEl);
       toggleClass(cloneEl, this.options.chosenClass, true);
       toggleClass(cloneEl, this.options.placeholderClass, true);
       this._appendGhost();
-      this.multiplayer.onDrag(this);
+      this.multiplayer.onDrag();
       dispatchEvent({
         sortable: this,
         name: 'onDrag',
@@ -900,6 +897,7 @@
       css(dragEl, 'display', 'none');
       toggleClass(dragEl, this.options.chosenClass, false);
       dragEl.parentNode.insertBefore(cloneEl, dragEl);
+      this.animator.animate();
     },
     _getGhostElement: function _getGhostElement() {
       var customGhost = this.options.customGhost;
@@ -926,8 +924,8 @@
         opacity: '0.8',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        transform: 'translate3d(0px, 0px, 0px)',
-        transition: 'none',
+        transform: '',
+        transition: '',
         pointerEvents: 'none'
       }, this.options.ghostStyle);
       for (var key in style) {
@@ -983,9 +981,9 @@
       }
     },
     _getDirection: function _getDirection() {
-      var _this$options3 = this.options,
-        draggable = _this$options3.draggable,
-        direction = _this$options3.direction;
+      var _this$options2 = this.options,
+        draggable = _this$options2.draggable,
+        direction = _this$options2.direction;
       return direction ? typeof direction === 'function' ? direction.call(moveEvent.event, dragEl, this) : direction : detectDirection(parentEl, draggable);
     },
     _allowSwap: function _allowSwap() {
@@ -1175,9 +1173,10 @@
       off(listenerNode, 'mouseup', this._onDrop);
       off(listenerNode, 'touchend', this._onDrop);
       off(listenerNode, 'touchcancel', this._onDrop);
-      toggleClass(dragEl, this.options.chosenClass, false);
-      toggleClass(cloneEl, this.options.placeholderClass, false);
       if (fromEl) {
+        this.animator.collect(parentEl);
+        toggleClass(dragEl, this.options.chosenClass, false);
+        toggleClass(cloneEl, this.options.placeholderClass, false);
         from = fromEl;
         oldIndex = fromIndex;
         if (targetEl === cloneEl) {
@@ -1190,10 +1189,11 @@
           params: this._getParams(event)
         });
         moveEvent && this._onEnd(event);
+        this.animator.animate();
       }
-      var _this$options4 = this.options,
-        multiple = _this$options4.multiple,
-        selectHandle = _this$options4.selectHandle;
+      var _this$options3 = this.options,
+        multiple = _this$options3.multiple,
+        selectHandle = _this$options3.selectHandle;
       if (multiple && (selectHandle && useSelectHandle || !selectHandle && !fromEl)) {
         var evt = event.changedTouches ? event.changedTouches[0] : event;
         // check whether the event is a click event
@@ -1250,7 +1250,7 @@
       evt.oldIndex = oldIndex;
       evt.newIndex = newIndex;
       evt.pullMode = pullMode;
-      _extends(evt, this.multiplayer.elements(), params);
+      _extends(evt, this.multiplayer.params(), params);
       evt.relative = targetEl === dragEl ? 0 : sort(cloneEl, targetEl);
       return evt;
     },
@@ -1260,6 +1260,8 @@
     destroy: function destroy() {
       this._cancelStart();
       this._nulling();
+      this.multiplayer.nulling();
+      this.autoScroller.stop();
       off(this.el, 'touchstart', this._onDrag);
       off(this.el, 'mousedown', this._onDrag);
       var index = sortables.indexOf(this.el);

@@ -211,16 +211,11 @@ Sortable.prototype = {
     on(listenerNode, 'touchend', this._onDrop);
     on(listenerNode, 'touchcancel', this._onDrop);
 
-    const { handle, selectHandle } = this.options;
-
     // use multi-select-handle
-    if (
-      (typeof selectHandle === 'function' && selectHandle(event)) ||
-      (typeof selectHandle === 'string' && matches(target, selectHandle))
-    ) {
-      useSelectHandle = true;
-      return;
-    }
+    useSelectHandle = this.multiplayer.useSelectHandle(event, target);
+    if (useSelectHandle) return;
+
+    const { handle } = this.options;
     if (typeof handle === 'function' && !handle(event)) return;
     if (typeof handle === 'string' && !matches(target, handle)) return;
 
@@ -313,11 +308,13 @@ Sortable.prototype = {
   },
 
   _onStarted() {
+    this.animator.collect(parentEl);
+
     toggleClass(cloneEl, this.options.chosenClass, true);
     toggleClass(cloneEl, this.options.placeholderClass, true);
 
     this._appendGhost();
-    this.multiplayer.onDrag(this);
+    this.multiplayer.onDrag();
 
     dispatchEvent({
       sortable: this,
@@ -328,6 +325,8 @@ Sortable.prototype = {
     css(dragEl, 'display', 'none');
     toggleClass(dragEl, this.options.chosenClass, false);
     dragEl.parentNode.insertBefore(cloneEl, dragEl);
+
+    this.animator.animate();
   },
 
   _getGhostElement() {
@@ -360,8 +359,8 @@ Sortable.prototype = {
         opacity: '0.8',
         overflow: 'hidden',
         boxSizing: 'border-box',
-        transform: 'translate3d(0px, 0px, 0px)',
-        transition: 'none',
+        transform: '',
+        transition: '',
         pointerEvents: 'none',
       },
       this.options.ghostStyle
@@ -653,10 +652,12 @@ Sortable.prototype = {
     off(listenerNode, 'touchend', this._onDrop);
     off(listenerNode, 'touchcancel', this._onDrop);
 
-    toggleClass(dragEl, this.options.chosenClass, false);
-    toggleClass(cloneEl, this.options.placeholderClass, false);
-
     if (fromEl) {
+      this.animator.collect(parentEl);
+
+      toggleClass(dragEl, this.options.chosenClass, false);
+      toggleClass(cloneEl, this.options.placeholderClass, false);
+
       from = fromEl;
       oldIndex = fromIndex;
 
@@ -673,6 +674,8 @@ Sortable.prototype = {
       });
 
       moveEvent && this._onEnd(event);
+
+      this.animator.animate();
     }
 
     const { multiple, selectHandle } = this.options;
@@ -741,7 +744,7 @@ Sortable.prototype = {
     evt.newIndex = newIndex;
     evt.pullMode = pullMode;
 
-    Object.assign(evt, this.multiplayer.elements(), params);
+    Object.assign(evt, this.multiplayer.params(), params);
 
     evt.relative = targetEl === dragEl ? 0 : sort(cloneEl, targetEl);
 
@@ -782,6 +785,8 @@ Sortable.prototype = {
   destroy() {
     this._cancelStart();
     this._nulling();
+    this.multiplayer.nulling();
+    this.autoScroller.stop();
 
     off(this.el, 'touchstart', this._onDrag);
     off(this.el, 'mousedown', this._onDrag);

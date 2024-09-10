@@ -37,9 +37,10 @@ Animation.prototype = {
   },
 
   animate() {
-    if (!this.options.animation) return;
-
     const animations = this.stack.pop();
+
+    if (!animations || !this.options.animation) return;
+
     for (let i = 0, len = animations.length; i < len; i++) {
       const { el, rect } = animations[i];
       this._excute(el, rect);
