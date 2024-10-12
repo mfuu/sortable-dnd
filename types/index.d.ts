@@ -87,7 +87,7 @@ export interface SortableEvent {
   clone: HTMLElement;
 
   /**
-   * cloned elements, there is a value only in the `pull: clone` after moving to a another list.
+   * cloned elements, there is a value only in the `pull: 'clone'` & `multiple: true` after moving to a another list.
    */
   clones: HTMLElement[];
 
@@ -97,12 +97,16 @@ export interface SortableEvent {
   target: HTMLElement;
 
   /**
-   * old index within parent. `-1`: element added from another list to the current list
+   * old index within parent(from).
+   * 
+   * `-1`: element added from another list to the current list
    */
   oldIndex: number;
 
   /**
-   * new index within parent. `-1`: element has been removed from the current list
+   * new index within parent(to).
+   * 
+   * `-1`: element has been removed from the current list
    */
   newIndex: number;
 
@@ -120,18 +124,20 @@ export interface SortableEvent {
    * Position of the drag element relative to the drop element(target) after swap is complete.
    * @example
    * 0: // The position of dropEl is the same as dragEl.
-   * <div>dragEl, dropEl</div>
+   * <div id="same">dragEl, dropEl</div>
    *
    * 1: // dragEl comes after dropEl.
-   * <div>dropEl</div> <div>dragEl</div>
+   * <div id="before">dropEl</div>
+   * <div id="after">dragEl</div>
    *
    * -1: // dragEl comes before dropEl.
-   * <div>dragEl</div> <div>dropEl</div>
+   * <div id="before">dragEl</div>
+   * <div id="after">dropEl</div>
    */
   relative: 0 | 1 | -1;
 
   /**
-   * Revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
+   * The dragEl returns to the start position of the drag after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
    */
   revertDrag?: boolean;
 
@@ -282,7 +288,7 @@ export interface SortableOptions {
   autoScroll?: boolean;
 
   /**
-   * Threshold to trigger autoscroll.
+   * Threshold to trigger autoScroll.
    * @defaults `55`
    */
   scrollThreshold?: number;
@@ -324,7 +330,9 @@ export interface SortableOptions {
   fallbackOnBody?: boolean;
 
   /**
-   * When the value is false, the dragEl will not move to the drop position.
+   * Whether to place the dragEl in the drop position after the drag is complete.
+   * 
+   * When the value is `false`, the dragEl will not move to the drop position (for virtual-list).
    * @defaults `true`
    */
   swapOnDrop?: boolean | ((event: SortableEvent) => boolean);

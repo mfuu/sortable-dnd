@@ -1,7 +1,7 @@
 import Sortable from '../index.js';
-import { css, sort, index, toggleClass, dispatchEvent, expando, matches } from '../utils';
+import { css, dispatchEvent, expando, index, matches, sort, toggleClass } from '../utils';
 
-let dragElements, cloneElements;
+let dragElements, cloneElements, useSelectHandle;
 
 function Multiple(options) {
   this.options = options || {};
@@ -9,12 +9,12 @@ function Multiple(options) {
 }
 
 Multiple.prototype = {
-  nulling() {
-    dragElements = cloneElements = null;
-  },
-
   active() {
     return !!dragElements;
+  },
+
+  nulling() {
+    dragElements = cloneElements = useSelectHandle = null;
   },
 
   params() {
@@ -39,53 +39,30 @@ Multiple.prototype = {
     }
   },
 
+  useSelectHandle(event, target) {
+    const { selectHandle } = this.options;
+
+    useSelectHandle =
+      (typeof selectHandle === 'function' && selectHandle(event)) ||
+      (typeof selectHandle === 'string' && matches(target, selectHandle));
+
+    return !!useSelectHandle;
+  },
+
   getGhostElement() {
     if (!dragElements) return null;
 
     const container = document.createElement('div');
+    toggleClass(container, this.options.chosenClass, true);
+
     this.selects.forEach((node, index) => {
       let clone = node.cloneNode(true);
       let opacity = index === 0 ? 1 : 0.5;
       clone.style = `position: absolute;left: 0;top: 0;bottom: 0;right: 0;opacity: ${opacity};z-index: ${index};`;
       container.appendChild(clone);
     });
+
     return container;
-  },
-
-  toggleSelected(elements, isAdd) {
-    if (isAdd) {
-      elements.forEach((el) => this.selects.push(el));
-    } else {
-      this.selects = this.selects.filter((el) => elements.indexOf(el) < 0);
-    }
-  },
-
-  toggleClass(state) {
-    if (!dragElements) return;
-
-    for (let i = 0; i < dragElements.length; i++) {
-      toggleClass(dragElements[i], this.options.chosenClass, state);
-    }
-  },
-
-  toggleVisible(visible) {
-    if (!dragElements) return;
-
-    if (visible) {
-      const dragIndex = dragElements.indexOf(Sortable.dragged);
-      this._viewElements(dragElements, dragIndex, Sortable.dragged);
-    } else {
-      this._hideElements(dragElements);
-    }
-  },
-
-  useSelectHandle(event, target) {
-    const { selectHandle } = this.options;
-
-    return !!(
-      (typeof selectHandle === 'function' && selectHandle(event)) ||
-      (typeof selectHandle === 'string' && matches(target, selectHandle))
-    );
   },
 
   onChoose() {
@@ -100,14 +77,7 @@ Multiple.prototype = {
     this.selects.sort((a, b) => sort(a, b));
     dragElements = this.selects;
 
-    this.toggleClass(true);
-  },
-
-  onDrag() {
-    if (!dragElements) return;
-
-    this._hideElements(dragElements);
-    this.toggleClass(false);
+    this.toggleChosenClass(true);
   },
 
   onDrop(from, to, isClone) {
@@ -119,12 +89,12 @@ Multiple.prototype = {
 
     if (from !== to && isClone) {
       css(cloneEl, 'display', 'none');
-      cloneElements = dragElements.map((el) => el.cloneNode(true));
+      this.toggleVisible(true);
 
-      this._viewElements(cloneElements, dragIndex, cloneEl);
-      this._viewElements(dragElements, dragIndex, dragEl);
+      cloneElements = dragElements.map((el) => el.cloneNode(true));
+      this._sortElements(cloneElements, dragIndex, cloneEl);
     } else {
-      this._viewElements(dragElements, dragIndex, cloneEl);
+      this._sortElements(dragElements, dragIndex, cloneEl);
     }
 
     // Recalculate selected elements
@@ -134,7 +104,12 @@ Multiple.prototype = {
     }
   },
 
-  onSelect(event, dragEl, sortable) {
+  onSelect(event, dragEl, fromEl, sortable) {
+    const { multiple, selectHandle } = this.options;
+    if (!(multiple && ((selectHandle && useSelectHandle) || (!selectHandle && !fromEl)))) {
+      return;
+    }
+
     const dragIndex = this.selects.indexOf(dragEl);
 
     toggleClass(dragEl, this.options.selectedClass, dragIndex < 0);
@@ -151,8 +126,33 @@ Multiple.prototype = {
     this.selects.sort((a, b) => sort(a, b));
   },
 
-  _viewElements(elements, index, target) {
-    for (let i = 0; i < elements.length; i++) {
+  toggleChosenClass(state) {
+    if (!dragElements) return;
+
+    for (let i = 0, len = dragElements.length; i < len; i++) {
+      toggleClass(dragElements[i], this.options.chosenClass, state);
+    }
+  },
+
+  toggleVisible(visible) {
+    if (!dragElements) return;
+
+    for (let i = 0, len = dragElements.length; i < len; i++) {
+      if (dragElements[i] == Sortable.dragged) continue;
+      css(dragElements[i], 'display', visible ? '' : 'none');
+    }
+  },
+
+  toggleSelected(elements, isAdd) {
+    if (isAdd) {
+      elements.forEach((el) => this.selects.push(el));
+    } else {
+      this.selects = this.selects.filter((el) => elements.indexOf(el) < 0);
+    }
+  },
+
+  _sortElements(elements, index, target) {
+    for (let i = 0, len = elements.length; i < len; i++) {
       css(elements[i], 'display', '');
 
       if (i < index) {
@@ -161,13 +161,6 @@ Multiple.prototype = {
         let dropEl = i > 0 ? elements[i - 1] : target;
         target.parentNode.insertBefore(elements[i], dropEl.nextSibling);
       }
-    }
-  },
-
-  _hideElements(elements) {
-    for (let i = 0; i < elements.length; i++) {
-      if (elements[i] == Sortable.dragged) continue;
-      css(elements[i], 'display', 'none');
     }
   },
 };
