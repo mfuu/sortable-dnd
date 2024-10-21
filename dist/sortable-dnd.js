@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.19
+ * sortable-dnd v0.6.20
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -739,6 +739,7 @@
       selectedClass: '',
       placeholderClass: '',
       swapOnDrop: true,
+      removeCloneOnDrop: true,
       fallbackOnBody: false,
       supportTouch: 'ontouchstart' in window,
       emptyInsertThreshold: -1
@@ -1204,11 +1205,13 @@
       var params = this._getParams(event);
 
       // swap real drag element to the current drop position
-      var swapOnDrop = this.options.swapOnDrop;
+      var _this$options3 = this.options,
+        swapOnDrop = _this$options3.swapOnDrop,
+        removeCloneOnDrop = _this$options3.removeCloneOnDrop;
       if ((!isClone || from === to) && (typeof swapOnDrop === 'function' ? swapOnDrop(params) : swapOnDrop)) {
         parentEl.insertBefore(dragEl, cloneEl);
       }
-      if (!isClone || from === to || this.multiplayer.active()) {
+      if ((!isClone || from === to || this.multiplayer.active()) && (typeof removeCloneOnDrop === 'function' ? removeCloneOnDrop(params) : removeCloneOnDrop)) {
         cloneEl && cloneEl.parentNode && cloneEl.parentNode.removeChild(cloneEl);
       }
       css(dragEl, 'display', '');

@@ -81,6 +81,7 @@ new Sortable(element, {
   store: null, // store data
   direction: '', // Direction of Sortable, will be detected automatically if not given.
   swapOnDrop: true, // When the value is false, the dragged element will return to the starting position of the drag
+  removeCloneOnDrop: true, // Whether to remove the cloneEl after the drag is complete.
 
   customGhost: (nodes) => {
     // Customize the ghost element in drag

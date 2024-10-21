@@ -150,6 +150,7 @@ function Sortable(el, options) {
     selectedClass: '',
     placeholderClass: '',
     swapOnDrop: true,
+    removeCloneOnDrop: true,
     fallbackOnBody: false,
     supportTouch: 'ontouchstart' in window,
     emptyInsertThreshold: -1,
@@ -700,7 +701,7 @@ Sortable.prototype = {
     const params = this._getParams(event);
 
     // swap real drag element to the current drop position
-    const { swapOnDrop } = this.options;
+    const { swapOnDrop, removeCloneOnDrop } = this.options;
     if (
       (!isClone || from === to) &&
       (typeof swapOnDrop === 'function' ? swapOnDrop(params) : swapOnDrop)
@@ -708,7 +709,10 @@ Sortable.prototype = {
       parentEl.insertBefore(dragEl, cloneEl);
     }
 
-    if (!isClone || from === to || this.multiplayer.active()) {
+    if (
+      (!isClone || from === to || this.multiplayer.active()) &&
+      (typeof removeCloneOnDrop === 'function' ? removeCloneOnDrop(params) : removeCloneOnDrop)
+    ) {
       cloneEl && cloneEl.parentNode && cloneEl.parentNode.removeChild(cloneEl);
     }
 

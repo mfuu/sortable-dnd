@@ -98,14 +98,14 @@ export interface SortableEvent {
 
   /**
    * old index within parent(from).
-   * 
+   *
    * `-1`: element added from another list to the current list
    */
   oldIndex: number;
 
   /**
    * new index within parent(to).
-   * 
+   *
    * `-1`: element has been removed from the current list
    */
   newIndex: number;
@@ -331,11 +331,17 @@ export interface SortableOptions {
 
   /**
    * Whether to place the dragEl in the drop position after the drag is complete.
-   * 
+   *
    * When the value is `false`, the dragEl will not move to the drop position (for virtual-list).
    * @defaults `true`
    */
   swapOnDrop?: boolean | ((event: SortableEvent) => boolean);
+
+  /**
+   * Whether to remove the cloneEl after the drag is complete.
+   * @defaults `true`
+   */
+  removeCloneOnDrop?: boolean | ((event: SortableEvent) => boolean);
 
   /**
    * Class name for the chosen item.
