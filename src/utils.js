@@ -411,6 +411,14 @@ export function css(el, prop, val) {
 }
 
 /**
+ * repaint
+ * @param {HTMLElement} el
+ */
+export function repaint(el) {
+  return el.offsetWidth;
+}
+
+/**
  * Reports the position of its argument node relative to the node on which it is called.
  */
 export function comparePosition(a, b) {

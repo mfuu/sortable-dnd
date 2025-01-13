@@ -1,5 +1,5 @@
 import Sortable from '../index.js';
-import { css, getRect } from '../utils.js';
+import { css, getRect, repaint } from '../utils.js';
 
 function Animation(options) {
   this.options = options;
@@ -57,8 +57,7 @@ Animation.prototype = {
     css(el, 'transition', '');
     css(el, 'transform', `translate3d(${dx}px, ${dy}px, 0)`);
 
-    // repaint
-    el.offsetWidth;
+    repaint(el);
 
     const { animation, easing } = this.options;
     css(el, 'transition', `transform ${animation}ms ${easing ? ' ' + easing : ''}`);

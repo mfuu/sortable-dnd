@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.20
+ * sortable-dnd v0.6.21
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -342,6 +342,14 @@
   }
 
   /**
+   * repaint
+   * @param {HTMLElement} el
+   */
+  function repaint(el) {
+    return el.offsetWidth;
+  }
+
+  /**
    * Reports the position of its argument node relative to the node on which it is called.
    */
   function comparePosition(a, b) {
@@ -484,9 +492,7 @@
       var dy = fromRect.top - toRect.top;
       css(el, 'transition', '');
       css(el, 'transform', "translate3d(".concat(dx, "px, ").concat(dy, "px, 0)"));
-
-      // repaint
-      el.offsetWidth;
+      repaint(el);
       var _this$options = this.options,
         animation = _this$options.animation,
         easing = _this$options.easing;
