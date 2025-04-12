@@ -28,7 +28,7 @@ export interface Group {
   pull?: boolean | 'clone';
 
   /**
-   * Revert draged element to initial position after moving to a another list.
+   * Revert draged element to initial position after moving to a another list in `pull: 'clone'`.
    */
   revertDrag?: boolean;
 }
@@ -170,7 +170,8 @@ export interface SortableOptions {
    * - 'div'   // use tag name
    * - '.item' // use class name
    * - '#item' // use id
-   * @defaults `''`
+   * - '>div' // use css selector
+   * @defaults `'>*'`
    */
   draggable?: string;
 
@@ -398,17 +399,17 @@ export interface SortableOptions {
   onDrop?: (event: SortableEvent) => void;
 
   /**
-   * Element is dropped into the current list from another.
+   * Element is dropped into the current list from another (in the process of dragging).
    */
   onAdd?: (event: SortableEvent) => void;
 
   /**
-   * Element is removed from the current list into another.
+   * Element is removed from the current list into another (in the process of dragging).
    */
   onRemove?: (event: SortableEvent) => void;
 
   /**
-   * Dragging element changes position in the current list.
+   * Dragging element changes position in the current list (in the process of dragging).
    */
   onChange?: (event: SortableEvent) => void;
 

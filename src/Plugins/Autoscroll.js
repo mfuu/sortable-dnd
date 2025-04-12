@@ -1,46 +1,42 @@
 import { getRect } from '../utils.js';
 
-if (!window.requestAnimationFrame) {
-  window.requestAnimationFrame = function (callback) {
-    return setTimeout(callback, 17);
-  };
-}
-if (!window.cancelAnimationFrame) {
-  window.cancelAnimationFrame = function (id) {
-    clearTimeout(id);
-  };
-}
-
 function AutoScroll(options) {
   this.options = options;
-  this.autoScrollAnimationFrame = null;
+  this.scrollEl = null;
+  this.autoScrollInterval = null;
 }
 
 AutoScroll.prototype = {
-  stop() {
-    if (!this.autoScrollAnimationFrame) return;
-
-    cancelAnimationFrame(this.autoScrollAnimationFrame);
-    this.autoScrollAnimationFrame = null;
+  nulling() {
+    if (this.autoScrollInterval) {
+      clearInterval(this.autoScrollInterval);
+      this.autoScrollInterval = null;
+    }
   },
 
-  start(scrollEl, dragEvent, moveEvent) {
-    cancelAnimationFrame(this.autoScrollAnimationFrame);
-    this.autoScrollAnimationFrame = requestAnimationFrame(() => {
-      if (dragEvent && moveEvent) {
-        this.autoScroll(scrollEl, moveEvent);
-      }
-      this.start(scrollEl, dragEvent, moveEvent);
+  onStarted() {
+    this.nulling();
+    this.autoScrollInterval = setInterval(() => {
+      this.autoScroll();
     });
   },
 
-  autoScroll(scrollEl, evt) {
-    if (!scrollEl || evt.clientX === void 0 || evt.clientY === void 0) return;
+  onMove(scrollEl, moveEvent, options) {
+    this.options = options;
+    this.scrollEl = scrollEl;
+    this.moveEvent = moveEvent;
+  },
+
+  autoScroll() {
+    let event = this.moveEvent;
+    let scrollEl = this.scrollEl;
+
+    if (!scrollEl || event.clientX === void 0 || event.clientY === void 0) return;
 
     const rect = getRect(scrollEl);
     if (!rect) return;
 
-    const { clientX, clientY } = evt;
+    const { clientX, clientY } = event;
     const { top, right, bottom, left, height, width } = rect;
 
     // execute only inside scrolling elements

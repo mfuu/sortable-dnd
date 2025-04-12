@@ -18,18 +18,11 @@ npm install sortable-dnd
 
 ```html
 <ul id="group">
-  <li class="item">
-    <i id="handle" class="handle">handle</i>
-    <p>1</p>
-  </li>
-  <li class="item">
-    <i id="handle" class="handle">handle</i>
-    <p>2</p>
-  </li>
-  <li class="item">
-    <i id="handle" class="handle">handle</i>
-    <p>3</p>
-  </li>
+  <li>1 </li>
+  <li>2</li>
+  <li>3</li>
+  <li>4</li>
+  <li>5</li>
 </ul>
 ```
 
@@ -38,22 +31,14 @@ npm install sortable-dnd
 ```js
 import Sortable from 'sortable-dnd';
 
-let sortable = new Sortable(document.getElementById('group'), {
-  // draggable: 'li', // use tagName
-  // draggable: '#item', // use id
-  draggable: '.item', // use class
-  // handle: 'I', // use tagName
-  // handle: '#handle', // use id
-  // handle: (e) => e.target.tagName === 'I' ? true : false, // use function
-  handle: '.handle', // use class
-});
+let sortable = new Sortable(document.getElementById('group'));
 ```
 
 ## Options
 
 ```js
 new Sortable(element, {
-  draggable: '', // Specifies which items inside the element should be draggable
+  draggable: '>*', // Specifies which items inside the element should be draggable
   handle: '', // Drag handle selector within list items
   group: '', // see @Group
   lockAxis: '', // Axis on which dragging will be locked
@@ -113,17 +98,17 @@ new Sortable(element, {
     // see @SortableEvent
   },
 
-  // Element is dropped into the current list from another
+  // Element is dropped into the current list from another (in the process of dragging)
   onAdd: (event) => {
     // see @SortableEvent
   },
 
-  // Element is removed from the current list into another
+  // Element is removed from the current list into another (in the process of dragging)
   onRemove: (event) => {
     // see @SortableEvent
   },
 
-  // Dragging element changes position in the current list
+  // Dragging element changes position in the current list (in the process of dragging)
   onChange: (event) => {
     // see @SortableEvent
   },

@@ -90,11 +90,9 @@ export function off(el, event, fn) {
 }
 
 /**
- * get scroll element
- * @param {Boolean} includeSelf whether to include the passed element
- * @returns {HTMLElement} scroll element
+ * get scrolling element
  */
-export function getParentAutoScrollElement(el, includeSelf) {
+export function getAutoScrollElement(el, includeSelf) {
   // skip to window
   if (!el || !el.getBoundingClientRect) {
     return getWindowScrollingElement();
@@ -190,16 +188,6 @@ export function getRect(el, relativeToContainingBlock, container) {
 export function closest(el, selector, ctx, includeCTX) {
   if (!el) return;
 
-  if (ctx && !selector) {
-    let children = Array.prototype.slice.call(ctx.children);
-
-    for (let i = 0, len = children.length; i < len; i++) {
-      if (children[i] === el || containes(el, children[i])) {
-        return children[i];
-      }
-    }
-  }
-
   ctx = ctx || document;
   do {
     if (
@@ -221,21 +209,20 @@ export function closest(el, selector, ctx, includeCTX) {
 /**
  * Check if child element is contained in parent element
  */
-export function containes(el, root) {
-  if (!el || !root) return false;
-  if (root.compareDocumentPosition) {
-    return !!(root.compareDocumentPosition(el) & 16);
+export function containes(el, parent) {
+  if (!el || !parent) return false;
+  if (parent.compareDocumentPosition) {
+    return !!(parent.compareDocumentPosition(el) & 16);
   }
-  if (root.contains && el.nodeType === 1) {
-    return root.contains(el) && root !== el;
+  if (parent.contains && el.nodeType === 1) {
+    return parent.contains(el) && parent !== el;
   }
-  while ((el = el.parentNode)) if (el === root) return true;
+  while ((el = el.parentNode)) if (el === parent) return true;
   return false;
 }
 
 /**
- * Gets the last child in the el, ignoring ghostEl or invisible elements (clones)
- * @return {HTMLElement|null} The last child, ignoring ghostEl
+ * Gets the last child in the el, ignoring ghostEl and invisible elements
  */
 export function lastChild(el, selector) {
   let last = el.lastElementChild;
@@ -276,7 +263,6 @@ export function index(el, selector) {
 
 /**
  * Gets nth child of el, ignoring hidden children, sortable's elements (does not ignore clone if it's visible) and non-draggable elements
- * @return {HTMLElement} The child at index childNum, or null if not found
  */
 export function getChild(el, childNum, selector, includeDragEl) {
   let i = 0,
@@ -391,6 +377,9 @@ export function matches(el, selector) {
   return false;
 }
 
+/**
+ * get or set css property
+ */
 export function css(el, prop, val) {
   let style = el && el.style;
   if (style) {
@@ -410,10 +399,6 @@ export function css(el, prop, val) {
   }
 }
 
-/**
- * repaint
- * @param {HTMLElement} el
- */
 export function repaint(el) {
   return el.offsetWidth;
 }
@@ -433,6 +418,9 @@ export function comparePosition(a, b) {
       : 0;
 }
 
+/**
+ * Sorts the sequence of two elements.
+ */
 export function sort(before, after) {
   const compareValue = comparePosition(before, after);
   return compareValue === 2 ? 1 : compareValue === 4 ? -1 : 0;
@@ -442,10 +430,10 @@ export function preventDefault(evt) {
   evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
 }
 
-export function dispatchEvent({ sortable, name, params }) {
+export function dispatchEvent({ sortable, name, evt }) {
   const callback = sortable.options[name];
   if (typeof callback === 'function') {
-    callback(Object.assign({}, params));
+    callback(Object.assign({}, evt));
   }
 }
 

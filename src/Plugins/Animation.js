@@ -43,11 +43,11 @@ Animation.prototype = {
 
     for (let i = 0, len = animations.length; i < len; i++) {
       const { el, rect } = animations[i];
-      this._excute(el, rect);
+      this.execute(el, rect);
     }
   },
 
-  _excute(el, fromRect) {
+  execute(el, fromRect) {
     const toRect = getRect(el);
     if (toRect.top === fromRect.top && toRect.left === fromRect.left) return;
 
@@ -57,7 +57,7 @@ Animation.prototype = {
     css(el, 'transition', '');
     css(el, 'transform', `translate3d(${dx}px, ${dy}px, 0)`);
 
-    repaint(el);
+    this.repaintDummy = repaint(el);
 
     const { animation, easing } = this.options;
     css(el, 'transition', `transform ${animation}ms ${easing ? ' ' + easing : ''}`);
