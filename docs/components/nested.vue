@@ -34,16 +34,20 @@
 
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue';
-import Sortable from '../../src/index';
 
 const dnd = ref();
 const listRef = ref();
 
 onMounted(() => {
-  dnd.value = new Sortable(listRef.value, {
-    draggable: '.item',
-    chosenClass: 'chosen',
-  });
+  if (!import.meta.env.SSR) {
+    import('../../src/index').then((module) => {
+      const Sortable = module.default;
+      dnd.value = new Sortable(listRef.value, {
+        draggable: '.item',
+        chosenClass: 'chosen',
+      });
+    })
+  }
 });
 
 onUnmounted(() => {

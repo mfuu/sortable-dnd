@@ -30,7 +30,6 @@
 
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue';
-import Sortable from '../../src/index';
 
 const dnd0 = ref();
 const dnd1 = ref();
@@ -44,46 +43,49 @@ const groupRef3 = ref();
 const groupRef4 = ref();
 
 onMounted(() => {
-  dnd0.value = new Sortable(groupRef0.value, {
-    group: {
-      name: 'group',
-      pull: 'clone',
-      revertDrag: true,
-    },
-    chosenClass: 'chosen',
-  });
+  import('../../src/index').then((module) => {
+    const Sortable = module.default;
+    dnd0.value = new Sortable(groupRef0.value, {
+      group: {
+        name: 'group',
+        pull: 'clone',
+        revertDrag: true,
+      },
+      chosenClass: 'chosen',
+    });
 
-  dnd1.value = new Sortable(groupRef1.value, {
-    group: {
-      name: 'group1',
-      put: ['group', 'group2'],
-    },
-    chosenClass: 'chosen',
-  });
+    dnd1.value = new Sortable(groupRef1.value, {
+      group: {
+        name: 'group1',
+        put: ['group', 'group2'],
+      },
+      chosenClass: 'chosen',
+    });
 
-  dnd2.value = new Sortable(groupRef2.value, {
-    group: {
-      name: 'group2',
-      put: ['group', 'group1'],
-    },
-    chosenClass: 'chosen',
-  });
+    dnd2.value = new Sortable(groupRef2.value, {
+      group: {
+        name: 'group2',
+        put: ['group', 'group1'],
+      },
+      chosenClass: 'chosen',
+    });
 
-  dnd3.value = new Sortable(groupRef3.value, {
-    group: {
-      name: 'group3',
-      put: ['group', 'group4'],
-    },
-    chosenClass: 'chosen',
-  });
+    dnd3.value = new Sortable(groupRef3.value, {
+      group: {
+        name: 'group3',
+        put: ['group', 'group4'],
+      },
+      chosenClass: 'chosen',
+    });
 
-  dnd4.value = new Sortable(groupRef4.value, {
-    group: {
-      name: 'group4',
-      put: ['group', 'group3'],
-    },
-    chosenClass: 'chosen',
-  });
+    dnd4.value = new Sortable(groupRef4.value, {
+      group: {
+        name: 'group4',
+        put: ['group', 'group3'],
+      },
+      chosenClass: 'chosen',
+    });
+  })
 });
 
 onUnmounted(() => {
