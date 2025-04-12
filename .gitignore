@@ -3,7 +3,6 @@
 dev
 issues
 coverage
-docs
 *.html
 
 # dependencies
@@ -17,3 +16,7 @@ yarn-error.log*
 # lock files
 package-lock.json
 yarn.lock
+
+# vitepress
+cache
+docs/*/dist
