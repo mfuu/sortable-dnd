@@ -214,7 +214,7 @@ Sortable.prototype = {
 
     const { handle } = this.options;
     if (typeof handle === 'function' && !handle(event)) return;
-    if (typeof handle === 'string' && !matches(target, handle)) return;
+    if (typeof handle === 'string' && !closest(target, handle, dragEl)) return;
 
     const { delay, delayOnTouchOnly } = this.options;
     // Delay is impossible for native DnD in Edge or IE
@@ -353,7 +353,8 @@ Sortable.prototype = {
         left: rect.left,
         width: rect.width,
         height: rect.height,
-        zIndex: '100000',
+        margin: 0,
+        zIndex: 100000,
         opacity: '0.8',
         overflow: 'hidden',
         boxSizing: 'border-box',

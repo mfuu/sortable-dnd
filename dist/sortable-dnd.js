@@ -1,5 +1,5 @@
 /*!
- * sortable-dnd v0.6.22
+ * sortable-dnd v0.6.23
  * open source under the MIT license
  * https://github.com/mfuu/sortable-dnd#readme
  */
@@ -10,6 +10,15 @@
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, global.Sortable = factory());
 })(this, (function () { 'use strict';
 
+  function _extends() {
+    return _extends = Object.assign ? Object.assign.bind() : function (n) {
+      for (var e = 1; e < arguments.length; e++) {
+        var t = arguments[e];
+        for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]);
+      }
+      return n;
+    }, _extends.apply(null, arguments);
+  }
   function _typeof(o) {
     "@babel/helpers - typeof";
 
@@ -19,20 +28,6 @@
       return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
     }, _typeof(o);
   }
-  function _extends() {
-    _extends = Object.assign ? Object.assign.bind() : function (target) {
-      for (var i = 1; i < arguments.length; i++) {
-        var source = arguments[i];
-        for (var key in source) {
-          if (Object.prototype.hasOwnProperty.call(source, key)) {
-            target[key] = source[key];
-          }
-        }
-      }
-      return target;
-    };
-    return _extends.apply(this, arguments);
-  }
 
   var captureMode = {
     capture: false,
@@ -41,7 +36,7 @@
   var R_SPACE = /\s+/g;
   function userAgent(pattern) {
     if (typeof window !== 'undefined' && window.navigator) {
-      return !!( /*@__PURE__*/navigator.userAgent.match(pattern));
+      return !!(/*@__PURE__*/navigator.userAgent.match(pattern));
     }
   }
   var IE11OrLess = userAgent(/(?:Trident.*rv[ :]?11\.|msie|iemobile|Windows Phone)/i);
@@ -775,7 +770,7 @@
       if (this.multiplayer.useSelectHandle(event, target)) return;
       var handle = this.options.handle;
       if (typeof handle === 'function' && !handle(event)) return;
-      if (typeof handle === 'string' && !matches(target, handle)) return;
+      if (typeof handle === 'string' && !closest(target, handle, dragEl)) return;
       var _this$options = this.options,
         delay = _this$options.delay,
         delayOnTouchOnly = _this$options.delayOnTouchOnly;
@@ -894,7 +889,8 @@
         left: rect.left,
         width: rect.width,
         height: rect.height,
-        zIndex: '100000',
+        margin: 0,
+        zIndex: 100000,
         opacity: '0.8',
         overflow: 'hidden',
         boxSizing: 'border-box',
