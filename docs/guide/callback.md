@@ -6,12 +6,12 @@
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Callback when element is chosen
+Element is chosen.
 
 ```js
 new Sortable(element, {
   onChoose: (event) => {
-    // Element is chosen
+    // see @SortableEvent
   },
 });
 ```
@@ -22,7 +22,15 @@ new Sortable(element, {
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Callback when element is unchosen
+Element is unchosen.
+
+```ts
+new Sortable(element, {
+  onUnchoose: (event: SortableEvent) => {
+    // see @SortableEvent
+  },
+});
+```
 
 ## `onDrag`
 
@@ -30,7 +38,15 @@ Callback when element is unchosen
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Element dragging started
+Element dragging started.
+
+```ts
+new Sortable(element, {
+  onDrag: (event: SortableEvent) => {
+    // see @SortableEvent
+  },
+});
+```
 
 ## `onMove`
 
@@ -38,7 +54,15 @@ Element dragging started
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Move an item in the list or between lists
+Move an item in the list or between lists.
+
+```ts
+new Sortable(element, {
+  onMove: (event: SortableEvent) => {
+    // see @SortableEvent
+  },
+});
+```
 
 ## `onDrop`
 
@@ -46,7 +70,15 @@ Move an item in the list or between lists
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Element dragging is completed. Only record changes in the current list
+Element dragging is completed.
+
+```ts
+new Sortable(element, {
+  onDrop: (event: SortableEvent) => {
+    // see @SortableEvent
+  },
+});
+```
 
 ## `onAdd`
 
@@ -54,7 +86,15 @@ Element dragging is completed. Only record changes in the current list
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Element is dropped into the current list from another (in the process of dragging)
+Element is dropped into the current list from another (in the process of dragging).
+
+```ts
+new Sortable(element, {
+  onAdd: (event: SortableEvent) => {
+    // see @SortableEvent
+  },
+});
+```
 
 ## `onRemove`
 
@@ -62,7 +102,15 @@ Element is dropped into the current list from another (in the process of draggin
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Element is removed from the current list into another (in the process of dragging)
+Element is removed from the current list into another (in the process of dragging).
+
+```ts
+new Sortable(element, {
+  onRemove: (event: SortableEvent) => {
+    // see @SortableEvent
+  },
+});
+```
 
 ## `onChange`
 
@@ -70,20 +118,78 @@ Element is removed from the current list into another (in the process of draggin
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Dragging element changes position in the current list (in the process of dragging)
+Dragging element changes position in the current list (in the process of dragging).
 
-## `onSelect`
+```ts
+new Sortable(element, {
+  onChange: (event: SortableEvent) => {
+    // see @SortableEvent
+  },
+});
+```
 
-| **Type**   | **Default** |
-| ---------- | ----------- |
-| `Function` | `undefined` |
+## `SortableEvent`
 
-Element is selected. Takes effect in `multiple: true`
+### `event.from`
 
-## `onDeselect`
+previous list
 
-| **Type**   | **Default** |
-| ---------- | ----------- |
-| `Function` | `undefined` |
+### `event.to`
 
-Element is unselected. Takes effect in `multiple: true`
+list of currently placed drag element
+
+### `event.node`
+
+the dragged element
+
+### `event.clone`
+
+the clone element, all dnd operations are based on cloned element and do not alter the source dom(dragEl).
+
+### `event.target`
+
+drop element
+
+### `event.oldIndex`
+
+old index within parent.
+
+```
+-1: element added from another list to the current list
+```
+
+### `event.newIndex`
+
+new index within parent.
+
+```
+-1: element has been removed from the current list
+```
+
+### `event.event`
+
+TouchEvent | MouseEvent
+
+### `event.pullMode`
+
+Pull mode if dragging into another sortable.
+
+### `event.relative`
+
+Position of the drop element relative to the drag element after swap is complete.
+
+```js
+0: drag element is same as drop element
+
+1: drag element is after drop element
+
+-1: drag element is before drop element
+```
+
+### `event.revertDrag`
+
+revert draged element to initial position after moving to a another list on `{ pull: 'clone', revertDrag: true }`.
+
+### `event.backToOrigin`
+
+dragged element go back to the original list on `pull: 'clone'`.

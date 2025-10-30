@@ -47,6 +47,7 @@ export default defineConfig({
         base: '/demo/',
         items: [
           { text: 'Basic', link: 'basic' },
+          { text: 'Handle', link: 'handle' },
           { text: 'Grid', link: 'grid' },
           { text: 'Group', link: 'group' },
           { text: 'Nested', link: 'nested' },

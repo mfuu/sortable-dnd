@@ -18,7 +18,7 @@ npm install sortable-dnd
 
 ```html
 <ul id="group">
-  <li>1 </li>
+  <li>1</li>
   <li>2</li>
   <li>3</li>
   <li>4</li>
@@ -38,39 +38,41 @@ let sortable = new Sortable(document.getElementById('group'));
 
 ```js
 new Sortable(element, {
+  store: null, // store data
   draggable: '>*', // Specifies which items inside the element should be draggable
   handle: '', // Drag handle selector within list items
   group: '', // see @Group
   lockAxis: '', // Axis on which dragging will be locked
-  multiple: false, // Enable multiple drag
-  selectHandle: '', // Handle selector within list items which used to select element in `multiple: true`
 
   easing: '', // Easing for animation
-  animation: 150, // Animation speed moving items when sorting
+  direction: '', // Direction of Sortable, will be detected automatically if not given
+  animation: 150, // ms, animation speed moving items when sorting, `0` — without animation
   chosenClass: '', // Class name for the chosen item
-  selectedClass: '', // The class of the element when it is selected, it is usually used when multiple drag
   placeholderClass: '', // Class name for the drop placeholder
-  ghostStyle: {}, // The style of the mask element when dragging
-  ghostClass: '', // The class of the mask element when dragging
+  ghostStyle: {}, // Style object for the ghost element
+  ghostClass: '', // Class name for the ghost element
 
-  sortable: true, // Whether the current list can be sorted by dragging.
+  sortable: true, // Whether the current list can be sorted by dragging
   disabled: false, // Disables the sortable if set to true
   autoScroll: true, // Automatic scrolling when moving to the edge of the container
   scrollThreshold: 55, // Threshold to trigger autoscroll
   scrollSpeed: { x: 10, y: 10 }, // Vertical&Horizontal scrolling speed (px)
   delay: 0, // Time in milliseconds to define when the sorting should start
   delayOnTouchOnly: false, // Only delay if user is using touch
-  touchStartThreshold: 1, // How many *pixels* the point should move before cancelling a delayed drag event.
-  emptyInsertThreshold: -1, // Distance mouse must be from empty sortable to insert drag element into it.
-  fallbackOnBody: false, // Appends the ghost element into the document's body
-  store: null, // store data
-  direction: '', // Direction of Sortable, will be detected automatically if not given.
-  swapOnDrop: true, // When the value is false, the dragged element will return to the starting position of the drag
-  removeCloneOnDrop: true, // Whether to remove the cloneEl after the drag is complete.
+  touchStartThreshold: 1, // How many *pixels* the point should move before cancelling a delayed drag event
+  emptyInsertThreshold: -1, // Distance mouse must be from empty sortable to insert drag element into it
+  appendToBody: false, // Appends the ghost element into the document's body
+  swapOnDrop: true, // Whether to place the dragEl in the drop position after the drag is complete
+  removeCloneOnDrop: true, // Whether to remove the cloneEl after the drag is complete
+  dropOnAnimationEnd: false, // Trigger the `onDrop` event when the animation is complete
 
-  customGhost: (nodes) => {
+  customGhost: (node) => {
     // Customize the ghost element in drag
     // you must return an HTMLElement
+
+    // example:
+    const div = document.createElement('div');
+    return div;
   },
 
   // Element is chosen
@@ -112,16 +114,6 @@ new Sortable(element, {
   onChange: (event) => {
     // see @SortableEvent
   },
-
-  // Element is selected
-  onSelect: (event) => {
-    // see @SelectEvent
-  },
-
-  // Element is unselected
-  onDeselect: (event) => {
-    // see @SelectEvent
-  },
 });
 ```
 
@@ -153,26 +145,15 @@ group: {
 event.from; // previous list
 event.to; // list of currently placed drag element
 event.node; // dragged element
-event.nodes; // dragged elements
-event.clone; // cloned element, all dnd operations are based on cloned element and do not alter the source dom(node).
-event.clones; // cloned elements, there is a value only in the `pull: clone` after moving to a another list.
+event.clone; // cloned element, all dnd operations are based on cloned element and do not alter the source dom(dragEl).
 event.target; // drop element
 event.oldIndex; // old index within parent. `-1`: element added from another list to the current list
 event.newIndex; // new index within parent. `-1`: element has been removed from the current list
 event.event; // TouchEvent | MouseEvent
 event.pullMode; // Pull mode if dragging into another sortable.
 event.relative; // Position of the drop element relative to the drag element after swap is complete.
-event.revertDrag; // revert draged element to initial position after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
-event.backToOrigin; // dragged element go back to the original list in `pull: 'clone'`.
-```
-
-**SelectEvent**
-
-```js
-event.event; // TouchEvent | MouseEvent
-event.index; // index within parent
-event.node; // dragged element
-event.from; // list container
+event.revertDrag; // revert draged element to initial position after moving to a another list on `{ pull: 'clone', revertDrag: true }`.
+event.backToOrigin; // dragged element go back to the original list on `pull: 'clone'`.
 ```
 
 ## Methods
@@ -185,15 +166,6 @@ sortable.destroy();
 
 // Get or set the option value, depending on whether the `value` is passed in
 sortable.option(key, value?);
-
-// Selects the provided multi-drag item
-sortable.select(element);
-
-// Deselects the provided multi-drag item
-sortable.deselect(element);
-
-// Get the selected elements in the list, the return value is available in the case of `multiple`
-sortable.getSelectedElements();
 ```
 
 ## Static Methods & Properties

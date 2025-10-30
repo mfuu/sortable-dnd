@@ -1,9 +1,10 @@
 import Sortable from '../index.js';
-import { css, getRect, repaint } from '../utils.js';
+import { css, getRect, isRectEqual, matrix, repaint } from '../utils.js';
 
 function Animation(options) {
   this.options = options;
-  this.stack = [];
+  this.animationStack = [];
+  this.animationCallbackId = null;
 }
 
 Animation.prototype = {
@@ -20,56 +21,127 @@ Animation.prototype = {
       children = Array.prototype.slice.call(parentEl.children),
       animations = [];
 
-    for (let i = 0, len = children.length; i <= len; i++) {
+    // Animate only elements within the visible area
+    for (let i = 0, len = children.length; i < len; i++) {
       const el = children[i];
-      if (!el || el === Sortable.ghost || css(el, 'display') === 'none') continue;
+      if (el === Sortable.ghost || css(el, 'display') === 'none') continue;
 
       const rect = getRect(el);
       if (rect.bottom < 0 || rect.right < 0) continue;
 
-      // Animate only elements within the visible area
-      if (rect.top - rect.height > maxHeight || rect.left - rect.width > maxWidth) break;
+      // buffer front
+      if (animations.length === 0 && el.previousElementSibling) {
+        let prevEl = el.previousElementSibling;
+        do {
+          if (prevEl && prevEl !== Sortable.ghost && css(prevEl, 'display') !== 'none') {
+            break;
+          }
+        } while ((prevEl = prevEl.previousElementSibling));
+
+        if (prevEl) {
+          animations.push({ el: prevEl, rect: getRect(prevEl) });
+        }
+      }
+
+      // buffer behind
+      if (rect.top - rect.height > maxHeight || rect.left - rect.width > maxWidth) {
+        animations.push({ el, rect });
+        break;
+      }
 
       animations.push({ el, rect });
     }
 
-    this.stack.push(animations);
+    this.animationStack.push(animations);
   },
 
-  animate() {
-    const animations = this.stack.pop();
+  animate(callback) {
+    let animations = this.animationStack.pop(),
+      animation = this.options.animation;
 
-    if (!animations || !this.options.animation) return;
+    if (!animations || !animation) {
+      clearTimeout(this.animationCallbackId);
+      typeof callback === 'function' && callback();
+      return;
+    }
 
-    for (let i = 0, len = animations.length; i < len; i++) {
-      const { el, rect } = animations[i];
-      this.execute(el, rect);
+    let maxAnimationTime = 0;
+    animations.forEach((item) => {
+      let duration = 0,
+        el = item.el,
+        toRect = getRect(el),
+        fromRect = item.rect,
+        prevToRect = el.prevToRect,
+        prevFromRect = el.prevFromRect;
+
+      // if element is animating, try to calculate the remaining duration
+      if (el.animating && prevFromRect && prevToRect && isRectEqual(fromRect, toRect)) {
+        const elMatrix = matrix(el, true);
+        if (elMatrix) {
+          const remainingRect = { top: toRect.top - elMatrix.f, left: toRect.left - elMatrix.e };
+          const remainingDistance = calculateDistance(remainingRect, toRect);
+
+          const distance = calculateDistance(prevFromRect, prevToRect);
+
+          duration = (remainingDistance / distance) * animation;
+        }
+      }
+
+      if (!isRectEqual(fromRect, toRect)) {
+        el.prevFromRect = fromRect;
+        el.prevToRect = toRect;
+
+        if (!duration) {
+          duration = animation;
+        }
+
+        this.execute(el, fromRect, toRect, duration);
+      }
+
+      if (duration) {
+        maxAnimationTime = Math.max(maxAnimationTime, duration);
+      }
+    });
+
+    clearTimeout(this.animationCallbackId);
+    if (maxAnimationTime) {
+      this.animationCallbackId = setTimeout(() => {
+        typeof callback === 'function' && callback();
+      }, maxAnimationTime);
+    } else {
+      typeof callback === 'function' && callback();
     }
   },
 
-  execute(el, fromRect) {
-    const toRect = getRect(el);
-    if (toRect.top === fromRect.top && toRect.left === fromRect.left) return;
-
-    const dx = fromRect.left - toRect.left;
-    const dy = fromRect.top - toRect.top;
+  execute(el, fromRect, toRect, duration) {
+    let easing = this.options.easing || '',
+      dx = fromRect.left - toRect.left,
+      dy = fromRect.top - toRect.top;
 
     css(el, 'transition', '');
     css(el, 'transform', `translate3d(${dx}px, ${dy}px, 0)`);
 
     this.repaintDummy = repaint(el);
 
-    const { animation, easing } = this.options;
-    css(el, 'transition', `transform ${animation}ms ${easing ? ' ' + easing : ''}`);
+    css(el, 'transition', `transform ${duration}ms ${easing}`);
     css(el, 'transform', 'translate3d(0px, 0px, 0px)');
 
-    typeof el.animated === 'number' && clearTimeout(el.animated);
-    el.animated = setTimeout(() => {
+    typeof el.animating === 'number' && clearTimeout(el.animating);
+    el.animating = setTimeout(() => {
       css(el, 'transition', '');
       css(el, 'transform', '');
-      el.animated = null;
-    }, animation);
+
+      el.prevFromRect = null;
+      el.prevToRect = null;
+      el.animating = null;
+    }, duration);
   },
 };
+
+function calculateDistance(fromRect, toRect) {
+  return Math.sqrt(
+    Math.pow(fromRect.left - toRect.left, 2) + Math.pow(fromRect.top - toRect.top, 2)
+  );
+}
 
 export default Animation;

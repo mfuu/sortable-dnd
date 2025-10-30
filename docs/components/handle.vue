@@ -2,6 +2,7 @@
   <div ref="listRef">
     <div v-for="item in 10" :key="item" class="item">
       {{ item }}
+      <span class="handle">☰</span>
     </div>
   </div>
 </template>
@@ -17,6 +18,7 @@ onMounted(() => {
     import('../../src/index').then((module) => {
       const Sortable = module.default;
       dnd.value = new Sortable(listRef.value, {
+        handle: '.handle',
         chosenClass: 'chosen',
         onChoose: (evt) => {
           console.log('choose', evt);
@@ -40,6 +42,11 @@ onUnmounted(() => {
   box-shadow: 0px 2px 5px -2px #57bbb4;
   padding: 8px;
   margin-bottom: 5px;
+}
+
+.handle {
+  float: right;
+  cursor: move;
 }
 
 .chosen {

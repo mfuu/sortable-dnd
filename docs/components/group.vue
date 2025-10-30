@@ -1,129 +1,130 @@
 <template>
   <div class="group-wrap">
-    <div ref="groupRef0" class="group-item">
-      <div v-for="item in 10" :key="item" class="item">
-        {{ item }}
-      </div>
-    </div>
-    <div ref="groupRef1" class="group-item">
-      <div v-for="item in 10" :key="item" class="item pink">
-        {{ item }}
-      </div>
-    </div>
-    <div ref="groupRef2" class="group-item">
-      <div v-for="item in 10" :key="item" class="item pink">
-        {{ item + 10 }}
-      </div>
-    </div>
-    <div ref="groupRef3" class="group-item">
-      <div v-for="item in 10" :key="item" class="item green">
-        {{ item }}
-      </div>
-    </div>
-    <div ref="groupRef4" class="group-item">
-      <div v-for="item in 10" :key="item" class="item green">
-        {{ item + 10 }}
-      </div>
-    </div>
+    <dnd-comp
+      :group="{ name: 'group', pull: 'clone', revertDrag: true }"
+      class="group-item"
+    ></dnd-comp>
+
+    <dnd-comp
+      :group="{ name: 'group1', put: ['group', 'group2'] }"
+      class="group-item"
+      item-class="pink"
+    ></dnd-comp>
+
+    <dnd-comp
+      :group="{
+        name: 'group2',
+        put: ['group', 'group1'],
+      }"
+      class="group-item"
+      item-class="pink"
+    ></dnd-comp>
+
+    <dnd-comp
+      :group="{
+        name: 'group3',
+        put: ['group', 'group4'],
+      }"
+      class="group-item"
+      item-class="green"
+    ></dnd-comp>
+
+    <dnd-comp
+      :group="{
+        name: 'group4',
+        put: ['group', 'group3'],
+      }"
+      class="group-item"
+      item-class="green"
+    ></dnd-comp>
   </div>
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { defineComponent, h, onMounted, onUnmounted, ref } from 'vue';
 
-const dnd0 = ref();
-const dnd1 = ref();
-const dnd2 = ref();
-const dnd3 = ref();
-const dnd4 = ref();
-const groupRef0 = ref();
-const groupRef1 = ref();
-const groupRef2 = ref();
-const groupRef3 = ref();
-const groupRef4 = ref();
+const dndComp = defineComponent({
+  props: {
+    group: {
+      type: Object,
+      default: () => ({}),
+    },
+    itemClass: {
+      type: String,
+      default: '',
+    },
+  },
+  setup(props) {
+    const listRef = ref();
+    const dnd = ref();
 
-onMounted(() => {
-  import('../../src/index').then((module) => {
-    const Sortable = module.default;
-    dnd0.value = new Sortable(groupRef0.value, {
-      group: {
-        name: 'group',
-        pull: 'clone',
-        revertDrag: true,
-      },
-      chosenClass: 'chosen',
+    onMounted(() => {
+      if (!import.meta.env.SSR) {
+        import('../../src/index').then((module) => {
+          const Sortable = module.default;
+
+          dnd.value = new Sortable(listRef.value, {
+            group: props.group,
+            chosenClass: 'chosen',
+            placeholderClass: 'placeholder',
+            onChoose: (evt) => {
+              console.log('choose', evt);
+            },
+            onDrop: (evt) => {
+              console.log('drop', evt);
+            },
+            onAdd: (evt) => {
+              console.log('add', evt);
+            },
+            onRemove: (evt) => {
+              console.log('remove', evt);
+            },
+          });
+        });
+      }
     });
 
-    dnd1.value = new Sortable(groupRef1.value, {
-      group: {
-        name: 'group1',
-        put: ['group', 'group2'],
-      },
-      chosenClass: 'chosen',
+    onUnmounted(() => {
+      dnd.value.destroy();
     });
 
-    dnd2.value = new Sortable(groupRef2.value, {
-      group: {
-        name: 'group2',
-        put: ['group', 'group1'],
-      },
-      chosenClass: 'chosen',
-    });
+    const renderItems = () =>
+      new Array(10).fill(0).map((v, i) => h('div', { class: `item ${props.itemClass}` }, i + 1));
 
-    dnd3.value = new Sortable(groupRef3.value, {
-      group: {
-        name: 'group3',
-        put: ['group', 'group4'],
-      },
-      chosenClass: 'chosen',
-    });
-
-    dnd4.value = new Sortable(groupRef4.value, {
-      group: {
-        name: 'group4',
-        put: ['group', 'group3'],
-      },
-      chosenClass: 'chosen',
-    });
-  })
-});
-
-onUnmounted(() => {
-  dnd0.value.destroy();
-  dnd1.value.destroy();
-  dnd2.value.destroy();
-  dnd3.value.destroy();
-  dnd4.value.destroy();
+    return () => {
+      return h('div', { ref: listRef }, renderItems());
+    };
+  },
 });
 </script>
 
-<style scoped>
+<style>
 .group-wrap {
   display: flex;
   justify-content: space-between;
   gap: 20px;
-}
 
-.group-item {
-  flex: 1;
-}
+  .group-item {
+    flex: 1;
+  }
 
-.item {
-  border-radius: 5px;
-  box-shadow: 0px 2px 5px -2px #57bbb4;
-  padding: 8px;
-  margin-bottom: 5px;
-}
+  .item {
+    border-radius: 5px;
+    box-shadow: 0px 2px 5px -2px #57bbb4;
+    padding: 8px;
+    margin-bottom: 5px;
+  }
 
-.item.pink {
-  background-color: #fb566940;
-}
+  .item.pink {
+    background-color: #fb566940;
+  }
 
-.item.green {
-  background-color: turquoise;
-}
+  .item.green {
+    background-color: turquoise;
+  }
 
-.chosen {
-  box-shadow: 0px 0px 5px 1px #1984ff;
+  .chosen {
+    box-shadow: 0px 0px 5px 1px #1984ff;
+  }
 }
 </style>

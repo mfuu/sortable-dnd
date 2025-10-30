@@ -1,4 +1,4 @@
-import { getRect } from '../utils.js';
+import { expando, getScrollingElement, getRect } from '../utils.js';
 
 function AutoScroll(options) {
   this.options = options;
@@ -16,20 +16,27 @@ AutoScroll.prototype = {
 
   onStarted() {
     this.nulling();
-    this.autoScrollInterval = setInterval(() => {
-      this.autoScroll();
-    });
+    this.autoScrollInterval = setInterval(this.autoScroll.bind(this));
   },
 
-  onMove(scrollEl, moveEvent, options) {
+  onMove(target, moveEvent, el, defaultOptions) {
+    const options = el ? el[expando].options : defaultOptions;
+    if (el && !options.autoScroll) {
+      this.scrollEl = null;
+      return;
+    }
+
     this.options = options;
-    this.scrollEl = scrollEl;
+    this.scrollEl = getScrollingElement(target, true);
     this.moveEvent = moveEvent;
   },
 
   autoScroll() {
-    let event = this.moveEvent;
-    let scrollEl = this.scrollEl;
+    let options = this.options,
+      event = this.moveEvent,
+      scrollEl = this.scrollEl,
+      scrollThreshold = options.scrollThreshold,
+      scrollSpeed = options.scrollSpeed;
 
     if (!scrollEl || event.clientX === void 0 || event.clientY === void 0) return;
 
@@ -42,39 +49,42 @@ AutoScroll.prototype = {
     // execute only inside scrolling elements
     if (clientY < top || clientX > right || clientY > bottom || clientX < left) return;
 
-    const { scrollThreshold, scrollSpeed } = this.options;
     const { scrollTop, scrollLeft, scrollHeight, scrollWidth } = scrollEl;
 
-    // check direction
-    let toTop = scrollTop > 0 && clientY >= top && clientY <= top + scrollThreshold,
-      toLeft = scrollLeft > 0 && clientX >= left && clientX <= left + scrollThreshold,
-      toRight =
-        scrollLeft + width < scrollWidth && clientX <= right && clientX >= right - scrollThreshold,
-      toBottom =
-        scrollTop + height < scrollHeight &&
-        clientY <= bottom &&
-        clientY >= bottom - scrollThreshold;
+    scrollEl.scrollLeft += this.getScrollOffset(
+      clientX,
+      left,
+      right,
+      scrollThreshold,
+      scrollSpeed.x,
+      scrollLeft,
+      scrollWidth,
+      width
+    );
+    scrollEl.scrollTop += this.getScrollOffset(
+      clientY,
+      top,
+      bottom,
+      scrollThreshold,
+      scrollSpeed.y,
+      scrollTop,
+      scrollHeight,
+      height
+    );
+  },
 
-    if (toLeft) {
-      scrollEl.scrollLeft += Math.floor(
-        Math.max(-1, (clientX - left) / scrollThreshold - 1) * scrollSpeed.x
-      );
+  getScrollOffset(mousePos, edgeStart, edgeEnd, threshold, speed, scrollPos, maxScroll, dimension) {
+    if (scrollPos > 0 && mousePos >= edgeStart && mousePos <= edgeStart + threshold) {
+      return Math.max(-1, (mousePos - edgeStart) / threshold - 1) * speed;
+    } else if (
+      scrollPos + dimension < maxScroll &&
+      mousePos <= edgeEnd &&
+      mousePos >= edgeEnd - threshold
+    ) {
+      return Math.min(1, (mousePos - edgeEnd) / threshold + 1) * speed;
     }
-    if (toRight) {
-      scrollEl.scrollLeft += Math.ceil(
-        Math.min(1, (clientX - right) / scrollThreshold + 1) * scrollSpeed.x
-      );
-    }
-    if (toTop) {
-      scrollEl.scrollTop += Math.floor(
-        Math.max(-1, (clientY - top) / scrollThreshold - 1) * scrollSpeed.y
-      );
-    }
-    if (toBottom) {
-      scrollEl.scrollTop += Math.ceil(
-        Math.min(1, (clientY - bottom) / scrollThreshold + 1) * scrollSpeed.y
-      );
-    }
+
+    return 0;
   },
 };
 

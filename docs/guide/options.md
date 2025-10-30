@@ -4,16 +4,17 @@
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `String` | `''`        |
+| `String` | `'>*'`      |
 
-Specifies which items inside the element should be draggable
+Specifies which items inside the element should be draggable.
 
 ```js
 new Sortable(document.getElementById('group'), {
   // draggable: 'li', // use tagName
   // draggable: '#item', // use id
   // draggable: '>div', // use css selector
-  draggable: '.item', // use class
+  // draggable: '.item', // use class
+  draggable: '>*',
 });
 ```
 
@@ -23,14 +24,15 @@ new Sortable(document.getElementById('group'), {
 | -------------------- | ----------- |
 | `String \| Function` | `''`        |
 
-Drag handle selector within list items
+Drag handle selector within list items.
 
 ```js
 new Sortable(document.getElementById('group'), {
   // handle: 'I', // use tagName
   // handle: '#handle', // use id
   // handle: (e) => e.target.tagName === 'I' ? true : false, // use function
-  handle: '.handle', // use class
+  // handle: '.handle', // use class
+  handle: '',
 });
 ```
 
@@ -57,7 +59,7 @@ group: {
   // whether elements can be moved out of this list.
   pull: true | false | 'clone',
 
-  // revert drag element to initial position after moving to a another list.
+  // whether to revert the drag element to its initial position after clone to a another list.
   revertDrag: true | false,
 }
 ```
@@ -68,7 +70,7 @@ group: {
 | ------------ | ----------- |
 | `'x' \| 'y'` | `''`        |
 
-Axis on which dragging will be locked
+Axis on which dragging will be locked.
 
 ## `sortable`
 
@@ -76,7 +78,7 @@ Axis on which dragging will be locked
 | --------- | ----------- |
 | `Boolean` | `true`      |
 
-Whether the current list can be sorted by dragging
+Whether the current list can be sorted by dragging.
 
 ## `disabled`
 
@@ -84,7 +86,7 @@ Whether the current list can be sorted by dragging
 | --------- | ----------- |
 | `Boolean` | `false`     |
 
-Disables the sortable if set to true
+Disables the sortable if set to true.
 
 ## `store`
 
@@ -92,7 +94,7 @@ Disables the sortable if set to true
 | -------- | ----------- |
 | `any`    | `null`      |
 
-store any data
+store any data you want.
 
 ```js
 sortable.option('store', value); // store value
@@ -105,7 +107,7 @@ sortable.option('store'); // get the stored value
 | --------- | ----------- |
 | `Boolean` | `true`      |
 
-Automatic scrolling when moving to the edge of the container
+Automatic scrolling when moving to the edge of the container.
 
 ## `scrollThreshold`
 
@@ -113,7 +115,7 @@ Automatic scrolling when moving to the edge of the container
 | -------- | ----------- |
 | `Number` | `55`        |
 
-Threshold to trigger autoScroll
+Threshold to trigger autoScroll.
 
 ## `scrollSpeed`
 
@@ -121,23 +123,7 @@ Threshold to trigger autoScroll
 | -------- | ------------------ |
 | `Object` | `{ x: 10, y: 10 }` |
 
-Threshold to trigger autoScroll
-
-## `delay`
-
-| **Type** | **Default** |
-| -------- | ----------- |
-| `Number` | `0`         |
-
-Time in milliseconds to define when the drag should start
-
-## `delayOnTouchOnly`
-
-| **Type**  | **Default** |
-| --------- | ----------- |
-| `Boolean` | `false`     |
-
-Only delay if user is using touch
+Vertical & Horizontal scrolling speed (px)
 
 ## `direction`
 
@@ -145,7 +131,7 @@ Only delay if user is using touch
 | -------- | ----------- |
 | `String` | `''`        |
 
-Direction of Sortable, will be detected automatically if not given
+Direction of Sortable, will be detected automatically if not given.
 
 ## `easing`
 
@@ -165,63 +151,21 @@ For other possible values, see https://www.w3schools.com/cssref/css3_pr_animatio
 
 ms, animation speed moving items when sorting, `0` — without animation.
 
-## `chosenClass`
+## `delay`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `String` | `''`        |
+| `Number` | `0`         |
 
-Class name for the chosen item
+Time in milliseconds to define when the drag should start.
 
-## `placeholderClass`
-
-| **Type** | **Default** |
-| -------- | ----------- |
-| `String` | `''`        |
-
-Class name for the drop placeholder
-
-## `ghostClass`
-
-| **Type** | **Default** |
-| -------- | ----------- |
-| `String` | `''`        |
-
-The class of the mask element when dragging
-
-## `multiple`
+## `delayOnTouchOnly`
 
 | **Type**  | **Default** |
 | --------- | ----------- |
 | `Boolean` | `false`     |
 
-Enable multiple drag
-
-## `selectHandle`
-
-| **Type**             | **Default** |
-| -------------------- | ----------- |
-| `String \| Function` | `false`     |
-
-Handle selector within list items which used to select element in `multiple: true`
-
-```js
-new Sortable(document.getElementById('group'), {
-  multiple: true,
-  // selectHandle: 'Checkbox', // use tagName
-  // selectHandle: '#checkbox', // use id
-  // selectHandle: (e) => e.target.tagName === 'Checkbox' ? true : false, // use function
-  selectHandle: '.checkbox', // use class
-});
-```
-
-## `selectedClass`
-
-| **Type** | **Default** |
-| -------- | ----------- |
-| `String` | `''`        |
-
-The class of the element when it is selected, it is usually used when multiple drag
+Only delay if user is using touch.
 
 ## `touchStartThreshold`
 
@@ -237,15 +181,15 @@ How many *pixels* the point should move before cancelling a delayed drag event.
 | -------- | ----------- |
 | `Number` | `-1`        |
 
-Distance mouse must be from empty sortable to insert drag element into it
+Distance mouse must be from empty sortable to insert drag element into it.
 
-## `fallbackOnBody`
+## `appendToBody`
 
 | **Type**  | **Default** |
 | --------- | ----------- |
 | `Boolean` | `false`     |
 
-Appends the ghost element into the document's body
+Appends the ghost element into the document's body.
 
 ## `swapOnDrop`
 
@@ -255,7 +199,8 @@ Appends the ghost element into the document's body
 
 Whether to place the dragEl in the drop position after the drag is complete.
 
-When the value is `false`, the dragEl will not move to the drop position (for virtual-list).
+- `true`  : The dragEl will be placed in the drop position after the drag is complete.
+- `false` : The dragEl will not move to the drop position (used for virtual-list).
 
 ## `removeCloneOnDrop`
 
@@ -263,7 +208,15 @@ When the value is `false`, the dragEl will not move to the drop position (for vi
 | --------- | ----------- |
 | `Boolean` | `true`      |
 
-Whether to remove the cloneEl after the drag is complete
+Whether to remove the cloneEl after the drag is complete.
+
+## `dropOnAnimationEnd`
+
+| **Type**  | **Default** |
+| --------- | ----------- |
+| `Boolean` | `false`     |
+
+Trigger the `onDrop` event when the animation is complete.
 
 ## `customGhost`
 
@@ -271,7 +224,7 @@ Whether to remove the cloneEl after the drag is complete
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Customize the ghost element in drag
+Customize the ghost element in drag.
 
 ```js
 new Sortable(element, {
@@ -284,3 +237,35 @@ new Sortable(element, {
   },
 });
 ```
+
+## `chosenClass`
+
+| **Type** | **Default** |
+| -------- | ----------- |
+| `String` | `''`        |
+
+Class name for the chosen item.
+
+## `placeholderClass`
+
+| **Type** | **Default** |
+| -------- | ----------- |
+| `String` | `''`        |
+
+Class name for the drop placeholder.
+
+## `ghostClass`
+
+| **Type** | **Default** |
+| -------- | ----------- |
+| `String` | `''`        |
+
+Class name for the ghost element.
+
+## `ghostStyle`
+
+| **Type** | **Default** |
+| -------- | ----------- |
+| `Object` | `{}`        |
+
+Style object for the ghost element.

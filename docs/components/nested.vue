@@ -45,8 +45,14 @@ onMounted(() => {
       dnd.value = new Sortable(listRef.value, {
         draggable: '.item',
         chosenClass: 'chosen',
+        onChoose: (evt) => {
+          console.log('choose', evt);
+        },
+        onDrop: (evt) => {
+          console.log('drop', evt);
+        },
       });
-    })
+    });
   }
 });
 

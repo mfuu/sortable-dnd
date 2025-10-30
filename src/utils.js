@@ -34,24 +34,9 @@ export const supportPassive = (function () {
   return supportPassive;
 })();
 
-export const cssVendorPrefix = (function () {
-  if (typeof window === 'undefined' || typeof document === 'undefined') {
-    // Server environment
-    return '';
-  }
-
-  // window.getComputedStyle() returns null inside an iframe with `display: none`
-  // in this case return an array with a fake mozilla style in it.
-  const styles = window.getComputedStyle(document.documentElement, '') || ['-moz-hidden-iframe'];
-  const pre = (Array.prototype.slice
-    .call(styles)
-    .join('')
-    .match(/-(moz|webkit|ms)-/) ||
-    (styles.OLink === '' && ['', 'o']))[1];
-
-  return pre ? `-${pre}-` : '';
-})();
-
+/**
+ * check if element is html element
+ */
 export function isHTMLElement(el) {
   if (!el) return false;
   let ctx = document.createElement('div');
@@ -89,10 +74,7 @@ export function off(el, event, fn) {
   }
 }
 
-/**
- * get scrolling element
- */
-export function getAutoScrollElement(el, includeSelf) {
+export function getScrollingElement(el, includeSelf) {
   // skip to window
   if (!el || !el.getBoundingClientRect) {
     return getWindowScrollingElement();
@@ -171,7 +153,6 @@ export function getRect(el, relativeToContainingBlock, container) {
 
         break;
       }
-      /* jshint boss:true */
     } while ((container = container.parentNode));
   }
 
@@ -185,6 +166,9 @@ export function getRect(el, relativeToContainingBlock, container) {
   };
 }
 
+/**
+ * Finds the closest element that matches a selector.
+ */
 export function closest(el, selector, ctx, includeCTX) {
   if (!el) return;
 
@@ -209,15 +193,19 @@ export function closest(el, selector, ctx, includeCTX) {
 /**
  * Check if child element is contained in parent element
  */
-export function containes(el, parent) {
+export function contains(el, parent) {
   if (!el || !parent) return false;
+
   if (parent.compareDocumentPosition) {
     return !!(parent.compareDocumentPosition(el) & 16);
   }
+
   if (parent.contains && el.nodeType === 1) {
     return parent.contains(el) && parent !== el;
   }
+
   while ((el = el.parentNode)) if (el === parent) return true;
+
   return false;
 }
 
@@ -250,9 +238,10 @@ export function index(el, selector) {
   let index = 0;
   while ((el = el.previousElementSibling)) {
     if (
+      el !== Sortable.ghost &&
       el.nodeName.toUpperCase() !== 'TEMPLATE' &&
-      (!selector || matches(el, selector)) &&
-      css(el, 'display') !== 'none'
+      css(el, 'display') !== 'none' &&
+      (!selector || matches(el, selector))
     ) {
       index++;
     }
@@ -339,15 +328,15 @@ export function detectDirection(el, selector) {
 /**
  * add or remove element's class
  */
-export function toggleClass(el, name, state) {
+export function toggleClass(el, name, isAdd) {
   if (el && name) {
     if (el.classList) {
-      el.classList[state ? 'add' : 'remove'](name);
+      el.classList[isAdd ? 'add' : 'remove'](name);
     } else {
       const className = (' ' + el.className + ' ')
         .replace(R_SPACE, ' ')
         .replace(' ' + name + ' ', ' ');
-      el.className = (className + (state ? ' ' + name : '')).replace(R_SPACE, ' ');
+      el.className = (className + (isAdd ? ' ' + name : '')).replace(R_SPACE, ' ');
     }
   }
 }
@@ -399,12 +388,41 @@ export function css(el, prop, val) {
   }
 }
 
+export function matrix(el, selfOnly) {
+  let appliedTransforms = '';
+  if (typeof el === 'string') {
+    appliedTransforms = el;
+  } else {
+    do {
+      let transform = css(el, 'transform');
+
+      if (transform && transform !== 'none') {
+        appliedTransforms = transform + ' ' + appliedTransforms;
+      }
+    } while (!selfOnly && (el = el.parentNode));
+  }
+
+  const matrixFn =
+    window.DOMMatrix || window.WebKitCSSMatrix || window.CSSMatrix || window.MSCSSMatrix;
+
+  return matrixFn && new matrixFn(appliedTransforms);
+}
+
+export function isRectEqual(rect1, rect2) {
+  return (
+    Math.round(rect1.top) === Math.round(rect2.top) &&
+    Math.round(rect1.left) === Math.round(rect2.left) &&
+    Math.round(rect1.height) === Math.round(rect2.height) &&
+    Math.round(rect1.width) === Math.round(rect2.width)
+  );
+}
+
 export function repaint(el) {
   return el.offsetWidth;
 }
 
 /**
- * Reports the position of its argument node relative to the node on which it is called.
+ * Compares the position of two DOM nodes.
  */
 export function comparePosition(a, b) {
   return a.compareDocumentPosition
@@ -433,8 +451,16 @@ export function preventDefault(evt) {
 export function dispatchEvent({ sortable, name, evt }) {
   const callback = sortable.options[name];
   if (typeof callback === 'function') {
-    callback(Object.assign({}, evt));
+    return callback(Object.assign({}, evt));
   }
+}
+
+export function result(option, ...args) {
+  if (typeof option === 'function') {
+    return option(...args);
+  }
+
+  return option;
 }
 
 export const expando = 'Sortable' + Date.now();

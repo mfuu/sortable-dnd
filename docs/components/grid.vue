@@ -13,11 +13,17 @@ const dnd = ref();
 const listRef = ref();
 
 onMounted(() => {
-  if (!import.meta.env.SSR) { 
+  if (!import.meta.env.SSR) {
     import('../../src/index').then((module) => {
       const Sortable = module.default;
       dnd.value = new Sortable(listRef.value, {
         chosenClass: 'chosen',
+        onChoose: (evt) => {
+          console.log('choose', evt);
+        },
+        onDrop: (evt) => {
+          console.log('drop', evt);
+        },
       });
     });
   }
