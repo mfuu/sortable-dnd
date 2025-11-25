@@ -43,14 +43,16 @@ new Sortable(element, {
   handle: '', // Drag handle selector within list items
   group: '', // see @Group
   lockAxis: '', // Axis on which dragging will be locked
-
-  easing: '', // Easing for animation
   direction: '', // Direction of Sortable, will be detected automatically if not given
   animation: 150, // ms, animation speed moving items when sorting, `0` — without animation
+
+  easing: '', // Easing for animation
   chosenClass: '', // Class name for the chosen item
   placeholderClass: '', // Class name for the drop placeholder
   ghostStyle: {}, // Style object for the ghost element
   ghostClass: '', // Class name for the ghost element
+  ghostContainer: null, // Container element to append the ghost Element to
+  appendToBody: false, // Appends the ghost Element into the Document's Body
 
   sortable: true, // Whether the current list can be sorted by dragging
   disabled: false, // Disables the sortable if set to true
@@ -61,7 +63,6 @@ new Sortable(element, {
   delayOnTouchOnly: false, // Only delay if user is using touch
   touchStartThreshold: 1, // How many *pixels* the point should move before cancelling a delayed drag event
   emptyInsertThreshold: -1, // Distance mouse must be from empty sortable to insert drag element into it
-  appendToBody: false, // Appends the ghost element into the document's body
   swapOnDrop: true, // Whether to place the dragEl in the drop position after the drag is complete
   removeCloneOnDrop: true, // Whether to remove the cloneEl after the drag is complete
   dropOnAnimationEnd: false, // Trigger the `onDrop` event when the animation is complete

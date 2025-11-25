@@ -282,6 +282,13 @@ export interface SortableOptions {
   appendToBody?: boolean;
 
   /**
+   * Container element to append the ghost element to.
+   * If not set, the ghost element will be appended to the sortable element.
+   * @defaults `null`
+   */
+  ghostContainer?: HTMLElement | ((sortable: Sortable) => HTMLElement);
+
+  /**
    * Whether to place the dragEl in the drop position after the drag is complete.
    *
    * - `true`  : The dragEl will be placed in the drop position after the drag is complete.

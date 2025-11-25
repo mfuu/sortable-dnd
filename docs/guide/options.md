@@ -183,14 +183,6 @@ How many *pixels* the point should move before cancelling a delayed drag event.
 
 Distance mouse must be from empty sortable to insert drag element into it.
 
-## `appendToBody`
-
-| **Type**  | **Default** |
-| --------- | ----------- |
-| `Boolean` | `false`     |
-
-Appends the ghost element into the document's body.
-
 ## `swapOnDrop`
 
 | **Type**  | **Default** |
@@ -269,3 +261,23 @@ Class name for the ghost element.
 | `Object` | `{}`        |
 
 Style object for the ghost element.
+
+## `ghostContainer`
+
+| **Type**      | **Default** |
+| ------------- | ----------- |
+| `HTMLElement` | `null`      |
+
+Container element to append the ghost Element to.
+
+If not set, the ghost Element will be appended to the sortable Element.
+
+## `appendToBody`
+
+| **Type**  | **Default** |
+| --------- | ----------- |
+| `Boolean` | `false`     |
+
+Appends the ghost Element into the Document's Body.
+
+If set to `true`, the `ghostContainer` option will be ignored.

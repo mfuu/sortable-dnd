@@ -130,10 +130,12 @@ function Sortable(el, options) {
     direction: '',
     animation: 150,
     easing: '',
-    ghostClass: '',
-    ghostStyle: {},
     chosenClass: '',
     placeholderClass: '',
+    ghostClass: '',
+    ghostStyle: {},
+    ghostContainer: null,
+    appendToBody: false,
     autoScroll: true,
     scrollThreshold: 55,
     scrollSpeed: { x: 10, y: 10 },
@@ -142,7 +144,6 @@ function Sortable(el, options) {
     swapOnDrop: true,
     removeCloneOnDrop: true,
     dropOnAnimationEnd: false,
-    appendToBody: false,
     supportTouch: 'ontouchstart' in window,
     touchStartThreshold:
       (Number.parseInt ? Number : window).parseInt(window.devicePixelRatio, 10) || 1,
@@ -337,7 +338,9 @@ Sortable.prototype = {
 
     let options = this.options;
 
-    const container = options.appendToBody ? document.body : this.el;
+    const container = options.appendToBody
+      ? document.body
+      : result(options.ghostContainer, this) || this.el;
     const element = result(options.customGhost, cloneEl) || cloneEl;
 
     ghostEl = element.cloneNode(true);
