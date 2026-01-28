@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { defineComponent, h, onMounted, onUnmounted, ref } from 'vue';
+import { defineComponent, h, inject, onMounted, onUnmounted, ref } from 'vue';
 
 const dndComp = defineComponent({
   props: {
@@ -59,29 +59,24 @@ const dndComp = defineComponent({
     const dnd = ref();
 
     onMounted(() => {
-      if (!import.meta.env.SSR) {
-        import('../../src/index').then((module) => {
-          const Sortable = module.default;
-
-          dnd.value = new Sortable(listRef.value, {
-            group: props.group,
-            chosenClass: 'chosen',
-            placeholderClass: 'placeholder',
-            onChoose: (evt) => {
-              console.log('choose', evt);
-            },
-            onDrop: (evt) => {
-              console.log('drop', evt);
-            },
-            onAdd: (evt) => {
-              console.log('add', evt);
-            },
-            onRemove: (evt) => {
-              console.log('remove', evt);
-            },
-          });
-        });
-      }
+      const Sortable = inject('Sortable');
+      dnd.value = new Sortable(listRef.value, {
+        group: props.group,
+        chosenClass: 'chosen',
+        placeholderClass: 'placeholder',
+        onChoose: (evt) => {
+          console.log('choose', evt);
+        },
+        onDrop: (evt) => {
+          console.log('drop', evt);
+        },
+        onAdd: (evt) => {
+          console.log('add', evt);
+        },
+        onRemove: (evt) => {
+          console.log('remove', evt);
+        },
+      });
     });
 
     onUnmounted(() => {

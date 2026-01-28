@@ -33,27 +33,23 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { inject, onMounted, onUnmounted, ref } from 'vue';
 
 const dnd = ref();
 const listRef = ref();
 
 onMounted(() => {
-  if (!import.meta.env.SSR) {
-    import('../../src/index').then((module) => {
-      const Sortable = module.default;
-      dnd.value = new Sortable(listRef.value, {
-        draggable: '.item',
-        chosenClass: 'chosen',
-        onChoose: (evt) => {
-          console.log('choose', evt);
-        },
-        onDrop: (evt) => {
-          console.log('drop', evt);
-        },
-      });
-    });
-  }
+  const Sortable = inject('Sortable');
+  dnd.value = new Sortable(listRef.value, {
+    draggable: '.item',
+    chosenClass: 'chosen',
+    onChoose: (evt) => {
+      console.log('choose', evt);
+    },
+    onDrop: (evt) => {
+      console.log('drop', evt);
+    },
+  });
 });
 
 onUnmounted(() => {

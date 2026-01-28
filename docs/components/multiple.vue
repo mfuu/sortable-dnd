@@ -1,5 +1,5 @@
 <template>
-  <div ref="checkListRef" class="flex-1">
+  <div ref="listRef" class="flex-1">
     <div
       v-for="item in list"
       :key="item.id"
@@ -14,10 +14,10 @@
 </template>
 
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { inject, onMounted, onUnmounted, ref } from 'vue';
 
-const checkDnd = ref(null);
-const checkListRef = ref();
+const dnd = ref(null);
+const listRef = ref();
 
 const isChoose = ref(false);
 
@@ -28,76 +28,71 @@ const list = ref(
 );
 
 onMounted(() => {
-  if (!import.meta.env.SSR) {
-    import('../../src/index').then((module) => {
-      const Sortable = module.default;
+  const Sortable = inject('Sortable');
+  dnd.value = new Sortable(listRef.value, {
+    handle: '.handle',
+    multiple: true,
+    chosenClass: 'chosen',
+    animation: 500,
+    swapOnDrop: false,
+    dropOnAnimationEnd: true,
+    onChoose: (evt) => {
+      console.log('choose', evt);
 
-      checkDnd.value = new Sortable(checkListRef.value, {
-        handle: '.handle',
-        multiple: true,
-        chosenClass: 'chosen',
-        animation: 500,
-        swapOnDrop: false,
-        dropOnAnimationEnd: true,
-        onChoose: (evt) => {
-          console.log('choose', evt);
+      isChoose.value = true;
+    },
+    onUnchoose: (evt) => {
+      console.log('unchoose', evt);
 
-          isChoose.value = true;
-        },
-        onUnchoose: (evt) => {
-          console.log('unchoose', evt);
+      isChoose.value = false;
+    },
+    onDrag: (evt) => {
+      console.log('drag', evt);
+    },
+    onDrop: (evt) => {
+      console.log('drop', evt);
 
-          isChoose.value = false;
-        },
-        onDrag: (evt) => {
-          console.log('drag', evt);
-        },
-        onDrop: (evt) => {
-          console.log('drop', evt);
+      if (evt.relative === 0) {
+        return;
+      }
 
-          if (evt.relative === 0) {
-            return;
-          }
+      const tempList = [...list.value];
 
-          const tempList = [...list.value];
+      const nodeItem = tempList[evt.oldIndex];
+      const targetId = tempList[evt.newIndex].id;
 
-          const nodeItem = tempList[evt.oldIndex];
-          const targetId = tempList[evt.newIndex].id;
+      let selectedItems = [];
+      // multi-drag
+      if (nodeItem.selected) {
+        selectedItems = tempList.filter((item) => item.selected);
 
-          let selectedItems = [];
-          // multi-drag
-          if (nodeItem.selected) {
-            selectedItems = tempList.filter((item) => item.selected);
+        if (selectedItems.find((item) => item.id === targetId)) {
+          return;
+        }
+      } else {
+        // single-drag
+        selectedItems = [nodeItem];
+      }
 
-            if (selectedItems.find((item) => item.id === targetId)) {
-              return;
-            }
-          } else {
-            // single-drag
-            selectedItems = [nodeItem];
-          }
-
-          selectedItems.forEach((item) => {
-            tempList.splice(tempList.indexOf(item), 1);
-          });
-
-          let dropIndex = tempList.findIndex((item) => item.id === targetId);
-
-          if (evt.oldIndex < evt.newIndex && evt.relative === 1) {
-            dropIndex += evt.relative;
-          }
-
-          tempList.splice(dropIndex, 0, ...selectedItems);
-
-          list.value = tempList;
-        },
+      selectedItems.forEach((item) => {
+        tempList.splice(tempList.indexOf(item), 1);
       });
-    });
-  }
+
+      let dropIndex = tempList.findIndex((item) => item.id === targetId);
+
+      if (evt.oldIndex < evt.newIndex && evt.relative === 1) {
+        dropIndex += evt.relative;
+      }
+
+      tempList.splice(dropIndex, 0, ...selectedItems);
+
+      list.value = tempList;
+    },
+  });
 });
 
 onUnmounted(() => {
-  checkDnd.value.destroy();
+  dnd.value.destroy();
 });
 </script>
 

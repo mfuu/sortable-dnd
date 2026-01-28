@@ -6,5 +6,10 @@ export default {
   ...DefaultTheme,
   async enhanceApp({ app }) {
     app.component('demo-preview', ElementPlusContainer);
+
+    if (!import.meta.env.SSR) {
+      const plugin = await import('../../../src/index');
+      app.provide('Sortable', plugin.default);
+    }
   },
 };
