@@ -21,39 +21,11 @@ export const IOS = userAgent(/iP(ad|od|hone)/i);
 export const ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
 
 /**
- * detect passive event support
- */
-export const supportPassive = (function () {
-  let supportPassive = false;
-  document.addEventListener('checkIfSupportPassive', null, {
-    get passive() {
-      supportPassive = true;
-      return true;
-    },
-  });
-  return supportPassive;
-})();
-
-/**
- * check if element is html element
- */
-export function isHTMLElement(el) {
-  if (!el) return false;
-  let ctx = document.createElement('div');
-  try {
-    ctx.appendChild(el.cloneNode(true));
-    return el.nodeType == 1 ? true : false;
-  } catch (e) {
-    return el == window || el == document;
-  }
-}
-
-/**
  * add specified event listener
  */
 export function on(el, event, fn) {
   if (window.addEventListener) {
-    el.addEventListener(event, fn, supportPassive || !IE11OrLess ? captureMode : false);
+    el.addEventListener(event, fn, !IE11OrLess && captureMode);
   } else if (window.attachEvent) {
     el.attachEvent('on' + event, fn);
   } else {
@@ -66,12 +38,20 @@ export function on(el, event, fn) {
  */
 export function off(el, event, fn) {
   if (window.removeEventListener) {
-    el.removeEventListener(event, fn, supportPassive || !IE11OrLess ? captureMode : false);
+    el.removeEventListener(event, fn, !IE11OrLess && captureMode);
   } else if (window.detachEvent) {
     el.detachEvent('on' + event, fn);
   } else {
     el['on' + event] = null;
   }
+}
+
+/**
+ * check if element is html element
+ */
+export function isHTMLElement(el) {
+  if (!el) return false;
+  return el.nodeType === 1 || el === window || el === document;
 }
 
 export function getScrollingElement(el, includeSelf) {
@@ -141,19 +121,26 @@ export function getRect(el, relativeToContainingBlock, container) {
   if (relativeToContainingBlock && el !== window) {
     container = container || el.parentNode;
 
-    do {
-      if (container && container.getBoundingClientRect) {
-        let containerRect = container.getBoundingClientRect();
+    if (!IE11OrLess) {
+      do {
+        if (
+          container &&
+          container.getBoundingClientRect &&
+          css(container, 'transform') !== 'none'
+        ) {
+          let containerRect = container.getBoundingClientRect();
 
-        // Set relative to edges of padding box of container
-        top -= containerRect.top + parseInt(css(container, 'border-top-width'));
-        left -= containerRect.left + parseInt(css(container, 'border-left-width'));
-        bottom = top + elRect.height;
-        right = left + elRect.width;
+          // Set relative to edges of padding box of container
+          top -= containerRect.top + parseInt(css(container, 'border-top-width'));
+          left -= containerRect.left + parseInt(css(container, 'border-left-width'));
+          bottom = top + elRect.height;
+          right = left + elRect.width;
 
-        break;
-      }
-    } while ((container = container.parentNode));
+          break;
+        }
+        /* jshint boss:true */
+      } while ((container = container.parentNode));
+    }
   }
 
   return {
@@ -170,22 +157,23 @@ export function getRect(el, relativeToContainingBlock, container) {
  * Finds the closest element that matches a selector.
  */
 export function closest(el, selector, ctx, includeCTX) {
-  if (!el) return;
+  if (el) {
+    ctx = ctx || document;
 
-  ctx = ctx || document;
-  do {
-    if (
-      (selector != null &&
-        (selector[0] === '>'
-          ? el.parentNode === ctx && matches(el, selector)
-          : matches(el, selector))) ||
-      (includeCTX && el === ctx)
-    ) {
-      return el;
-    }
+    do {
+      if (
+        (selector != null &&
+          (selector[0] === '>'
+            ? el.parentNode === ctx && matches(el, selector)
+            : matches(el, selector))) ||
+        (includeCTX && el === ctx)
+      ) {
+        return el;
+      }
 
-    if (el === ctx) break;
-  } while ((el = el.parentNode));
+      if (el === ctx) break;
+    } while ((el = el.parentNode));
+  }
 
   return null;
 }
@@ -262,8 +250,8 @@ export function getChild(el, childNum, selector, includeDragEl) {
     if (
       children[i] !== Sortable.ghost &&
       css(children[i], 'display') !== 'none' &&
-      closest(children[i], selector, el, false) &&
-      (includeDragEl || children[i] !== Sortable.dragged)
+      (includeDragEl || children[i] !== Sortable.dragged) &&
+      closest(children[i], selector, el, false)
     ) {
       if (currentChild === childNum) {
         return children[i];
@@ -345,22 +333,20 @@ export function toggleClass(el, name, isAdd) {
  * Check if a DOM element matches a given selector
  */
 export function matches(el, selector) {
-  if (!selector) return;
+  if (!el || !selector) return false;
 
   selector[0] === '>' && (selector = selector.substring(1));
 
-  if (el) {
-    try {
-      if (el.matches) {
-        return el.matches(selector);
-      } else if (el.msMatchesSelector) {
-        return el.msMatchesSelector(selector);
-      } else if (el.webkitMatchesSelector) {
-        return el.webkitMatchesSelector(selector);
-      }
-    } catch (error) {
-      return false;
+  try {
+    if (el.matches) {
+      return el.matches(selector);
+    } else if (el.msMatchesSelector) {
+      return el.msMatchesSelector(selector);
+    } else if (el.webkitMatchesSelector) {
+      return el.webkitMatchesSelector(selector);
     }
+  } catch (_) {
+    return false;
   }
 
   return false;
@@ -373,8 +359,8 @@ export function css(el, prop, val) {
   let style = el && el.style;
   if (style) {
     if (val === void 0) {
-      if (document.defaultView && document.defaultView.getComputedStyle) {
-        val = document.defaultView.getComputedStyle(el, '');
+      if (window.getComputedStyle) {
+        val = window.getComputedStyle(el, '');
       } else if (el.currentStyle) {
         val = el.currentStyle;
       }
@@ -422,10 +408,11 @@ export function repaint(el) {
 }
 
 /**
- * Compares the position of two DOM nodes.
+ * Sort two elements by their position in the document.
  */
-export function comparePosition(a, b) {
-  return a.compareDocumentPosition
+export function sort(a, b) {
+  // Compare the position of two elements.
+  const compareValue = a.compareDocumentPosition
     ? a.compareDocumentPosition(b)
     : a.contains
       ? (a != b && a.contains(b) && 16) +
@@ -434,25 +421,8 @@ export function comparePosition(a, b) {
           ? (a.sourceIndex < b.sourceIndex && 4) + (a.sourceIndex > b.sourceIndex && 2)
           : 1)
       : 0;
-}
 
-/**
- * Sorts the sequence of two elements.
- */
-export function sort(before, after) {
-  const compareValue = comparePosition(before, after);
   return compareValue === 2 ? 1 : compareValue === 4 ? -1 : 0;
-}
-
-export function preventDefault(evt) {
-  evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
-}
-
-export function dispatchEvent({ sortable, name, evt }) {
-  const callback = sortable.options[name];
-  if (typeof callback === 'function') {
-    return callback(Object.assign({}, evt));
-  }
 }
 
 export function result(option, ...args) {
@@ -461,6 +431,10 @@ export function result(option, ...args) {
   }
 
   return option;
+}
+
+export function preventDefault(evt) {
+  evt.preventDefault !== void 0 && evt.cancelable && evt.preventDefault();
 }
 
 export const expando = 'Sortable' + Date.now();

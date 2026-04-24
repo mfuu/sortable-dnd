@@ -1,6 +1,6 @@
 {
   "name": "sortable-dnd",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "JS library for drag-and-drop lists, supports sortable and draggable",
   "main": "dist/sortable-dnd.min.js",
   "types": "types/index.d.ts",
@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "rollup --config",
-    "docs:dev": "vitepress dev docs",
+    "docs:dev": "vitepress dev docs --host 0.0.0.0",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
   },

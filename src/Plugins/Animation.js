@@ -57,9 +57,9 @@ Animation.prototype = {
 
   animate(callback) {
     let animations = this.animationStack.pop(),
-      animation = this.options.animation;
+      duration = this.options.animation;
 
-    if (!animations || !animation) {
+    if (!animations || !duration) {
       clearTimeout(this.animationCallbackId);
       typeof callback === 'function' && callback();
       return;
@@ -67,7 +67,7 @@ Animation.prototype = {
 
     let maxAnimationTime = 0;
     animations.forEach((item) => {
-      let duration = 0,
+      let time = 0,
         el = item.el,
         toRect = getRect(el),
         fromRect = item.rect,
@@ -83,7 +83,7 @@ Animation.prototype = {
 
           const distance = calculateDistance(prevFromRect, prevToRect);
 
-          duration = (remainingDistance / distance) * animation;
+          time = (remainingDistance / distance) * duration;
         }
       }
 
@@ -91,15 +91,15 @@ Animation.prototype = {
         el.prevFromRect = fromRect;
         el.prevToRect = toRect;
 
-        if (!duration) {
-          duration = animation;
+        if (!time) {
+          time = duration;
         }
 
-        this.execute(el, fromRect, toRect, duration);
+        this.execute(el, fromRect, toRect, time);
       }
 
-      if (duration) {
-        maxAnimationTime = Math.max(maxAnimationTime, duration);
+      if (time) {
+        maxAnimationTime = Math.max(maxAnimationTime, time);
       }
     });
 
@@ -114,17 +114,21 @@ Animation.prototype = {
   },
 
   execute(el, fromRect, toRect, duration) {
+    if (!duration) return;
+
+    css(el, 'transition', '');
+    css(el, 'transform', '');
+
     let easing = this.options.easing || '',
       dx = fromRect.left - toRect.left,
       dy = fromRect.top - toRect.top;
 
-    css(el, 'transition', '');
     css(el, 'transform', `translate3d(${dx}px, ${dy}px, 0)`);
 
     this.repaintDummy = repaint(el);
 
     css(el, 'transition', `transform ${duration}ms ${easing}`);
-    css(el, 'transform', 'translate3d(0px, 0px, 0px)');
+    css(el, 'transform', 'translate3d(0, 0, 0)');
 
     typeof el.animating === 'number' && clearTimeout(el.animating);
     el.animating = setTimeout(() => {

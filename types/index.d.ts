@@ -324,7 +324,7 @@ export interface SortableOptions {
    * Style object for the ghost element.
    * @defaults `{}`
    */
-  ghostStyle?: CSSStyleDeclaration;
+  ghostStyle?: Partial<CSSStyleDeclaration>;
 
   /**
    * Class name for the ghost element.
@@ -493,6 +493,11 @@ declare class Sortable {
    * Public Methods.
    */
   static utils: Utils;
+
+  /**
+   * A global object to store data.
+   */
+  static store: any;
 
   /**
    * Create sortable instance.
