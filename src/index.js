@@ -527,7 +527,7 @@ Sortable.prototype = {
     }
 
     // insert to last
-    if (el !== fromEl && (target === el || !lastChild(el))) {
+    if (el !== fromEl && (target === el || !lastChild(el, options.draggable))) {
       dropEl = lastDropEl = null;
       this._onInsert(event);
       return;
