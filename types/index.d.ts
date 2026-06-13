@@ -13,22 +13,26 @@ export interface DOMRect {
 
 export interface Group {
   /**
-   * group name
+   * Name of the group. Sortable lists with the same group name can drag items between each other.
    */
   name: string;
 
   /**
-   * Whether elements can be added from other lists, or an array of group names from which elements can be taken.
+   * Whether elements can be added to this list from other lists.
+   * Can be set to `true`, `false`, or an array of group names allowed to put items in this list.
    */
   put?: readonly string[] | boolean;
 
   /**
-   * Ability to move from the list. `clone` — copy the item, rather than move.
+   * Ability to move items out of this list.
+   * - `true`: allow items to be dragged out.
+   * - `false`: prevent items from being dragged out.
+   * - `'clone'`: copy the item rather than move it.
    */
   pull?: boolean | 'clone';
 
   /**
-   * Revert draged element to initial position after moving to a another list on `pull: 'clone'`.
+   * Whether to return the dragged element to its initial position after moving to another list when pull is set to `'clone'`.
    */
   revertDrag?: boolean;
 }
@@ -40,84 +44,84 @@ export interface ScrollSpeed {
 
 export interface SortableEvent {
   /**
-   * Start list of element to be dragged.
+   * The source list container from which the dragged element originated.
    */
   from: HTMLElement;
 
   /**
-   * List of currently placed drag element. Or the start list(from) in `pull: 'clone'`.
+   * The target list container currently holding the dragged/placeholder element.
+   * In `pull: 'clone'`, it may represent the source list (`from`).
    */
   to: HTMLElement;
 
   /**
-   * dragged element
+   * The original element being dragged.
    */
   node: HTMLElement;
 
   /**
-   * cloned element, all dnd operations are based on cloned element and do not alter the source dom(dragEl).
+   * The cloned placeholder element. All drag-and-drop operations and DOM rearrangements
+   * are based on this clone to avoid altering the source element directly during sorting.
    */
   clone: HTMLElement;
 
   /**
-   * drop element
+   * The current target element under the cursor that is being hovered or swapped with.
    */
   target: HTMLElement;
 
   /**
-   * old index within parent(from).
-   *
-   * `-1`: element added from another list to the current list
+   * The starting index of the dragged element within its parent container (`from`).
+   * Returns `-1` if the element was added from another list.
    */
   oldIndex: number;
 
   /**
-   * new index within parent(to).
-   *
-   * `-1`: element has been removed from the current list
+   * The target ending index of the dragged element within its new container (`to`).
+   * Returns `-1` if the element has been removed from the current list.
    */
   newIndex: number;
 
   /**
-   * TouchEvent | MouseEvent
+   * The underlying native touch or mouse event.
    */
   event: EventType;
 
   /**
-   * Pull value of the start list.
+   * The pull option mode of the source list (e.g., `true`, `false`, or `'clone'`).
    */
   pullMode: boolean | 'clone';
 
   /**
-   * Position of the drag element relative to the drop element(target) after swap is complete.
+   * Position of the dragged element relative to the target element after a swap is completed.
    * @example
-   * 0: // The position of dropEl is the same as dragEl.
+   * 0: // The position of target is the same as the dragged element.
    * <div id="same">dragEl, dropEl</div>
    *
-   * 1: // dragEl comes after dropEl.
+   * 1: // The dragged element comes after the target element.
    * <div id="before">dropEl</div>
    * <div id="after">dragEl</div>
    *
-   * -1: // dragEl comes before dropEl.
+   * -1: // The dragged element comes before the target element.
    * <div id="before">dragEl</div>
    * <div id="after">dropEl</div>
    */
   relative: 0 | 1 | -1;
 
   /**
-   * The dragEl returns to the start position of the drag after moving to a another list in `pull: 'clone'` & `revertDrag: true`.
+   * Whether the dragged element returns to its initial position after moving to another list under `pull: 'clone'` & `revertDrag: true`.
    */
   revertDrag?: boolean;
 
   /**
-   * Dragged element go back to the original list in `pull: 'clone'`.
+   * Whether the dragged element should go back to the original list under `pull: 'clone'`.
    */
   backToOrigin?: boolean;
 }
 
 export interface SortableOptions {
   /**
-   * store data.
+   * A custom data store object or function to get/set sorting state.
    * @example
    * sortable.option('store', value); // store value
    * sortable.option('store'); // get the stored value
@@ -133,29 +137,31 @@ export interface SortableOptions {
   sortable?: boolean;
 
   /**
-   * Specifies which items inside the element should be draggable.
+   * Specifies which items inside the container should be draggable.
+   * Supports standard CSS selectors.
    * @example
    * - 'div'   // use tag name
    * - '.item' // use class name
-   * - '#item' // use id
-   * - '>div' // use css selector
+   * - '#item' // use ID
+   * - '>div'  // use immediate child tag name selector
    * @defaults `'>*'`
    */
   draggable?: string;
 
   /**
-   * Drag handle selector within list items.
+   * Selector or function defining the drag handle within list items.
    * @example
    * - (e) => e.target.tagName === 'I' ? true : false
-   * - 'i' // use tag name
-   * - '.handle' // use class
-   * - '#handle' // use id
+   * - 'i'        // use tag name
+   * - '.handle'  // use class name
+   * - '#handle'  // use ID
    * @defaults `''`
    */
   handle?: string | ((event: EventType) => boolean);
 
   /**
-   * Set value to allow drag between different lists.
+   * Set value to allow dragging between different lists.
+   * Can be a group name string or a configuration object.
    * @example
    * - string: 'name'
    * - object: {
@@ -176,284 +182,285 @@ export interface SortableOptions {
   group?: string | Group;
 
   /**
-   * Axis on which dragging will be locked.
+   * Axis along which dragging should be locked.
+   * - `'x'`: horizontal lock.
+   * - `'y'`: vertical lock.
    * @defaults `''`
    */
   lockAxis?: 'x' | 'y';
 
   /**
-   * Customize the ghost element in drag.
+   * A custom callback function to create or customize the ghost element during dragging.
    * @defaults `undefined`
    */
   customGhost?: (node: HTMLElement) => HTMLElement;
 
   /**
-   * Direction of Sortable, will be detected automatically if not given.
+   * Direction of the Sortable list. Automatically detected if not provided.
    * @defaults `''`
    */
-  direction?: Direction | ((event: EventType, dragEl: HTMLElement, sortable: Sortable) => Direction);
+  direction?:
+    | Direction
+    | ((event: EventType, dragEl: HTMLElement, sortable: Sortable) => Direction);
 
   /**
-   * ms, animation speed moving items when sorting, `0` — without animation.
+   * Animation duration (in milliseconds) when swapping/reordering list items.
+   * Set to `0` to disable animations.
    * @defaults `150`
    */
   animation?: number;
 
   /**
-   * Easing for animation.
-   *
+   * CSS easing function or value applied to sorting animations.
    * See https://easings.net/ for examples.
-   *
-   * For other possible values, see
-   * https://www.w3schools.com/cssref/css3_pr_animation-timing-function.asp
-   *
    * @example
-   *
    * // CSS functions
-   * | 'steps(int, start | end)'
-   * | 'cubic-bezier(n, n, n, n)'
+   * - 'steps(int, start | end)'
+   * - 'cubic-bezier(n, n, n, n)'
    *
-   * // CSS values
-   * | 'linear'
-   * | 'ease'
-   * | 'ease-in'
-   * | 'ease-out'
-   * | 'ease-in-out'
-   * | 'step-start'
-   * | 'step-end'
-   * | 'initial'
-   * | 'inherit'
+   * // CSS keywords
+   * - 'linear'
+   * - 'ease'
+   * - 'ease-in-out'
    * @defaults `''`
    */
   easing?: string;
 
   /**
-   * Disables the sortable if set to `true`.
+   * Disables the sortable instance if set to `true`.
    * @defaults `false`
    */
   disabled?: boolean;
 
   /**
-   * Automatic scrolling when moving to the edge of the container.
+   * Whether to enable automatic scrolling when dragging near the container or page edges.
    * @defaults `true`
    */
   autoScroll?: boolean;
 
   /**
-   * Threshold to trigger autoScroll.
+   * Distance (in pixels) from the container boundary required to trigger automatic scrolling.
    * @defaults `55`
    */
   scrollThreshold?: number;
 
   /**
-   * Vertical & Horizontal scrolling speed (px)
+   * Vertical and horizontal scrolling speed (in pixels per frame).
    * @defaults `{ x: 10, y: 10 }`
    */
   scrollSpeed?: ScrollSpeed;
 
   /**
-   * Time in milliseconds to define when the sorting should start.
+   * Delay (in milliseconds) before the sorting drag starts.
    * @defaults `0`
    */
   delay?: number;
 
   /**
-   * Only delay if user is using touch.
+   * Only apply the drag delay when the user is on a touch device.
    * @defaults `false`
    */
   delayOnTouchOnly?: boolean;
 
   /**
-   * How many *pixels* the point should move before cancelling a delayed drag event.
+   * Distance (in pixels) the pointer must move during a delay period before the drag is cancelled.
    * @defaults `1`
    */
   touchStartThreshold?: number;
 
   /**
-   * Distance mouse must be from empty sortable to insert drag element into it.
+   * Distance (in pixels) the cursor must be from an empty sortable list to trigger element insertion.
    * @defaults `-1`
    */
   emptyInsertThreshold?: number;
 
   /**
-   * Appends the ghost Element into the Document's Body.
+   * Whether to append the ghost mirror element to the document body instead of the container.
    * @defaults `false`
    */
   appendToBody?: boolean;
 
   /**
-   * Container element to append the ghost element to.
-   * If not set, the ghost element will be appended to the sortable element.
+   * Element or custom function returning the element to append the ghost mirror to.
    * @defaults `null`
    */
   ghostContainer?: HTMLElement | ((sortable: Sortable) => HTMLElement);
 
   /**
-   * Whether to place the dragEl in the drop position after the drag is complete.
-   *
-   * - `true`  : The dragEl will be placed in the drop position after the drag is complete.
-   * - `false` : The dragEl will not move to the drop position (used for virtual-list).
+   * Whether to finalize the position of `dragEl` on drop.
+   * - `true`: placing `dragEl` in the drop position on drop.
+   * - `false`: do not move `dragEl` to drop position (typically used for virtual-list updates).
    * @defaults `true`
    */
   swapOnDrop?: boolean | ((event: SortableEvent) => boolean);
 
   /**
-   * Whether to remove the cloneEl after the drag is complete.
+   * Whether to remove the cloned element after dragging completes successfully.
    * @defaults `true`
    */
   removeCloneOnDrop?: boolean | ((event: SortableEvent) => boolean);
 
   /**
-   * Trigger the `onDrop` event when the animation is complete.
+   * Whether to delay trigger of the `onDrop` event until sorting animations complete.
    * @defaults `false`
    */
   dropOnAnimationEnd?: boolean;
 
   /**
-   * Class name for the chosen item.
+   * CSS class name applied to the active chosen item during sorting.
    * @defaults `''`
    */
   chosenClass?: string;
 
   /**
-   * Class name for the drop placeholder.
+   * CSS class name applied to the drop placeholder (clone) element remaining in the list during drag.
+   * @defaults `''`
    */
   placeholderClass?: string;
 
   /**
-   * Style object for the ghost element.
+   * Style declarations applied directly to the ghost mirror element.
    * @defaults `{}`
    */
   ghostStyle?: Partial<CSSStyleDeclaration>;
 
   /**
-   * Class name for the ghost element.
-   * @defaults `''`
+   * CSS class name applied to the floating ghost mirror element.
+   * @default `''`
    */
   ghostClass?: string;
 
   /**
-   * Element is chosen.
+   * Callback fired immediately when an element is chosen for potential dragging.
    */
   onChoose?: (event: SortableEvent) => void;
 
   /**
-   * Element is unchosen.
+   * Callback fired when an element is unchosen without completing sorting.
    */
   onUnchoose?: (event: SortableEvent) => void;
 
   /**
-   * Element dragging started.
+   * Callback fired when dragging officially starts.
    */
   onDrag?: (event: SortableEvent) => void;
 
   /**
-   * Move an item in the list or between lists.
+   * Callback fired on every move step as elements are being arranged.
    */
   onMove?: (event: SortableEvent) => void;
 
   /**
-   * Element dragging is completed.
+   * Callback fired when the dragged element is successfully dropped.
    */
   onDrop?: (event: SortableEvent) => void;
 
   /**
-   * Element is dropped into the current list from another (in the process of dragging).
+   * Callback fired when an element from another list is added to the current list (process of dragging).
    */
   onAdd?: (event: SortableEvent) => void;
 
   /**
-   * Element is removed from the current list into another (in the process of dragging).
+   * Callback fired when an element is dragged out of the current list into another (process of dragging).
    */
   onRemove?: (event: SortableEvent) => void;
 
   /**
-   * Dragging element changes position in the current list (in the process of dragging).
+   * Callback fired when the dragged element changes index/position within the current list (process of dragging).
    */
   onChange?: (event: SortableEvent) => void;
 }
 
 export interface Utils {
   /**
-   * Attach an event handler function.
-   * @param el an HTMLElement.
-   * @param event an Event context.
-   * @param fn
+   * Attaches an event listener to an element.
+   * @param el The target HTMLElement.
+   * @param event The event type (e.g., 'touchstart', 'mousedown').
+   * @param fn The event handler function.
    */
   on(el: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
 
   /**
-   * Remove an event handler function.
-   * @param el an HTMLElement.
-   * @param event an Event context.
-   * @param fn a callback.
+   * Removes an event listener from an element.
+   * @param el The target HTMLElement.
+   * @param event The event type (e.g., 'touchstart', 'mousedown').
+   * @param fn The event handler function to remove.
    */
   off(el: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
 
   /**
-   * Get the values of all the CSS properties.
-   * @param el an HTMLElement.
+   * Reads the computed CSS style declarations of an element.
+   * @param el The target HTMLElement.
    */
   css(el: HTMLElement): CSSStyleDeclaration;
 
   /**
-   * Get the value of style properties.
-   * @param el an HTMLElement.
-   * @param prop a property key.
+   * Reads a specific computed CSS style property of an element.
+   * @param el The target HTMLElement.
+   * @param prop The CSS style property key.
    */
   css<K extends keyof CSSStyleDeclaration>(el: HTMLElement, prop: K): CSSStyleDeclaration[K];
 
   /**
-   * Set one CSS property.
-   * @param el an HTMLElement.
-   * @param prop a property key.
-   * @param value a property value.
+   * Sets a specific inline CSS style property value on an element.
+   * @param el The target HTMLElement.
+   * @param prop The CSS style property key.
+   * @param value The value to apply to the style property.
    */
-  css<K extends keyof CSSStyleDeclaration>(el: HTMLElement, prop: K, value: CSSStyleDeclaration[K]): void;
+  css<K extends keyof CSSStyleDeclaration>(
+    el: HTMLElement,
+    prop: K,
+    value: CSSStyleDeclaration[K]
+  ): void;
 
   /**
-   * Returns the index of an element within its parent for a selected set of elements
-   * @param el an HTMLElement.
-   * @param selector an element seletor.
+   * Returns the current index of an element among its siblings (ignoring template or invisible elements).
+   * @param el The target HTMLElement.
+   * @param selector Optional CSS selector to filter sibling comparison.
    */
   index(el: HTMLElement, selector?: string): number;
 
   /**
-   * Check if a DOM element matches a given selector.
-   * @param el an HTMLElement.
-   * @param selector an element seletor.
+   * Checks if an element matches a given selector.
+   * @param el The target HTMLElement.
+   * @param selector The CSS selector string.
    */
   matches(el: HTMLElement, selector: string): boolean;
 
   /**
-   * For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
-   * @param el an HTMLElement.
-   * @param selector an element seletor.
-   * @param context a specific element's context.
-   * @param includeContext whether to add `context` to comparison
+   * Finds the closest ancestor element that matches the given selector (tests the element itself first).
+   * @param el The target HTMLElement.
+   * @param selector The CSS selector string.
+   * @param context Optional bounding container element.
+   * @param includeContext Whether to include the context element in match evaluation.
    */
-  closest(el: HTMLElement, selector: string, context?: HTMLElement, includeContext?: boolean): HTMLElement | null;
+  closest(
+    el: HTMLElement,
+    selector: string,
+    context?: HTMLElement,
+    includeContext?: boolean
+  ): HTMLElement | null;
 
   /**
-   * Returns the "bounding client rect" of given element
-   * @param el The element whose boundingClientRect is wanted
-   * @param relativeToContainingBlock Whether the rect should be relative to the containing block of (including) the container
-   * @param container The parent the element will be placed in
+   * Computes the bounding rect coordinates of an element, with optional absolute/parent container offsets.
+   * @param el The target HTMLElement.
+   * @param relativeToContainingBlock Whether offsets should be computed relative to containing blocks.
+   * @param container Bounding container offset reference.
    */
   getRect(el: HTMLElement, relativeToContainingBlock?: boolean, container?: HTMLElement): DOMRect;
 
   /**
-   * Add or remove one classes from each element.
-   * @param el an HTMLElement.
-   * @param name a class name.
-   * @param state a class's state.
+   * Adds or removes a CSS class on an element based on a boolean state toggle.
+   * @param el The target HTMLElement.
+   * @param name The class name to toggle.
+   * @param state `true` to add the class, `false` to remove it.
    */
   toggleClass(el: HTMLElement, name: string, state: boolean): void;
 
   /**
-   * Determine the direction in which the container is rolling.
-   * @param el list container.
-   * @param selector an element seletor.
+   * Automatically detects or determines directionality of children in a container (vertical or horizontal).
+   * @param el The list container element.
+   * @param selector The item selector string.
    */
   detectDirection(el: HTMLElement, selector: string): Direction;
 }
@@ -464,64 +471,69 @@ declare class Sortable {
   public options: SortableOptions;
 
   /**
-   * @param el The Parent which holds the draggable element(s).
-   * @param options Options to customise the behavior of the drag animations.
+   * @param el The Parent container holding the draggable elements.
+   * @param options Configuration options to customize the behavior of the drag animations and sorting.
    */
   constructor(el: HTMLElement, options?: SortableOptions);
 
   /**
-   * Active Sortable instance.
+   * Reference to the currently active Sortable instance.
    */
   static active: Sortable | null;
 
   /**
-   * Original element to be dragged.
+   * Reference to the original HTMLElement being dragged.
    */
   static dragged: HTMLElement | null;
 
   /**
-   * The ghost element.
-   */
-  static ghost: HTMLElement | null;
-
-  /**
-   * The clone element. All operations during dnd are based on clone.
+   * Reference to the cloned placeholder HTMLElement.
    */
   static clone: HTMLElement | null;
 
   /**
-   * Public Methods.
+   * Reference to the floating ghost HTMLElement mirror.
+   */
+  static ghost: HTMLElement | null;
+
+  /**
+   * Exposed static utility functions for DOM manipulation and calculation.
    */
   static utils: Utils;
 
   /**
-   * A global object to store data.
+   * A global key-value store object for storing internal or session state data.
    */
   static store: any;
 
   /**
-   * Create sortable instance.
-   * @param el The Parent which holds the draggable element(s).
-   * @param options Options to customise the behavior of the drag animations.
+   * Creates and returns a new Sortable instance for a container element.
+   * @param el The Parent container holding the draggable elements.
+   * @param options Configuration options.
    */
   static create(el: HTMLElement, options: SortableOptions): Sortable;
 
   /**
-   * Get the Sortable instance of an element.
-   * @param el Elements passed in when creating an instance.
+   * Retrieves the associated Sortable instance bound to a DOM element container.
+   * @param el The DOM element.
    */
   static get(el: HTMLElement): Sortable | undefined;
 
   /**
-   * Get or set the option value, depending on whether the `value` is passed in.
-   * @param name a SortableOptions property.
-   * @param value a value.
+   * Sets an option key value dynamically on the Sortable instance.
+   * @param name The option property key.
+   * @param value The value to apply.
    */
   option<K extends keyof SortableOptions>(name: K, value: SortableOptions[K]): void;
+
+  /**
+   * Retrieves an option value from the Sortable instance dynamically.
+   * @param name The option property key.
+   */
   option<K extends keyof SortableOptions>(name: K): SortableOptions[K];
 
   /**
-   * Removes the sortable functionality completely.
+   * Tears down the Sortable instance completely, removing event listeners and references.
    */
   destroy(): void;
 }

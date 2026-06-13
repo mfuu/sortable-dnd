@@ -1,72 +1,80 @@
-# Utils
+# Utility Methods
 
-**example**
+Sortable-dnd exposes a collection of static DOM and layout utility helpers under `Sortable.utils` to assist with custom drag-and-drop implementations.
+
+**Example**
+
 ```js
 import Sortable from 'sortable-dnd';
 
-Sortable.utils.getRect(element);
+const rect = Sortable.utils.getRect(element);
+console.log('Element bounding dimensions:', rect);
 ```
 
 ## `on`
 
-attach an event handler function.
+Attaches an event listener to an element with cross-browser and passive-mode support.
 
 ```ts
-on(el: HTMLElement, event: String, fn: Function);
+on(el: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
 ```
 
 ## `off`
 
-remove an event handler function.
+Removes a registered event listener from an element.
 
 ```ts
-off(el: HTMLElement, event: String, fn: Function);
+off(el: HTMLElement, event: string, fn: EventListenerOrEventListenerObject): void;
 ```
 
 ## `css`
 
-set one CSS properties.
+Gets computed CSS properties or sets inline CSS styles on an element.
 
 ```ts
-css(el: HTMLElement, prop: String, value: String);
+// Get a computed property value
+const displayMode = css(el, 'display');
+
+// Set inline style properties
+css(el, 'transform', 'translate3d(0, 0, 0)');
 ```
 
 ## `index`
 
-Returns the index of an element within its parent for a selected set of elements.
+Returns the index of a DOM element among its siblings, ignoring template tags, hidden elements, and active dragging/ghost elements.
 
 ```ts
-index(el: HTMLElement, selector: String);
+index(el: HTMLElement, selector?: string): number;
 ```
 
 ## `matches`
 
-Check if the element matches the selector.
+Checks if a DOM element matches a specified CSS selector string.
 
 ```ts
-matches(el: HTMLElement, selector: String);
+matches(el: HTMLElement, selector: string): boolean;
 ```
 
 ## `getRect`
 
-Returns the "bounding client rect" of given element.
+Calculates and returns the bounding client coordinates (`top`, `left`, `right`, `bottom`, `width`, `height`) of an element. Optionally adjusts offsets relative to a parent container block.
 
 ```ts
-getRect(element: HTMLElement, relativeToContainingBlock?: boolean, container?: HTMLElement);
+getRect(element: HTMLElement, relativeToContainingBlock?: boolean, container?: HTMLElement): DOMRect;
 ```
 
 ## `closest`
 
-For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
+Traverses up the DOM tree starting from `el` to find the closest ancestor element matching the provided selector.
 
 ```ts
-closest(el: HTMLElement, selector: String, context?: HTMLElement, includeContext?: Boolean);
+closest(el: HTMLElement, selector: string, context?: HTMLElement, includeContext?: boolean): HTMLElement | null;
 ```
 
 ## `toggleClass`
 
-Add or remove one classes from each element.
+Adds or removes a CSS class on an element depending on the provided boolean state.
 
 ```ts
-toggleClass(el: HTMLElement, name: String, state: Boolean);
+toggleClass(el: HTMLElement, name: string, state: boolean): void;
 ```

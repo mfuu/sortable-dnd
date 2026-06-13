@@ -1,20 +1,22 @@
-# Options
+# Configuration Options
+
+Customize the drag-and-drop behavior, styling, scrolling, and callbacks of Sortable-dnd using configuration options.
 
 ## `draggable`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `String` | `'>*'`      |
+| `string` | `'>*'`      |
 
-Specifies which items inside the element should be draggable.
+A CSS selector string specifying which child items inside the container should be draggable.
 
 ```js
 new Sortable(document.getElementById('group'), {
-  // draggable: 'li', // use tagName
-  // draggable: '#item', // use id
-  // draggable: '>div', // use css selector
-  // draggable: '.item', // use class
-  draggable: '>*',
+  // draggable: 'li',     // Match tag name
+  // draggable: '#item',   // Match specific element by ID
+  // draggable: '>div',    // Match immediate div child elements
+  // draggable: '.item',   // Match class name
+  draggable: '>*',         // Default: match all immediate children
 });
 ```
 
@@ -22,17 +24,17 @@ new Sortable(document.getElementById('group'), {
 
 | **Type**             | **Default** |
 | -------------------- | ----------- |
-| `String \| Function` | `''`        |
+| `string \| Function` | `''`        |
 
-Drag handle selector within list items.
+A CSS selector string or custom callback function defining the drag handle within list items. Dragging can only be initiated from handles matching this option.
 
 ```js
 new Sortable(document.getElementById('group'), {
-  // handle: 'I', // use tagName
-  // handle: '#handle', // use id
-  // handle: (e) => e.target.tagName === 'I' ? true : false, // use function
-  // handle: '.handle', // use class
-  handle: '',
+  // handle: 'i',          // Only allow dragging via <i> elements
+  // handle: '#handle',     // Only allow dragging via elements with ID 'handle'
+  // handle: '.handle',     // Only allow dragging via class '.handle'
+  // handle: (e) => e.target.tagName === 'I', // Custom function evaluation
+  handle: '',              // Default: the entire item acts as a handle
 });
 ```
 
@@ -40,26 +42,31 @@ new Sortable(document.getElementById('group'), {
 
 | **Type**           | **Default** |
 | ------------------ | ----------- |
-| `String \| Object` | `''`        |
+| `string \| Object` | `''`        |
 
-To drag elements from one list into another, both lists must have the same group value.
+Allows dragging elements between different lists. To drag and sort elements between multiple lists, both containers must share the same group config name.
 
 ```js
-// string
-group: 'name',
+// Simple string notation
+group: 'shared-list-name',
 
-// object
+// Advanced object configuration
 group: {
-  name: 'group', // group name
+  name: 'shared-list-name', // Shared group name
 
-  // whether elements can be added from other lists,
-  // or an array of group names from which elements can be taken.
+  // Whether elements can be added to this list from other lists:
+  // - true: allow elements from any group.
+  // - false: block items from being dropped here.
+  // - Array of strings: allow drops only from listed group names.
   put: true | false | ['group1', 'group2'],
 
-  // whether elements can be moved out of this list.
+  // Whether elements can be moved out of this list:
+  // - true: allow items to be dragged out.
+  // - false: block items from being dragged out.
+  // - 'clone': copy items during drag rather than moving them out.
   pull: true | false | 'clone',
 
-  // whether to revert the drag element to its initial position after clone to a another list.
+  // Whether to return the dragged element to its starting position after moving to another list when pull is 'clone'.
   revertDrag: true | false,
 }
 ```
@@ -70,23 +77,26 @@ group: {
 | ------------ | ----------- |
 | `'x' \| 'y'` | `''`        |
 
-Axis on which dragging will be locked.
+Locks the drag movement along a specific coordinate axis.
+
+- `'x'`: Restrict dragging to the horizontal axis.
+- `'y'`: Restrict dragging to the vertical axis.
 
 ## `sortable`
 
 | **Type**  | **Default** |
 | --------- | ----------- |
-| `Boolean` | `true`      |
+| `boolean` | `true`      |
 
-Whether the current list can be sorted by dragging.
+Whether elements inside the current container can be sorted by dragging them around. Set to `false` to disable inner-list reordering (useful for purely transferring items between lists).
 
 ## `disabled`
 
 | **Type**  | **Default** |
 | --------- | ----------- |
-| `Boolean` | `false`     |
+| `boolean` | `false`     |
 
-Disables the sortable if set to true.
+Disables the Sortable instance completely when set to `true`.
 
 ## `store`
 
@@ -94,121 +104,127 @@ Disables the sortable if set to true.
 | -------- | ----------- |
 | `any`    | `null`      |
 
-store any data you want.
+A custom state/data storage utility. Useful for state synchronization or external storage.
 
 ```js
-sortable.option('store', value); // store value
-sortable.option('store'); // get the stored value
+// Save data to store
+sortable.option('store', someData);
+
+// Retrieve data from store
+const storedData = sortable.option('store');
 ```
 
 ## `autoScroll`
 
 | **Type**  | **Default** |
 | --------- | ----------- |
-| `Boolean` | `true`      |
+| `boolean` | `true`      |
 
-Automatic scrolling when moving to the edge of the container.
+Enables automatic container/page scrolling when the dragged item is held near the boundaries.
 
 ## `scrollThreshold`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `Number` | `55`        |
+| `number` | `55`        |
 
-Threshold to trigger autoScroll.
+The distance (in pixels) from the container's edges that the pointer must reach to trigger automatic scrolling.
 
 ## `scrollSpeed`
 
-| **Type** | **Default**        |
-| -------- | ------------------ |
-| `Object` | `{ x: 10, y: 10 }` |
+| **Type**      | **Default**        |
+| ------------- | ------------------ |
+| `ScrollSpeed` | `{ x: 10, y: 10 }` |
 
-Vertical & Horizontal scrolling speed (px)
+The speed of automatic scrolling along the X and Y axes (in pixels per frame).
 
 ## `direction`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `String` | `''`        |
+| `string` | `''`        |
 
-Direction of Sortable, will be detected automatically if not given.
+Specifies the layout direction of the list (e.g. `'vertical'` or `'horizontal'`). Automatically detected from styles if not specified.
 
 ## `easing`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `String` | `''`        |
+| `string` | `''`        |
 
-Easing for animation. See https://easings.net/ for examples.
+A CSS transition timing function string applied to sorting animations.
+See https://easings.net/ for examples.
 
-For other possible values, see https://www.w3schools.com/cssref/css3_pr_animation-timing-function.asp
+```js
+easing: 'cubic-bezier(0.25, 1, 0.5, 1)', // Custom bezier easing
+```
 
 ## `animation`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `Number` | `150`       |
+| `number` | `150`       |
 
-ms, animation speed moving items when sorting, `0` — without animation.
+The duration of item reordering animations in milliseconds. Set to `0` to disable animations.
 
 ## `delay`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `Number` | `0`         |
+| `number` | `0`         |
 
-Time in milliseconds to define when the drag should start.
+The delay (in milliseconds) before dragging starts. This helps distinguish click actions from drag actions.
 
 ## `delayOnTouchOnly`
 
 | **Type**  | **Default** |
 | --------- | ----------- |
-| `Boolean` | `false`     |
+| `boolean` | `false`     |
 
-Only delay if user is using touch.
+If set to `true`, the `delay` option will only be applied when dragging on touch/mobile devices.
 
 ## `touchStartThreshold`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `Number` | `1`         |
+| `number` | `1`         |
 
-How many *pixels* the point should move before cancelling a delayed drag event.
+The minimum movement in pixels required during a delay period before the drag is cancelled (prevents accidental drags during click or tap).
 
 ## `emptyInsertThreshold`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `Number` | `-1`        |
+| `number` | `-1`        |
 
-Distance mouse must be from empty sortable to insert drag element into it.
+The distance in pixels the cursor must be from an empty list to trigger item insertion. Set to `-1` to disable.
 
 ## `swapOnDrop`
 
-| **Type**  | **Default** |
-| --------- | ----------- |
-| `Boolean` | `true`      |
+| **Type**                | **Default** |
+| ----------------------- | ----------- |
+| `boolean \| SwappingFn` | `true`      |
 
-Whether to place the dragEl in the drop position after the drag is complete.
+Whether to physically finalize the position of the dragged element in the DOM at the drop coordinate.
 
-- `true`  : The dragEl will be placed in the drop position after the drag is complete.
-- `false` : The dragEl will not move to the drop position (used for virtual-list).
+- `true`: finalizes position.
+- `false`: do not alter DOM hierarchy on drop (useful when integrating with modern virtual-list or reactivity-driven frameworks like Vue, React, or Angular).
 
 ## `removeCloneOnDrop`
 
-| **Type**  | **Default** |
-| --------- | ----------- |
-| `Boolean` | `true`      |
+| **Type**                | **Default** |
+| ----------------------- | ----------- |
+| `boolean \| SwappingFn` | `true`      |
 
-Whether to remove the cloneEl after the drag is complete.
+Whether to automatically remove the cloned placeholder element after the drag is complete.
 
 ## `dropOnAnimationEnd`
 
 | **Type**  | **Default** |
 | --------- | ----------- |
-| `Boolean` | `false`     |
+| `boolean` | `false`     |
 
-Trigger the `onDrop` event when the animation is complete.
+If set to `true`, the `onDrop` event callback will only be triggered after the sorting transition animation completes fully.
 
 ## `customGhost`
 
@@ -216,16 +232,16 @@ Trigger the `onDrop` event when the animation is complete.
 | ---------- | ----------- |
 | `Function` | `undefined` |
 
-Customize the ghost element in drag.
+A custom callback function returning an HTML element to be used as the floating ghost mirror during drag.
 
 ```js
 new Sortable(element, {
-  customGhost: (nodes) => {
-    // you must return an HTMLElement
-
-    // example:
-    const div = document.createElement('div');
-    return div;
+  customGhost: (cloneEl) => {
+    // Customize ghost element styling/content and return it
+    const ghost = document.createElement('div');
+    ghost.textContent = 'Dragging...';
+    ghost.className = 'my-custom-ghost';
+    return ghost;
   },
 });
 ```
@@ -234,25 +250,25 @@ new Sortable(element, {
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `String` | `''`        |
+| `string` | `''`        |
 
-Class name for the chosen item.
+The CSS class name applied to the active dragged element when chosen.
 
 ## `placeholderClass`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `String` | `''`        |
+| `string` | `''`        |
 
-Class name for the drop placeholder.
+The CSS class name applied to the drop placeholder (clone) element remaining in the list during drag.
 
 ## `ghostClass`
 
 | **Type** | **Default** |
 | -------- | ----------- |
-| `String` | `''`        |
+| `string` | `''`        |
 
-Class name for the ghost element.
+The CSS class name applied to the floating ghost element following the pointer.
 
 ## `ghostStyle`
 
@@ -260,7 +276,7 @@ Class name for the ghost element.
 | -------- | ----------- |
 | `Object` | `{}`        |
 
-Style object for the ghost element.
+A key-value style configuration object applied inline to the floating ghost mirror element.
 
 ## `ghostContainer`
 
@@ -268,16 +284,12 @@ Style object for the ghost element.
 | ------------- | ----------- |
 | `HTMLElement` | `null`      |
 
-Container element to append the ghost Element to.
-
-If not set, the ghost Element will be appended to the sortable Element.
+The HTML container element where the floating ghost mirror will be appended. If not specified, it defaults to the active Sortable list container.
 
 ## `appendToBody`
 
 | **Type**  | **Default** |
 | --------- | ----------- |
-| `Boolean` | `false`     |
+| `boolean` | `false`     |
 
-Appends the ghost Element into the Document's Body.
-
-If set to `true`, the `ghostContainer` option will be ignored.
+Appends the floating ghost mirror element directly to the document `<body>`. If set to `true`, the `ghostContainer` option will be overridden.

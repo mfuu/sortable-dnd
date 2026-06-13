@@ -1,37 +1,51 @@
-# Start
+# Installation & Usage
 
-## Install
+## Installation
+
+Install the package via your preferred package manager:
 
 ::: code-group
 
 ```sh [npm]
-$ npm i sortable-dnd
+$ npm install sortable-dnd
 ```
 
 ```sh [yarn]
 $ yarn add sortable-dnd
 ```
 
+```sh [pnpm]
+$ pnpm add sortable-dnd
+```
+
 :::
 
-## Usage
+## Basic Usage
+
+Set up your HTML structure and initialize Sortable-dnd:
 
 **HTML**
 
 ```html
 <ul id="group">
-  <li>1</li>
-  <li>2</li>
-  <li>3</li>
-  <li>4</li>
-  <li>5</li>
+  <li>Item 1</li>
+  <li>Item 2</li>
+  <li>Item 3</li>
+  <li>Item 4</li>
+  <li>Item 5</li>
 </ul>
 ```
 
-**JavaScript**
+**JavaScript / TypeScript**
 
 ```js
 import Sortable from 'sortable-dnd';
 
-let sortable = new Sortable(document.getElementById('group'));
+const container = document.getElementById('group');
+const sortable = new Sortable(container, {
+  animation: 150,
+  onDrop: (event) => {
+    console.log('Item dropped:', event);
+  }
+});
 ```

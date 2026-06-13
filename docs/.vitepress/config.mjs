@@ -38,7 +38,7 @@ export default defineConfig({
         items: [
           { text: 'Start', link: 'install' },
           { text: 'Options', link: 'options' },
-          { text: 'Callback', link: 'callback' },
+          { text: 'Callbacks', link: 'callbacks' },
           { text: 'Methods', link: 'methods' },
           { text: 'Utils', link: 'utils' },
         ],
