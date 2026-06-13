@@ -1,22 +1,31 @@
-import { expando, getScrollingElement, getRect } from '../utils.js';
+import {
+  expando,
+  getRect,
+  getScrollingElement,
+  requestAnimationFrame,
+  cancelAnimationFrame,
+} from '../utils.js';
 
 function AutoScroll(options) {
   this.options = options;
   this.scrollEl = null;
-  this.autoScrollInterval = null;
+  this.autoScrollFrameId = null;
+
+  this.loopScroll = this.loopScroll.bind(this);
+  this.autoScroll = this.autoScroll.bind(this);
 }
 
 AutoScroll.prototype = {
   nulling() {
-    if (this.autoScrollInterval) {
-      clearInterval(this.autoScrollInterval);
-      this.autoScrollInterval = null;
+    if (this.autoScrollFrameId) {
+      cancelAnimationFrame(this.autoScrollFrameId);
+      this.autoScrollFrameId = null;
     }
   },
 
   onStarted() {
     this.nulling();
-    this.autoScrollInterval = setInterval(this.autoScroll.bind(this));
+    this.autoScrollFrameId = requestAnimationFrame(this.loopScroll);
   },
 
   onMove(target, moveEvent, el, defaultOptions) {
@@ -29,6 +38,11 @@ AutoScroll.prototype = {
     this.options = options;
     this.scrollEl = getScrollingElement(target, true);
     this.moveEvent = moveEvent;
+  },
+
+  loopScroll() {
+    this.autoScroll();
+    this.autoScrollFrameId = requestAnimationFrame(this.loopScroll);
   },
 
   autoScroll() {

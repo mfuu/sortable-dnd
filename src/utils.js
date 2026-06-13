@@ -20,6 +20,28 @@ export const Safari = userAgent(/safari/i) && !userAgent(/chrome/i) && !userAgen
 export const IOS = userAgent(/iP(ad|od|hone)/i);
 export const ChromeForAndroid = userAgent(/chrome/i) && userAgent(/android/i);
 
+export const requestAnimationFrame =
+  typeof window !== 'undefined'
+    ? window.requestAnimationFrame ||
+      window.webkitRequestAnimationFrame ||
+      window.mozRequestAnimationFrame ||
+      function (callback) {
+        return setTimeout(callback, 16);
+      }
+    : function (callback) {
+        return setTimeout(callback, 16);
+      };
+
+export const cancelAnimationFrame =
+  typeof window !== 'undefined'
+    ? window.cancelAnimationFrame ||
+      window.webkitCancelAnimationFrame ||
+      window.mozCancelAnimationFrame ||
+      window.clearTimeout
+    : function (id) {
+        clearTimeout(id);
+      };
+
 /**
  * add specified event listener
  */
