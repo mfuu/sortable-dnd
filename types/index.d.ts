@@ -131,6 +131,12 @@ export interface SortableOptions {
   store?: any;
 
   /**
+   * Disables the sortable instance if set to `true`.
+   * @defaults `false`
+   */
+  disabled?: boolean;
+
+  /**
    * Whether the current list can be sorted by dragging.
    * @defaults `true`
    */
@@ -225,12 +231,6 @@ export interface SortableOptions {
    * @defaults `''`
    */
   easing?: string;
-
-  /**
-   * Disables the sortable instance if set to `true`.
-   * @defaults `false`
-   */
-  disabled?: boolean;
 
   /**
    * Whether to enable automatic scrolling when dragging near the container or page edges.
@@ -450,6 +450,20 @@ export interface Utils {
   getRect(el: HTMLElement, relativeToContainingBlock?: boolean, container?: HTMLElement): DOMRect;
 
   /**
+   * Returns the draggable element at a given index of draggable elements within a Sortable instance.
+   * @param el The target HTMLElement.
+   * @param childNum The index of the child element to return.
+   * @param selector Optional CSS selector to filter child comparison.
+   * @param includeDragEl Whether to include the dragged element in the comparison.
+   */
+  getChild(
+    el: HTMLElement,
+    childNum: number,
+    selector?: string,
+    includeDragEl?: boolean
+  ): HTMLElement | null;
+
+  /**
    * Adds or removes a CSS class on an element based on a boolean state toggle.
    * @param el The target HTMLElement.
    * @param name The class name to toggle.
@@ -463,6 +477,11 @@ export interface Utils {
    * @param selector The item selector string.
    */
   detectDirection(el: HTMLElement, selector: string): Direction;
+
+  /**
+   * expando property name for internal use, sortableListElement[expando] returns the Sortable instance of that element
+   */
+  expando: string;
 }
 
 declare class Sortable {

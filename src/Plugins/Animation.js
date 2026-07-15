@@ -65,7 +65,9 @@ Animation.prototype = {
       return;
     }
 
-    let maxAnimationTime = 0;
+    let animationTime = 0;
+    let animationQueue = [];
+
     animations.forEach((item) => {
       let time = 0,
         el = item.el,
@@ -95,50 +97,45 @@ Animation.prototype = {
           time = duration;
         }
 
-        this.execute(el, fromRect, toRect, time);
+        const dx = fromRect.left - toRect.left;
+        const dy = fromRect.top - toRect.top;
+
+        css(el, 'transition', '');
+        css(el, 'transform', `translate3d(${dx}px, ${dy}px, 0)`);
+
+        animationQueue.push({ el, time });
       }
 
       if (time) {
-        maxAnimationTime = Math.max(maxAnimationTime, time);
+        animationTime = Math.max(animationTime, time);
       }
     });
 
+    if (animationQueue.length > 0) {
+      this.repaintDummy = repaint(document.body);
+
+      let easing = this.options.easing || '';
+      animationQueue.forEach(({ el, time }) => {
+        css(el, 'transition', `transform ${time}ms ${easing}`);
+        css(el, 'transform', 'translate3d(0, 0, 0)');
+
+        typeof el.animating === 'number' && clearTimeout(el.animating);
+        el.animating = setTimeout(() => {
+          css(el, 'transition', '');
+          css(el, 'transform', '');
+          el.animating = null;
+        }, animationTime);
+      });
+    }
+
     clearTimeout(this.animationCallbackId);
-    if (maxAnimationTime) {
+    if (animationTime) {
       this.animationCallbackId = setTimeout(() => {
         typeof callback === 'function' && callback();
-      }, maxAnimationTime);
+      }, animationTime);
     } else {
       typeof callback === 'function' && callback();
     }
-  },
-
-  execute(el, fromRect, toRect, duration) {
-    if (!duration) return;
-
-    css(el, 'transition', '');
-    css(el, 'transform', '');
-
-    let easing = this.options.easing || '',
-      dx = fromRect.left - toRect.left,
-      dy = fromRect.top - toRect.top;
-
-    css(el, 'transform', `translate3d(${dx}px, ${dy}px, 0)`);
-
-    this.repaintDummy = repaint(el);
-
-    css(el, 'transition', `transform ${duration}ms ${easing}`);
-    css(el, 'transform', 'translate3d(0, 0, 0)');
-
-    typeof el.animating === 'number' && clearTimeout(el.animating);
-    el.animating = setTimeout(() => {
-      css(el, 'transition', '');
-      css(el, 'transform', '');
-
-      el.prevFromRect = null;
-      el.prevToRect = null;
-      el.animating = null;
-    }, duration);
   },
 };
 

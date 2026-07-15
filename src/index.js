@@ -827,6 +827,7 @@ Sortable.utils = {
   off,
   css,
   index,
+  expando,
   matches,
   closest,
   getRect,

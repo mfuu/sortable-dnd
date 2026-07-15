@@ -205,12 +205,21 @@ css(el: HTMLElement, prop: String, value: String);
 // Returns the index of an element within its parent for a selected set of elements
 index(el: HTMLElement, selector: String);
 
+// Checks if an element matches a given selector
+matches(el: HTMLElement, selector: String)
+
 // For each element in the set, get the first element that matches the selector by testing the element itself and traversing up through its ancestors in the DOM tree.
 closest(el: HTMLElement, selector: String, context: HTMLElement, includeContext: Boolean);
 
 // Returns the "bounding client rect" of given element
 getRect(element: HTMLElement, relativeToContainingBlock: boolean, container: HTMLElement);
 
+// Get the draggable element at a given index of draggable elements within a Sortable instance
+getChild(el: HTMLElement, childNum: number, selector?: string, includeDragEl?: boolean);
+
 // Add or remove one classes from each element
 toggleClass(el: HTMLElement, name: String, state: Boolean);
+
+// Automatically detects or determines directionality of children in a container (vertical or horizontal)
+detectDirection(el: HTMLElement, selector: String);
 ```

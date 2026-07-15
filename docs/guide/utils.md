@@ -63,6 +63,14 @@ Calculates and returns the bounding client coordinates (`top`, `left`, `right`, 
 getRect(element: HTMLElement, relativeToContainingBlock?: boolean, container?: HTMLElement): DOMRect;
 ```
 
+## `getChild`
+
+Returns the draggable element at a given index of draggable elements within a Sortable instance.
+
+```ts
+getChild(el: HTMLElement, childNum: number, selector?: string, includeDragEl?: boolean): HTMLElement | null;
+```
+
 ## `closest`
 
 Traverses up the DOM tree starting from `el` to find the closest ancestor element matching the provided selector.
@@ -77,4 +85,12 @@ Adds or removes a CSS class on an element depending on the provided boolean stat
 
 ```ts
 toggleClass(el: HTMLElement, name: string, state: boolean): void;
+```
+
+## `detectDirection`
+
+Automatically detects or determines directionality of children in a container (vertical or horizontal).
+
+```ts
+detectDirection(el: HTMLElement, selector: string): Direction;
 ```
