@@ -372,7 +372,7 @@ Sortable.prototype = {
     ghostEl = element.cloneNode(true);
     toggleClass(ghostEl, options.ghostClass, true);
 
-    const rect = getRect(dragEl);
+    const rect = getRect(dragEl, true, container);
     const style = Object.assign(
       {
         position: 'fixed',
